@@ -2,167 +2,204 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Office Space & Cost Estimator | Lambert Smith Hampton</title>
+  <title>Explore costs | Lambert Smith Hampton</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- TailwindCSS (CDN) for rapid styling -->
+  <!-- Tailwind CSS for quick layout -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <!-- Leaflet for the interactive map -->
-  <link
-    rel="stylesheet"
-    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
-    integrity="sha256-VSjAGN6z0UMSPi90DxtmmBnxateTGf10TqupPZN8X+k="
-    crossorigin=""
-  />
+  <!-- DIN Pro font -->
+  <link href="https://fonts.cdnfonts.com/css/dinpro" rel="stylesheet" />
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
-    :root {
-      /* Lambert Smith Hampton core red */
-      --lsh-red: #cc2030;
-    }
-    .bg-lsh-red { background-color: var(--lsh-red); }
-    .hover\:bg-lsh-red-dark:hover { background-color: #b51c2a; }
-    .text-lsh-red { color: var(--lsh-red); }
+    :root { --lsh-red:#cc2030; --lsh-red-dark:#871720; }
+    body { font-family:'DINPro','DIN Pro',Arial,sans-serif; font-feature-settings:'liga' 0; -webkit-font-feature-settings:'liga' 0; }
+    h1,h2 { font-family:'DINPro','DIN Pro',Arial,sans-serif; }
+    .font-din-bold{ font-family:'DINPro Bold','DINPro',Arial,sans-serif; font-weight:700; }
+    .text-lsh-red{ color:var(--lsh-red); }
+    .bg-lsh-red{ background-color:var(--lsh-red); }
+    .hover\:bg-lsh-red-dark:hover{ background-color:#b51c2a; }
+    #map{ width:100%; height:420px; }
+    .error{ border-color:#dc2626!important; }
+    .err-msg{ display:none; color:#dc2626; font-size:0.75rem; }
   </style>
 </head>
-<body class="bg-gray-50 font-sans antialiased">
+<body class="bg-gray-50 antialiased">
   <!-- Header -->
   <header class="bg-white shadow">
-    <div class="max-w-5xl mx-auto px-4 py-6 flex items-center">
-      <div class="flex-shrink-0 w-11 h-11 rounded bg-lsh-red text-white flex items-center justify-center font-extrabold text-lg tracking-tight">
-        LSH
-      </div>
-      <h1 class="ml-3 text-2xl md:text-3xl font-semibold text-gray-900">Office Space &amp; Cost Estimator</h1>
+    <div class="max-w-6xl mx-auto px-4 py-6">
+      <h1 class="text-4xl font-din-bold text-gray-900">Explore costs</h1>
     </div>
   </header>
 
-  <!-- Main 2‑column layout -->
-  <main class="max-w-5xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-6">
-    <!-- Calculator column -->
-    <section class="flex-1 bg-white p-6 rounded-lg shadow-md order-2 md:order-1">
-      <h2 class="text-xl font-semibold mb-4 text-lsh-red">Quick estimate</h2>
+  <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
+    <!-- Calculator -->
+    <section class="bg-white p-6 rounded-lg shadow-md order-1">
+      <h2 class="text-2xl md:text-3xl font-din-bold mb-6 text-lsh-red">Estimation options</h2>
 
-      <!-- Location selector -->
-      <label for="locationSelect" class="block text-sm font-medium text-gray-700 mb-1">Where are you interested in?</label>
-      <select id="locationSelect" class="w-full border rounded p-2 mb-4 bg-white">
-        <option value="" disabled selected>Select a location…</option>
+      <label for="modeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
+      <select id="modeSelect" class="w-full border rounded p-2 mb-1 bg-white">
+        <option value="" disabled selected>Please select</option>
+        <option value="people">Number of people → cost</option>
+        <option value="budget">Budget → capacity</option>
+      </select>
+      <p id="modeError" class="err-msg mb-3">Please select an option</p>
+
+      <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
+      <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
+        <option value="" disabled selected>Please select</option>
         <option value="London">London</option>
         <option value="Manchester">Manchester</option>
         <option value="Birmingham">Birmingham</option>
         <option value="Newcastle">Newcastle</option>
         <option value="Bristol">Bristol</option>
       </select>
+      <p id="locationError" class="err-msg mb-3">Please select a location</p>
+
+      <label for="ageSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Building age</label>
+      <select id="ageSelect" class="w-full border rounded p-2 mb-1 bg-white">
+        <option value="" disabled selected>Please select</option>
+        <option value="New">New build</option>
+        <option value="20">20‑year old</option>
+      </select>
+      <p id="ageError" class="err-msg mb-3">Please select building age</p>
+
+      <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
+      <select id="typeSelect" class="w-full border rounded p-2 mb-1 bg-white">
+        <option value="" disabled selected>Please select</option>
+        <option value="Corporate">Corporate</option>
+        <option value="Financial">Financial</option>
+        <option value="Insurance">Insurance</option>
+        <option value="Professional">Professional</option>
+        <option value="Public">Public</option>
+      </select>
+      <p id="typeError" class="err-msg mb-3">Please select workstation type</p>
 
       <!-- People input -->
-      <label for="peopleInput" class="block text-sm font-medium text-gray-700 mb-1">How many people?</label>
-      <input
-        type="number"
-        id="peopleInput"
-        min="1"
-        class="w-full border rounded p-2 mb-4"
-        placeholder="e.g. 25"
-      />
-
-      <button
-        id="calcBtn"
-        class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded transition-colors w-full md:w-auto"
-      >
-        Calculate space &amp; cost
-      </button>
-
-      <!-- Results -->
-      <div id="resultWrapper" class="mt-6 hidden">
-        <p class="text-lg font-medium text-gray-900">Required floor area:</p>
-        <p id="areaResult" class="text-2xl font-bold"></p>
-        <p class="mt-4 text-lg font-medium text-gray-900">Estimated annual cost:</p>
-        <p id="costResult" class="text-2xl font-bold"></p>
+      <div id="peopleGroup" class="mb-3 hidden">
+        <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many people?</label>
+        <input type="number" id="peopleInput" class="w-full border rounded p-2" placeholder="e.g. 25" />
+        <p id="peopleError" class="err-msg mt-1">Enter a number &gt; 0</p>
       </div>
 
-      <p class="mt-6 text-sm text-gray-500 leading-snug">
-        *The tool uses <strong>12&nbsp;m² per person</strong> as a guideline and placeholder market rental rates per square&nbsp;metre. Adjust the multiplier and rates to match real‑world data before publication.
-      </p>
+      <!-- Budget input -->
+      <div id="budgetGroup" class="mb-3 hidden">
+        <label for="budgetInput" class="block text-lg font-din-bold text-gray-700 mb-1">Annual budget (£)</label>
+        <input type="text" id="budgetInput" inputmode="numeric" class="w-full border rounded p-2" placeholder="e.g. 750,000" />
+        <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
+      </div>
+
+      <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold w-full">Calculate</button>
+
+      <div id="resultWrapper" class="mt-6 hidden space-y-2">
+        <p id="areaResult" class="text-2xl font-din-bold"></p>
+        <p id="costResult" class="text-2xl font-din-bold"></p>
+        <p id="peopleResult" class="text-2xl font-din-bold"></p>
+      </div>
+
+      <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Assumes <strong>12&nbsp;m² per person</strong>. All prices are placeholders.</p>
     </section>
 
-    <!-- Map column -->
-    <section class="flex-1 bg-white p-6 rounded-lg shadow-md order-1 md:order-2">
-      <h2 class="text-xl font-semibold mb-4 text-lsh-red">UK office hotspots</h2>
-      <div id="map" class="w-full h-80 rounded"></div>
-      <p class="mt-4 text-sm text-gray-500">Hover a pin to see the city; click for placeholder rental info. Clicking also pre‑selects the city in the calculator.</p>
+    <!-- Map -->
+    <section class="bg-white p-6 rounded-lg shadow-md order-2">
+      <h2 class="text-2xl md:text-3xl font-din-bold mb-6 text-lsh-red">UK Office hotspots</h2>
+      <div id="map" class="rounded"></div>
+      <p class="mt-4 text-sm text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
     </section>
   </main>
 
-  <!-- Footer -->
-  <footer class="text-center text-sm text-gray-400 py-6">
-    © Lambert Smith Hampton — Prototype tool for illustration only.
-  </footer>
+  <footer class="text-center text-sm text-gray-400 py-6 font-din-light">© Lambert Smith Hampton — Prototype tool for illustration only.</footer>
 
-  <!-- JavaScript: Leaflet + calculator logic -->
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j8pN34E+xDZn6/R+ehGJbT4Lo0P6DUX5M6u2E2k=" crossorigin=""></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script>
-    // ---- Data ----
-    const PRICES = {
-      London: 650,       // £/m² (placeholder)
-      Manchester: 320,
-      Birmingham: 280,
-      Newcastle: 220,
-      Bristol: 350
-    };
+    if(typeof L==='undefined'){console.error('Leaflet failed to load.');}
+    (function(){
+      const BASE={London:650,Manchester:320,Birmingham:280,Newcastle:220,Bristol:350};
+      const AGE ={ '20':1, New:1.2 };
+      const TYPE={ Corporate:1, Financial:1.15, Insurance:0.95, Professional:1.05, Public:0.85 };
+      const LOCS=[
+        {name:'London',coords:[51.5072,-0.1276]},
+        {name:'Manchester',coords:[53.4808,-2.2426]},
+        {name:'Birmingham',coords:[52.4862,-1.8904]},
+        {name:'Newcastle',coords:[54.9714,-1.6174]},
+        {name:'Bristol',coords:[51.456,-2.5879]}
+      ];
 
-    const LOCATIONS = [
-      { name: "London", coords: [51.5072, -0.1276] },
-      { name: "Manchester", coords: [53.4808, -2.2426] },
-      { name: "Birmingham", coords: [52.4862, -1.8904] },
-      { name: "Newcastle", coords: [54.9714, -1.6174] },
-      { name: "Bristol", coords: [51.456, -2.5879] }
-    ];
+      const $=id=>document.getElementById(id);
+      const modeSel=$('modeSelect'); const locSel=$('locationSelect'); const ageSel=$('ageSelect'); const typeSel=$('typeSelect');
+      const pplInp=$('peopleInput'); const budInp=$('budgetInput');
+      const pplGrp=$('peopleGroup'); const budGrp=$('budgetGroup');
+      const calcBtn=$('calcBtn');
+      const areaR=$('areaResult'); const costR=$('costResult'); const pplR=$('peopleResult'); const resWrap=$('resultWrapper');
+      const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),type:$('typeError'),people:$('peopleError'),budget:$('budgetError')};
 
-    // ---- Calculator logic ----
-    const peopleInput = document.getElementById("peopleInput");
-    const locationSelect = document.getElementById("locationSelect");
-    const areaResult = document.getElementById("areaResult");
-    const costResult = document.getElementById("costResult");
-    const resultWrapper = document.getElementById("resultWrapper");
+      function clearErr(){Object.values(errs).forEach(e=>e.style.display='none'); [modeSel,locSel,ageSel,typeSel,pplInp,budInp].forEach(el=>el.classList.remove('error'));}
+      function rentPerSqm(){return (BASE[locSel.value]||0)*(AGE[ageSel.value]||1)*(TYPE[typeSel.value]||1);}      
+      function toggleInputs(){
+        pplGrp.classList.toggle('hidden',modeSel.value!=='people');
+        budGrp.classList.toggle('hidden',modeSel.value!=='budget');
+        resWrap.classList.add('hidden');
+      }
+      modeSel.addEventListener('change',toggleInputs);
 
-    document.getElementById("calcBtn").addEventListener("click", () => {
-      const people = parseInt(peopleInput.value, 10);
-      const location = locationSelect.value;
-
-      if (!location) return alert("Please choose a location from the list or map.");
-      if (!people || people <= 0) return alert("Please enter a positive number of people.");
-
-      const sqm = people * 12; // 12 m² per person
-      const sqft = sqm * 10.7639;
-      const cost = sqm * (PRICES[location] || 0);
-
-      areaResult.innerHTML = `${sqm.toLocaleString()}&nbsp;m² • ${Math.round(sqft).toLocaleString()}&nbsp;ft²`;
-      costResult.innerHTML = `£${cost.toLocaleString()}`;
-      resultWrapper.classList.remove("hidden");
-    });
-
-    // ---- Leaflet map ----
-    const map = L.map("map", {
-      zoomControl: false,
-      attributionControl: false,
-    }).setView([54.5, -3.0], 5);
-
-    // OpenStreetMap tiles (HTTPS)
-    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
-      maxZoom: 10,
-      attribution: "© OpenStreetMap contributors",
-    }).addTo(map);
-
-    // Ensure correct sizing when iframe finishes loading
-    window.addEventListener("load", () => setTimeout(() => map.invalidateSize(), 0));
-
-    LOCATIONS.forEach(({ name, coords }) => {
-      const marker = L.marker(coords, { title: name }).addTo(map);
-      const price = PRICES[name];
-      marker.bindPopup(`<strong>${name}</strong><br/>Avg. rent: £${price}/m²`);
-
-      // Hover tooltip (via title) & click behaviour
-      marker.on("click", () => {
-        locationSelect.value = name;
-        marker.openPopup();
+      // auto‑comma budget
+      budInp.addEventListener('input',()=>{
+        const raw=budInp.value.replace(/[^0-9]/g,'');
+        budInp.value=raw?parseInt(raw,10).toLocaleString():'';
       });
-    });
+
+      calcBtn.addEventListener('click',()=>{
+        clearErr(); let bad=false;
+        if(!modeSel.value){errs.mode.style.display='block'; modeSel.classList.add('error'); bad=true; }
+        if(!locSel.value){errs.location.style.display='block'; locSel.classList.add('error'); bad=true; }
+        if(!ageSel.value){errs.age.style.display='block'; ageSel.classList.add('error'); bad=true; }
+        if(!typeSel.value){errs.type.style.display='block'; typeSel.classList.add('error'); bad=true; }
+
+        const cpsqm=rentPerSqm();
+        if(modeSel.value==='people'){
+          const n=parseInt(pplInp.value,10);
+          if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
+          if(bad) return;
+          const sqm=n*12;
+          areaR.textContent=`Area required: ${sqm.toLocaleString()} m²`;
+          costR.textContent=`Annual cost: £${Math.round(sqm*cpsqm).toLocaleString()}`;
+          pplR.textContent='';
+        }else if(modeSel.value==='budget'){
+          const budget=parseInt(budInp.value.replace(/,/g,''),10);
+          if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
+          if(bad) return;
+          const sqm=budget/cpsqm;
+          areaR.textContent=`Area achievable: ${Math.round(sqm).toLocaleString()} m²`;
+          pplR.textContent=`People accommodated: ${Math.floor(sqm/12).toLocaleString()}`;
+          costR.textContent='';
+        }
+        resWrap.classList.remove('hidden');
+      });
+
+      toggleInputs(); // initialise visibility
+
+      // Map ------------------------------------------------------------------
+      if(typeof L!=='undefined'){
+        const map=L.map('map',{zoomControl:false,attributionControl:false}).setView([55,-3],5);
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',attribution:'&copy; OpenStreetMap & CartoDB'}).addTo(map);
+        const markers=[];
+        function resetMarkers(){markers.forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
+        LOCS.forEach(({name,coords})=>{
+          const base=BASE[name];
+          const marker=L.circleMarker(coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9}).addTo(map);
+          markers.push(marker);
+          const newRent=Math.round(base*AGE.New);
+          marker.bindTooltip(`<strong>${name}</strong><br/>New build: £${newRent}/m²<br/>20‑yr build: £${base}/m²`,{direction:'top',offset:[0,-8]});
+          marker.on('mouseover',function(){this.openTooltip();});
+          marker.on('mouseout',function(){this.closeTooltip();});
+          marker.on('click',()=>{
+            resetMarkers();
+            marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
+            locSel.value=name;
+          });
+        });
+        window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(),0));
+      }
+    })();
   </script>
 </body>
 </html>
