@@ -1,1 +1,121 @@
-<h1>Office‑space calculator coming soon</h1>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>Office Space Calculator | Lambert Smith Hampton</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <!-- TailwindCSS via CDN for quick, professional styling -->
+  <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
+  <!-- Leaflet for the optional UK map -->
+  <link
+    rel="stylesheet"
+    href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+    integrity="sha256-VSjAGN6z0UMSPi90DxtmmBnxateTGf10TqupPZN8X+k="
+    crossorigin=""
+  />
+  <style>
+    :root {
+      /* Lambert Smith Hampton core red */
+      --lsh-red: #cc2030;
+    }
+    /* Utility tweak because Tailwind CDN build doesn’t include bg-[hex] classes */
+    .bg-lsh-red {
+      background-color: var(--lsh-red);
+    }
+    .hover\:bg-lsh-red-dark:hover {
+      background-color: #cc0026; /* slightly darker hover */
+    }
+  </style>
+</head>
+<body class="bg-gray-50 font-sans antialiased">
+  <!-- Header -->
+  <header class="bg-white shadow">
+    <div class="max-w-3xl mx-auto px-4 py-6 flex items-center">
+      <!-- Faux logo square -->
+      <div class="flex-shrink-0 w-10 h-10 rounded bg-lsh-red text-white flex items-center justify-center font-extrabold text-lg tracking-tight">
+        LSH
+      </div>
+      <h1 class="ml-3 text-2xl font-semibold text-gray-900">Office Space Calculator</h1>
+    </div>
+  </header>
+
+  <!-- Main content -->
+  <main class="max-w-3xl mx-auto px-4 py-8 space-y-8">
+    <!-- Calculator card -->
+    <section class="bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4">Estimate your required floor area</h2>
+      <label for="peopleInput" class="block text-sm font-medium text-gray-700 mb-1">Total number of people</label>
+      <input
+        type="number"
+        id="peopleInput"
+        min="1"
+        class="w-full border rounded p-2 mb-4"
+        placeholder="e.g. 25"
+      />
+      <button
+        id="calcBtn"
+        class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded transition-colors"
+      >
+        Calculate
+      </button>
+      <p id="result" class="mt-4 text-lg font-medium text-gray-900 hidden"></p>
+      <p class="mt-2 text-sm text-gray-500">
+        *Calculation uses an industry average of <strong>10&nbsp;m² per person</strong>
+        (workspace + shared areas). Tweak the multiplier to suit your policy.
+      </p>
+    </section>
+
+    <!-- UK map card (optional) -->
+    <section class="bg-white p-6 rounded-lg shadow-md">
+      <h2 class="text-xl font-semibold mb-4">UK footprint (placeholder map)</h2>
+      <p class="text-sm text-gray-500 mb-4">
+        This simple Leaflet map centres on the UK. Swap tiles or markers to suit your
+        needs, or remove the section entirely if you don’t need a map.
+      </p>
+      <div id="map" class="w-full h-64 rounded"></div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="text-center text-sm text-gray-400 py-6">
+    © Lambert Smith Hampton — Prototype tool for illustration only.
+  </footer>
+
+  <!-- JavaScript: Leaflet + calculator logic -->
+  <script
+    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+    integrity="sha256-o9N1j8pN34E+xDZn6/R+ehGJbT4Lo0P6DUX5M6u2E2k="
+    crossorigin=""
+  ></script>
+  <script>
+    // -------- Calculator logic --------
+    document.getElementById("calcBtn").addEventListener("click", function () {
+      const people = parseInt(document.getElementById("peopleInput").value, 10);
+      if (!people || people <= 0) {
+        alert("Please enter a positive number of people");
+        return;
+      }
+
+      const sqm = people * 10; // 10 m² per person multiplier (placeholder)
+      const sqft = sqm * 10.7639;
+
+      const resultEl = document.getElementById("result");
+      resultEl.innerHTML = `${sqm.toLocaleString()}&nbsp;m² • ${Math.round(sqft).toLocaleString()}&nbsp;ft²`;
+      resultEl.classList.remove("hidden");
+    });
+
+    // -------- Leaflet map (optional) --------
+    const map = L.map("map", {
+      zoomControl: false,
+      attributionControl: false,
+    }).setView([54.5, -3.0], 5); // Centre roughly on the geographical UK
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      maxZoom: 10,
+    }).addTo(map);
+
+    // Example marker — remove or customise as needed
+    L.marker([51.5072, -0.1276]).addTo(map).bindPopup("London");
+  </script>
+</body>
+</html>
