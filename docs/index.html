@@ -2,11 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Office Space Calculator | Lambert Smith Hampton</title>
+  <title>Office Space & Cost Estimator | Lambert Smith Hampton</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <!-- TailwindCSS via CDN for quick, professional styling -->
+  <!-- TailwindCSS (CDN) for rapid styling -->
   <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet" />
-  <!-- Leaflet for the optional UK map -->
+  <!-- Leaflet for the interactive map -->
   <link
     rel="stylesheet"
     href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
@@ -18,33 +18,41 @@
       /* Lambert Smith Hampton core red */
       --lsh-red: #cc2030;
     }
-    /* Utility tweak because Tailwind CDN build doesn’t include bg-[hex] classes */
-    .bg-lsh-red {
-      background-color: var(--lsh-red);
-    }
-    .hover\:bg-lsh-red-dark:hover {
-      background-color: #cc0026; /* slightly darker hover */
-    }
+    .bg-lsh-red { background-color: var(--lsh-red); }
+    .hover\:bg-lsh-red-dark:hover { background-color: #b51c2a; }
+    .text-lsh-red { color: var(--lsh-red); }
   </style>
 </head>
 <body class="bg-gray-50 font-sans antialiased">
   <!-- Header -->
   <header class="bg-white shadow">
-    <div class="max-w-3xl mx-auto px-4 py-6 flex items-center">
-      <!-- Faux logo square -->
-      <div class="flex-shrink-0 w-10 h-10 rounded bg-lsh-red text-white flex items-center justify-center font-extrabold text-lg tracking-tight">
+    <div class="max-w-5xl mx-auto px-4 py-6 flex items-center">
+      <div class="flex-shrink-0 w-11 h-11 rounded bg-lsh-red text-white flex items-center justify-center font-extrabold text-lg tracking-tight">
         LSH
       </div>
-      <h1 class="ml-3 text-2xl font-semibold text-gray-900">Office Space Calculator</h1>
+      <h1 class="ml-3 text-2xl md:text-3xl font-semibold text-gray-900">Office Space &amp; Cost Estimator</h1>
     </div>
   </header>
 
-  <!-- Main content -->
-  <main class="max-w-3xl mx-auto px-4 py-8 space-y-8">
-    <!-- Calculator card -->
-    <section class="bg-white p-6 rounded-lg shadow-md">
-      <h2 class="text-xl font-semibold mb-4">Estimate your required floor area</h2>
-      <label for="peopleInput" class="block text-sm font-medium text-gray-700 mb-1">Total number of people</label>
+  <!-- Main 2‑column layout -->
+  <main class="max-w-5xl mx-auto px-4 py-8 flex flex-col md:flex-row gap-6">
+    <!-- Calculator column -->
+    <section class="flex-1 bg-white p-6 rounded-lg shadow-md order-2 md:order-1">
+      <h2 class="text-xl font-semibold mb-4 text-lsh-red">Quick estimate</h2>
+
+      <!-- Location selector -->
+      <label for="locationSelect" class="block text-sm font-medium text-gray-700 mb-1">Where are you interested in?</label>
+      <select id="locationSelect" class="w-full border rounded p-2 mb-4 bg-white">
+        <option value="" disabled selected>Select a location…</option>
+        <option value="London">London</option>
+        <option value="Manchester">Manchester</option>
+        <option value="Birmingham">Birmingham</option>
+        <option value="Newcastle">Newcastle</option>
+        <option value="Bristol">Bristol</option>
+      </select>
+
+      <!-- People input -->
+      <label for="peopleInput" class="block text-sm font-medium text-gray-700 mb-1">How many people?</label>
       <input
         type="number"
         id="peopleInput"
@@ -52,27 +60,32 @@
         class="w-full border rounded p-2 mb-4"
         placeholder="e.g. 25"
       />
+
       <button
         id="calcBtn"
-        class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded transition-colors"
+        class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded transition-colors w-full md:w-auto"
       >
-        Calculate
+        Calculate space &amp; cost
       </button>
-      <p id="result" class="mt-4 text-lg font-medium text-gray-900 hidden"></p>
-      <p class="mt-2 text-sm text-gray-500">
-        *Calculation uses an industry average of <strong>10&nbsp;m² per person</strong>
-        (workspace + shared areas). Tweak the multiplier to suit your policy.
+
+      <!-- Results -->
+      <div id="resultWrapper" class="mt-6 hidden">
+        <p class="text-lg font-medium text-gray-900">Required floor area:</p>
+        <p id="areaResult" class="text-2xl font-bold"></p>
+        <p class="mt-4 text-lg font-medium text-gray-900">Estimated annual cost:</p>
+        <p id="costResult" class="text-2xl font-bold"></p>
+      </div>
+
+      <p class="mt-6 text-sm text-gray-500 leading-snug">
+        *The tool uses <strong>12&nbsp;m² per person</strong> as a guideline and placeholder market rental rates per square&nbsp;metre. Adjust the multiplier and rates to match real‑world data before publication.
       </p>
     </section>
 
-    <!-- UK map card (optional) -->
-    <section class="bg-white p-6 rounded-lg shadow-md">
-      <h2 class="text-xl font-semibold mb-4">UK footprint (placeholder map)</h2>
-      <p class="text-sm text-gray-500 mb-4">
-        This simple Leaflet map centres on the UK. Swap tiles or markers to suit your
-        needs, or remove the section entirely if you don’t need a map.
-      </p>
-      <div id="map" class="w-full h-64 rounded"></div>
+    <!-- Map column -->
+    <section class="flex-1 bg-white p-6 rounded-lg shadow-md order-1 md:order-2">
+      <h2 class="text-xl font-semibold mb-4 text-lsh-red">UK office hotspots</h2>
+      <div id="map" class="w-full h-80 rounded"></div>
+      <p class="mt-4 text-sm text-gray-500">Hover a pin to see the city; click for placeholder rental info. Clicking also pre‑selects the city in the calculator.</p>
     </section>
   </main>
 
@@ -82,40 +95,75 @@
   </footer>
 
   <!-- JavaScript: Leaflet + calculator logic -->
-  <script
-    src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
-    integrity="sha256-o9N1j8pN34E+xDZn6/R+ehGJbT4Lo0P6DUX5M6u2E2k="
-    crossorigin=""
-  ></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" integrity="sha256-o9N1j8pN34E+xDZn6/R+ehGJbT4Lo0P6DUX5M6u2E2k=" crossorigin=""></script>
   <script>
-    // -------- Calculator logic --------
-    document.getElementById("calcBtn").addEventListener("click", function () {
-      const people = parseInt(document.getElementById("peopleInput").value, 10);
-      if (!people || people <= 0) {
-        alert("Please enter a positive number of people");
-        return;
-      }
+    // ---- Data ----
+    const PRICES = {
+      London: 650,       // £/m² (placeholder)
+      Manchester: 320,
+      Birmingham: 280,
+      Newcastle: 220,
+      Bristol: 350
+    };
 
-      const sqm = people * 10; // 10 m² per person multiplier (placeholder)
+    const LOCATIONS = [
+      { name: "London", coords: [51.5072, -0.1276] },
+      { name: "Manchester", coords: [53.4808, -2.2426] },
+      { name: "Birmingham", coords: [52.4862, -1.8904] },
+      { name: "Newcastle", coords: [54.9714, -1.6174] },
+      { name: "Bristol", coords: [51.456, -2.5879] }
+    ];
+
+    // ---- Calculator logic ----
+    const peopleInput = document.getElementById("peopleInput");
+    const locationSelect = document.getElementById("locationSelect");
+    const areaResult = document.getElementById("areaResult");
+    const costResult = document.getElementById("costResult");
+    const resultWrapper = document.getElementById("resultWrapper");
+
+    document.getElementById("calcBtn").addEventListener("click", () => {
+      const people = parseInt(peopleInput.value, 10);
+      const location = locationSelect.value;
+
+      if (!location) return alert("Please choose a location from the list or map.");
+      if (!people || people <= 0) return alert("Please enter a positive number of people.");
+
+      const sqm = people * 12; // 12 m² per person
       const sqft = sqm * 10.7639;
+      const cost = sqm * (PRICES[location] || 0);
 
-      const resultEl = document.getElementById("result");
-      resultEl.innerHTML = `${sqm.toLocaleString()}&nbsp;m² • ${Math.round(sqft).toLocaleString()}&nbsp;ft²`;
-      resultEl.classList.remove("hidden");
+      areaResult.innerHTML = `${sqm.toLocaleString()}&nbsp;m² • ${Math.round(sqft).toLocaleString()}&nbsp;ft²`;
+      costResult.innerHTML = `£${cost.toLocaleString()}`;
+      resultWrapper.classList.remove("hidden");
     });
 
-    // -------- Leaflet map (optional) --------
+    // ---- Leaflet map ----
     const map = L.map("map", {
       zoomControl: false,
       attributionControl: false,
-    }).setView([54.5, -3.0], 5); // Centre roughly on the geographical UK
+    }).setView([54.5, -3.0], 5);
 
+    // OpenStreetMap tiles (HTTPS)
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
       maxZoom: 10,
+      attribution: "© OpenStreetMap contributors",
     }).addTo(map);
 
-    // Example marker — remove or customise as needed
-    L.marker([51.5072, -0.1276]).addTo(map).bindPopup("London");
+    // Ensure correct sizing when iframe finishes loading
+    window.addEventListener("load", () => setTimeout(() => map.invalidateSize(), 0));
+
+    LOCATIONS.forEach(({ name, coords }) => {
+      const marker = L.marker(coords, { title: name }).addTo(map);
+      const price = PRICES[name];
+      marker.bindPopup(`<strong>${name}</strong><br/>Avg. rent: £${price}/m²`);
+
+      // Hover tooltip (via title) & click behaviour
+      marker.on("click", () => {
+        locationSelect.value = name;
+        marker.openPopup();
+      });
+    });
   </script>
 </body>
 </html>
+
