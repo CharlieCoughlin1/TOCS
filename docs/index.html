@@ -21,6 +21,22 @@
     #map{ width:100%; height:420px; }
     .error{ border-color:#dc2626!important; }
     .err-msg{ display:none; color:#dc2626; font-size:0.75rem; }
+    /* result label (smaller, lighter) */
+    .result-label{
+      font-size:0.875rem;          /* text-sm */
+      font-weight:500;             /* medium */
+      color:#4b5563;               /* gray-700 */
+      display:block;
+      line-height:1.2;
+    }
+    /* result value (larger, bolder) */
+    .result-value{
+      font-size:1.875rem;          /* text-3xl */
+      font-weight:700;             /* bold */
+      color:#111827;               /* gray-900 */
+      display:block;
+      line-height:1.2;
+    }
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -90,10 +106,10 @@
 
       <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold w-full">Calculate</button>
 
-      <div id="resultWrapper" class="mt-6 hidden space-y-2">
-        <p id="areaResult" class="text-2xl font-din-bold"></p>
-        <p id="costResult" class="text-2xl font-din-bold"></p>
-        <p id="peopleResult" class="text-2xl font-din-bold"></p>
+      <div id="resultWrapper" class="mt-6 hidden space-y-3">
+        <div id="areaResult"></div>
+        <div id="costResult"></div>
+        <div id="peopleResult"></div>
       </div>
 
       <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Assumes <strong>12&nbsp;m² per person</strong>. All prices are placeholders.</p>
@@ -125,6 +141,12 @@
       ];
 
       const $=id=>document.getElementById(id);
+      // ---------- helpers ----------
+      const SQM_TO_SQFT = 10.7639;
+      function renderResult(el,label,valueStr){
+        el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
+      }
+      // -----------------------------
       const modeSel=$('modeSelect'); const locSel=$('locationSelect'); const ageSel=$('ageSelect'); const typeSel=$('typeSelect');
       const pplInp=$('peopleInput'); const budInp=$('budgetInput');
       const pplGrp=$('peopleGroup'); const budGrp=$('budgetGroup');
@@ -160,17 +182,17 @@
           if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
           if(bad) return;
           const sqm=n*12;
-          areaR.textContent=`Area required: ${sqm.toLocaleString()} m²`;
-          costR.textContent=`Annual cost: £${Math.round(sqm*cpsqm).toLocaleString()}`;
-          pplR.textContent='';
+          renderResult(areaR,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
+          renderResult(costR,'Annual cost',`£${Math.round(sqm*cpsqm).toLocaleString()}`);
+          pplR.innerHTML='';
         }else if(modeSel.value==='budget'){
           const budget=parseInt(budInp.value.replace(/,/g,''),10);
           if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
           if(bad) return;
           const sqm=budget/cpsqm;
-          areaR.textContent=`Area achievable: ${Math.round(sqm).toLocaleString()} m²`;
-          pplR.textContent=`People accommodated: ${Math.floor(sqm/12).toLocaleString()}`;
-          costR.textContent='';
+          renderResult(areaR,'Area achievable',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
+          renderResult(pplR,'People accommodated',`${Math.floor(sqm/12).toLocaleString()}`);
+          costR.innerHTML='';
         }
         resWrap.classList.remove('hidden');
       });
@@ -203,4 +225,5 @@
   </script>
 </body>
 </html>
+
 
