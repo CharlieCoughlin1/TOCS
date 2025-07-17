@@ -137,11 +137,60 @@
       const AGE ={ '20':1, New:1.2 };
       const TYPE={ Corporate:1, Financial:1.15, Insurance:0.95, Professional:1.05, Public:0.85 };
       const LOCS=[
-        {name:'London',coords:[51.5072,-0.1276]},
-        {name:'Manchester',coords:[53.4808,-2.2426]},
-        {name:'Birmingham',coords:[52.4862,-1.8904]},
-        {name:'Newcastle',coords:[54.9714,-1.6174]},
-        {name:'Bristol',coords:[51.456,-2.5879]}
+        {name:'Edinburgh',coords:[55.9533,-3.1883],region:'Scotland',main:true},
+        {name:'Birmingham',coords:[52.4862,-1.8904],region:'West Midlands',main:true},
+        {name:'Bristol',coords:[51.4545,-2.5879],region:'South West',main:true},
+        {name:'Liverpool',coords:[53.4084,-2.9916],region:'North West',main:true},
+        {name:'Manchester',coords:[53.4808,-2.2426],region:'North West',main:true},
+        {name:'Leeds',coords:[53.7997,-1.5492],region:'Yorkshire & Humber',main:true},
+        {name:'Reading',coords:[51.4543,-0.9781],region:'South East',main:true},
+        {name:'London - City',coords:[51.5155,-0.0922],region:'London'},
+        {name:'London - Docklands',coords:[51.508,-0.0195],region:'London'},
+        {name:'London – Hammersmith',coords:[51.492,-0.223],region:'London'},
+        {name:'London – Midtown',coords:[51.517,-0.12],region:'London'},
+        {name:'London - Southbank',coords:[51.5067,-0.0995],region:'London'},
+        {name:'London - West End Core',coords:[51.512,-0.129],region:'London'},
+        {name:'London - West End non-core',coords:[51.517,-0.143],region:'London'},
+        {name:'Aberdeen',coords:[57.1497,-2.0943],region:'Scotland'},
+        {name:'Basingstoke',coords:[51.2667,-1.0879],region:'South East'},
+        {name:'Belfast',coords:[54.597,-5.93],region:'Northern Ireland'},
+        {name:'Bournemouth',coords:[50.7209,-1.9048],region:'South West'},
+        {name:'Bracknell',coords:[51.416,-0.753],region:'South East'},
+        {name:'Brighton',coords:[50.8225,-0.1372],region:'South East'},
+        {name:'Cambridge',coords:[52.2053,0.1218],region:'East of England'},
+        {name:'Cardiff',coords:[51.4816,-3.1791],region:'Wales'},
+        {name:'Crawley',coords:[51.1091,-0.1872],region:'South East'},
+        {name:'Croydon',coords:[51.3762,-0.0982],region:'South East'},
+        {name:'Exeter',coords:[50.7184,-3.5339],region:'South West'},
+        {name:'Farnborough',coords:[51.2828,-0.7571],region:'South East'},
+        {name:'Glasgow',coords:[55.8642,-4.2518],region:'Scotland'},
+        {name:'Guildford',coords:[51.2362,-0.5704],region:'South East'},
+        {name:'Heathrow',coords:[51.47,-0.4543],region:'South East'},
+        {name:'High Wycombe',coords:[51.628,-0.748],region:'South East'},
+        {name:'Leicester',coords:[52.6369,-1.1398],region:'East Midlands'},
+        {name:'Maidenhead',coords:[51.5223,-0.7199],region:'South East'},
+        {name:'Maidstone',coords:[51.2721,0.5347],region:'South East'},
+        {name:'Milton Keynes',coords:[52.0406,-0.7594],region:'South East'},
+        {name:'Newcastle',coords:[54.9783,-1.6178],region:'North East'},
+        {name:'Northampton',coords:[52.2405,-0.9027],region:'East Midlands'},
+        {name:'Norwich',coords:[52.6309,1.2974],region:'East of England'},
+        {name:'Nottingham',coords:[52.9548,-1.1581],region:'East Midlands'},
+        {name:'Oxford',coords:[51.752,-1.2577],region:'South East'},
+        {name:'Portsmouth',coords:[50.8198,-1.088],region:'South East'},
+        {name:'Preston',coords:[53.7632,-2.7031],region:'North West'},
+        {name:'Richmond',coords:[51.4613,-0.303],region:'South East'},
+        {name:'Sheffield',coords:[53.3811,-1.4701],region:'Yorkshire & Humber'},
+        {name:'Slough',coords:[51.5105,-0.5954],region:'South East'},
+        {name:'Southampton',coords:[50.9097,-1.4044],region:'South East'},
+        {name:'St Albans',coords:[51.7527,-0.3394],region:'South East'},
+        {name:'Staines',coords:[51.435,-0.5034],region:'South East'},
+        {name:'Swindon',coords:[51.56,-1.78],region:'South West'},
+        {name:'Uxbridge',coords:[51.546,-0.482],region:'South East'},
+        {name:'Watford',coords:[51.6565,-0.3903],region:'South East'},
+        {name:'Woking',coords:[51.3168,-0.5589],region:'South East'},
+        {name:'Luton',coords:[51.8787,-0.42],region:'East of England'},
+        {name:'Swansea',coords:[51.6214,-3.9439],region:'Wales'},
+        {name:'Warrington',coords:[53.3925,-2.5802],region:'North West'}
       ];
 
       const REGIONS=[
@@ -232,26 +281,39 @@
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
             btn.classList.add('active');
             map.setView(center,zoom);
+            showMarkers(name);
           });
           regionToggle.appendChild(btn);
         });
 
-        const markers=[];
-        function resetMarkers(){markers.forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
-        LOCS.forEach(({name,coords})=>{
-          const base=BASE[name];
-          const marker=L.circleMarker(coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9}).addTo(map);
-          markers.push(marker);
-          const newRent=Math.round(base*AGE.New);
-          marker.bindTooltip(`<strong>${name}</strong><br/>New build: £${newRent}/m²<br/>20‑yr build: £${base}/m²`,{direction:'top',offset:[0,-8]});
+        const markers={};
+        function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
+        LOCS.forEach(loc=>{
+          const base=BASE[loc.name];
+          const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9});
+          const newRent=base!==undefined?Math.round(base*AGE.New):null;
+          marker.bindTooltip(base!==undefined?`<strong>${loc.name}</strong><br/>New build: £${newRent}/m²<br/>20‑yr build: £${base}/m²`:`<strong>${loc.name}</strong>`,{direction:'top',offset:[0,-8]});
           marker.on('mouseover',function(){this.openTooltip();});
           marker.on('mouseout',function(){this.closeTooltip();});
           marker.on('click',()=>{
             resetMarkers();
             marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
-            locSel.value=name;
+            locSel.value=loc.name;
           });
+          markers[loc.name]=marker;
         });
+
+        function showMarkers(region){
+          Object.values(markers).forEach(m=>{ if(map.hasLayer(m)) m.remove(); });
+          LOCS.forEach(loc=>{
+            if(loc.main || (region!=='All UK' && loc.region===region)){
+              markers[loc.name].addTo(map);
+            }
+          });
+          resetMarkers();
+        }
+
+        showMarkers('All UK');
         window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(),0));
       }
     })();
