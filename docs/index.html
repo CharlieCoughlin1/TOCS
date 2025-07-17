@@ -19,6 +19,9 @@
     .bg-lsh-red{ background-color:var(--lsh-red); }
     .hover\:bg-lsh-red-dark:hover{ background-color:#b51c2a; }
     #map{ width:100%; height:420px; }
+    .region-btn{ background:#e5e7eb; padding:0.25rem 0.5rem; border-radius:0.25rem; font-size:0.875rem; cursor:pointer; }
+    .region-btn:hover{ background:#d1d5db; }
+    .region-btn.active{ background:var(--lsh-red); color:#fff; }
     .error{ border-color:#dc2626!important; }
     .err-msg{ display:none; color:#dc2626; font-size:0.75rem; }
     /* result label (smaller, lighter) */
@@ -117,9 +120,10 @@
 
     <!-- Map -->
     <section class="bg-white p-6 rounded-lg shadow-md order-2">
-      <h2 class="text-2xl md:text-3xl font-din-bold mb-6 text-lsh-red">UK office locations</h2>
+      <h2 class="text-2xl md:text-3xl font-din-bold mb-4 text-lsh-red">UK office locations</h2>
+      <div id="regionToggle" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="map" class="rounded"></div>
-      <p class="mt-4 text-sm text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
+      <p class="mt-4 text-sm text-gray-500 font-din-light">Hover a marker to view rental rates; click to select. Use the buttons above to zoom to a region.</p>
     </section>
   </main>
 
@@ -138,6 +142,22 @@
         {name:'Birmingham',coords:[52.4862,-1.8904]},
         {name:'Newcastle',coords:[54.9714,-1.6174]},
         {name:'Bristol',coords:[51.456,-2.5879]}
+      ];
+
+      const REGIONS=[
+        {name:'All UK',center:[55,-3],zoom:5},
+        {name:'London',center:[51.5072,-0.1276],zoom:8},
+        {name:'South East',center:[51.3,-0.7],zoom:7},
+        {name:'South West',center:[51,-3],zoom:7},
+        {name:'East Midlands',center:[52.9,-1.2],zoom:7},
+        {name:'West Midlands',center:[52.5,-2],zoom:7},
+        {name:'North West',center:[53.8,-2.8],zoom:7},
+        {name:'North East',center:[55,-1.6],zoom:7},
+        {name:'Yorkshire & Humber',center:[53.8,-1.5],zoom:7},
+        {name:'East of England',center:[52.2,0.5],zoom:7},
+        {name:'Wales',center:[52.3,-3.8],zoom:7},
+        {name:'Scotland',center:[56.5,-4],zoom:6},
+        {name:'Northern Ireland',center:[54.7,-6.6],zoom:7}
       ];
 
       const $=id=>document.getElementById(id);
@@ -201,8 +221,21 @@
 
       // Map ------------------------------------------------------------------
       if(typeof L!=='undefined'){
-        const map=L.map('map',{zoomControl:false,attributionControl:false}).setView([55,-3],5);
+        const map=L.map('map',{zoomControl:false,attributionControl:false}).setView(REGIONS[0].center,REGIONS[0].zoom);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',attribution:'&copy; OpenStreetMap & CartoDB'}).addTo(map);
+        const regionToggle=$('regionToggle');
+        REGIONS.forEach(({name,center,zoom},i)=>{
+          const btn=document.createElement('button');
+          btn.textContent=name;
+          btn.className='region-btn'+(i===0?' active':'');
+          btn.addEventListener('click',()=>{
+            regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+            btn.classList.add('active');
+            map.setView(center,zoom);
+          });
+          regionToggle.appendChild(btn);
+        });
+
         const markers=[];
         function resetMarkers(){markers.forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
         LOCS.forEach(({name,coords})=>{
