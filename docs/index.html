@@ -66,11 +66,6 @@
       <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
       <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
         <option value="" disabled selected>Please select</option>
-        <option value="London">London</option>
-        <option value="Manchester">Manchester</option>
-        <option value="Birmingham">Birmingham</option>
-        <option value="Newcastle">Newcastle</option>
-        <option value="Bristol">Bristol</option>
       </select>
       <p id="locationError" class="err-msg mb-3">Please select a location</p>
 
@@ -133,7 +128,6 @@
   <script>
     if(typeof L==='undefined'){console.error('Leaflet failed to load.');}
     (function(){
-      const BASE={London:650,Manchester:320,Birmingham:280,Newcastle:220,Bristol:350};
       const AGE ={ '20':1, New:1.2 };
       const TYPE={ Corporate:1, Financial:1.15, Insurance:0.95, Professional:1.05, Public:0.85 };
       const LOCS=[
@@ -193,10 +187,14 @@
         {name:'Warrington',coords:[53.3925,-2.5802],region:'North West'}
       ];
 
+      // assign placeholder rent values for each location
+      const BASE = {};
+      LOCS.forEach((loc,i)=>{ const val=200 + i*10; loc.base=val; BASE[loc.name]=val; });
+
       const REGIONS=[
         {name:'All UK',center:[55,-3],zoom:5},
-        {name:'London',center:[51.5072,-0.1276],zoom:8},
-        {name:'South East',center:[51.3,-0.7],zoom:7},
+        {name:'London',center:[51.5072,-0.1276],zoom:11},
+        {name:'South East',center:[51.3,-0.7],zoom:8},
         {name:'South West',center:[51,-3],zoom:7},
         {name:'East Midlands',center:[52.9,-1.2],zoom:7},
         {name:'West Midlands',center:[52.5,-2],zoom:7},
@@ -222,6 +220,14 @@
       const calcBtn=$('calcBtn');
       const areaR=$('areaResult'); const costR=$('costResult'); const pplR=$('peopleResult'); const resWrap=$('resultWrapper');
       const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),type:$('typeError'),people:$('peopleError'),budget:$('budgetError')};
+
+      // populate locations dropdown
+      LOCS.forEach(loc=>{
+        const opt=document.createElement('option');
+        opt.value=loc.name;
+        opt.textContent=loc.name;
+        locSel.appendChild(opt);
+      });
 
       function clearErr(){Object.values(errs).forEach(e=>e.style.display='none'); [modeSel,locSel,ageSel,typeSel,pplInp,budInp].forEach(el=>el.classList.remove('error'));}
       function rentPerSqm(){return (BASE[locSel.value]||0)*(AGE[ageSel.value]||1)*(TYPE[typeSel.value]||1);}      
@@ -299,6 +305,7 @@
             resetMarkers();
             marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
             locSel.value=loc.name;
+            marker.openTooltip();
           });
           markers[loc.name]=marker;
         });
@@ -314,6 +321,27 @@
         }
 
         showMarkers('All UK');
+
+        // respond to location dropdown changes
+        locSel.addEventListener('change',()=>{
+          const selected=LOCS.find(l=>l.name===locSel.value);
+          if(!selected) return;
+          const region=REGIONS.find(r=>r.name===selected.region);
+          if(region){
+            regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+            const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
+            if(btn) btn.classList.add('active');
+            map.setView(region.center,region.zoom);
+            showMarkers(region.name);
+          }
+          resetMarkers();
+          const marker=markers[selected.name];
+          if(marker){
+            marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
+            marker.openTooltip();
+          }
+        });
+
         window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(),0));
       }
     })();
