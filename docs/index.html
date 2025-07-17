@@ -192,7 +192,7 @@
       LOCS.forEach((loc,i)=>{ const val=200 + i*10; loc.base=val; BASE[loc.name]=val; });
 
       const REGIONS=[
-        {name:'All UK',center:[55,-3],zoom:5},
+        {name:'All UK',center:[54,-2.5],zoom:5.5},
         {name:'London',center:[51.5072,-0.1276],zoom:11},
         {name:'South East',center:[51.3,-0.7],zoom:8},
         {name:'South West',center:[51,-3],zoom:7},
@@ -235,6 +235,9 @@
         pplGrp.classList.toggle('hidden',modeSel.value!=='people');
         budGrp.classList.toggle('hidden',modeSel.value!=='budget');
         resWrap.classList.add('hidden');
+        if(modeSel.value==='people') calcBtn.textContent='Calculate cost';
+        else if(modeSel.value==='budget') calcBtn.textContent='Calculate capacity';
+        else calcBtn.textContent='Calculate';
       }
       modeSel.addEventListener('change',toggleInputs);
 
@@ -244,7 +247,7 @@
         budInp.value=raw?parseInt(raw,10).toLocaleString():'';
       });
 
-      calcBtn.addEventListener('click',()=>{
+      function performCalc(){
         clearErr(); let bad=false;
         if(!modeSel.value){errs.mode.style.display='block'; modeSel.classList.add('error'); bad=true; }
         if(!locSel.value){errs.location.style.display='block'; locSel.classList.add('error'); bad=true; }
@@ -270,7 +273,9 @@
           costR.innerHTML='';
         }
         resWrap.classList.remove('hidden');
-      });
+      }
+
+      calcBtn.addEventListener('click',performCalc);
 
       toggleInputs(); // initialise visibility
 
@@ -306,6 +311,7 @@
             marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
             locSel.value=loc.name;
             marker.openTooltip();
+            if(!resWrap.classList.contains('hidden')) performCalc();
           });
           markers[loc.name]=marker;
         });
@@ -340,6 +346,7 @@
             marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
             marker.openTooltip();
           }
+          if(!resWrap.classList.contains('hidden')) performCalc();
         });
 
         window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(),0));
