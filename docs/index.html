@@ -319,10 +319,10 @@
           occBars.appendChild(col);
           const table=document.createElement("table");
           table.className="w-full text-sm border-collapse mb-4";
-          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1" colspan="2">${d.name}</th></tr></thead><tbody><tr><td class="border px-2 py-1">New build</td><td class="border px-2 py-1">£${d.new}</td></tr><tr><td class="border px-2 py-1">20‑yr old</td><td class="border px-2 py-1">£${d.old}</td></tr></tbody>`; occTables.appendChild(table);
-            nb.style.height=(d.new/max*120)+"px";
-            ob.style.height=(d.old/max*120)+"px";
-          });
+          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1" colspan="2">${d.name}</th></tr></thead><tbody><tr><td class="border px-2 py-1">New build</td><td class="border px-2 py-1">£${d.new}</td></tr><tr><td class="border px-2 py-1">20‑yr old</td><td class="border px-2 py-1">£${d.old}</td></tr></tbody>`;
+          occTables.appendChild(table);
+          nb.style.height=(d.new/max*120)+"px";
+          ob.style.height=(d.old/max*120)+"px";
         });
       }
 
