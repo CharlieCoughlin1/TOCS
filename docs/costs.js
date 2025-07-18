@@ -528,7 +528,7 @@ const COSTS =
       "totalWorkstation": 9104.0
     }
   },
-  "London \u2013 Hammersmith": {
+  "London – Hammersmith": {
     "new": {
       "netEffectiveRent": 49.88,
       "rates": 24.82,
@@ -550,7 +550,7 @@ const COSTS =
       "totalWorkstation": 10674.0
     }
   },
-  "London \u2013 Midtown": {
+  "London – Midtown": {
     "new": {
       "netEffectiveRent": 66.0,
       "rates": 22.56,
@@ -616,7 +616,7 @@ const COSTS =
       "totalWorkstation": 16310.0
     }
   },
-  "London-West End non-core": {
+  "London - West End non-core": {
     "new": {
       "netEffectiveRent": 81.64,
       "rates": 45.29,
