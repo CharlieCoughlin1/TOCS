@@ -112,11 +112,12 @@
         <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
         <select id="typeSelect" class="w-full border rounded p-2 mb-1 bg-white">
           <option value="" disabled selected>Please select</option>
-          <option value="Corporate">Corporate</option>
-          <option value="Financial">Financial</option>
-          <option value="Insurance">Insurance</option>
-          <option value="Professional">Professional</option>
-          <option value="Public">Public</option>
+          <option value="Average">Average workstation (no change)</option>
+          <option value="Corporate">Corporate (+20% space per person)</option>
+          <option value="Finance">Finance, insurance (-26% space per person)</option>
+          <option value="Professional">Professional (+27% space per person)</option>
+          <option value="Public">Public (-2% space per person)</option>
+          <option value="Tech">Tech, media, telecomms (-13% space per person)</option>
         </select>
         <p id="typeError" class="err-msg mb-3">Please select workstation type</p>
 
@@ -142,17 +143,20 @@
           <div id="peopleResult"></div>
         </div>
 
-        <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Assumes <strong>12&nbsp;m² per person</strong>. All prices are placeholders.</p>
+        <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Calculations use LSH cost data and assume <strong>12&nbsp;m² per average workstation</strong>.</p>
       </div>
 
       <div id="occPrompt" class="mb-4 text-gray-500">Please select a location on the map to get started</div>
       <div id="occWrapper" class="hidden">
         <div class="flex justify-between items-center mb-4">
           <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
-          <button id="occExpand" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Expand</button>
         </div>
         <div id="occBars" class="flex gap-4 items-end mb-4"></div>
+        <div class="flex justify-end mb-2">
+          <button id="occExpand" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Expand</button>
+        </div>
         <div id="occTables"></div>
+        <p class="text-xs text-gray-500" id="occUnits">All costs are per sq ft.</p>
       </div>
     </section>
   </main>
@@ -164,8 +168,8 @@
   <script>
     if(typeof L==='undefined'){console.error('Leaflet failed to load.');}
     (function(){
-      const AGE ={ '20':1, New:1.2 };
-      const TYPE={ Corporate:1, Financial:1.15, Insurance:0.95, Professional:1.05, Public:0.85 };
+      const AGE_MAP={ '20':'old', New:'new' };
+      const TYPE_SPACE={ Average:1, Corporate:1.2, Finance:0.74, Professional:1.27, Public:0.98, Tech:0.87 };
       const LOCS=[
         {name:'Edinburgh',coords:[55.9533,-3.1883],region:'Scotland',main:true},
         {name:'Birmingham',coords:[52.4862,-1.8904],region:'West Midlands',main:true},
@@ -223,9 +227,7 @@
         {name:'Warrington',coords:[53.3925,-2.5802],region:'North West'}
       ];
 
-      // assign placeholder rent values for calculator
-      const BASE = {};
-      LOCS.forEach((loc,i)=>{ const val=200 + i*10; loc.base=val; BASE[loc.name]=val; });
+
 
       const REGIONS=[
         {name:'All UK',center:[54,-2.5],zoom:4.5},
@@ -271,7 +273,12 @@
       });
 
       function clearErr(){Object.values(errs).forEach(e=>e.style.display='none'); [modeSel,locSel,ageSel,typeSel,pplInp,budInp].forEach(el=>el.classList.remove('error'));}
-      function rentPerSqm(){return (BASE[locSel.value]||0)*(AGE[ageSel.value]||1)*(TYPE[typeSel.value]||1);}      
+      function costPerSqm(){
+        const data=COSTS[locSel.value];
+        const age=AGE_MAP[ageSel.value];
+        if(!data||!age||!data[age]) return 0;
+        return data[age].totalSqft*SQM_TO_SQFT;
+      }
       function toggleInputs(){
         pplGrp.classList.toggle('hidden',modeSel.value!=='people');
         budGrp.classList.toggle('hidden',modeSel.value!=='budget');
@@ -339,7 +346,7 @@
           occBars.appendChild(col);
           const table=document.createElement("table");
           table.className="w-full text-sm border-collapse mb-4";
-          const headers=['Total / sq ft','Net effective rent / sq ft','Rates / sq ft','Annualised costs / sq ft','Hard FM / sq ft','Soft FM / sq ft','Management fees / sq ft','Total per workstation'];
+          const headers=['Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
           const keys=['totalSqft','netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalWorkstation'];
           const headRow='<tr class="bg-gray-100"><th class="border px-2 py-1">Building age</th>'+headers.map((h,i)=>`<th class="border px-2 py-1${i>=4?' extra-col':''}">${h}</th>`).join('')+'</tr>';
           function buildRow(label,obj){
@@ -374,12 +381,13 @@
         if(!ageSel.value){errs.age.style.display='block'; ageSel.classList.add('error'); bad=true; }
         if(!typeSel.value){errs.type.style.display='block'; typeSel.classList.add('error'); bad=true; }
 
-        const cpsqm=rentPerSqm();
+        const cpsqm=costPerSqm();
         if(modeSel.value==='people'){
           const n=parseInt(pplInp.value,10);
           if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
           if(bad) return;
-          const sqm=n*12;
+          const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
+          const sqm=n*sqmPerPerson;
           renderResult(areaR,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
           renderResult(costR,'Annual cost',`£${Math.round(sqm*cpsqm).toLocaleString()}`);
           pplR.innerHTML='';
@@ -388,8 +396,9 @@
           if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
           if(bad) return;
           const sqm=budget/cpsqm;
+          const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
           renderResult(areaR,'Area achievable',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
-          renderResult(pplR,'People accommodated',`${Math.floor(sqm/12).toLocaleString()}`);
+          renderResult(pplR,'People accommodated',`${Math.floor(sqm/sqmPerPerson).toLocaleString()}`);
           costR.innerHTML='';
         }
         resWrap.classList.remove('hidden');
