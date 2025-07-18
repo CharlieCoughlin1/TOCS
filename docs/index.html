@@ -295,7 +295,7 @@
         }
         occPrompt.classList.add("hidden");
         occWrap.classList.remove("hidden");
-        const max=Math.max(...occData.flatMap(d=>[d.new,d.old]));
+        const max=Math.max(...occData.flatMap(d=>[d.new.totalSqft,d.old.totalSqft]));
         occData.forEach(d=>{
           const col=document.createElement("div");
           col.className="flex flex-col items-center";
@@ -307,11 +307,11 @@
           const nb=document.createElement("div");
           nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-8";
           nb.style.height="0px";
-          nb.textContent="£"+d.new.toFixed(2);
+          nb.textContent="£"+d.new.totalSqft.toFixed(2);
           const ob=document.createElement("div");
           ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-8";
           ob.style.height="0px";
-          ob.textContent="£"+d.old.toFixed(2);
+          ob.textContent="£"+d.old.totalSqft.toFixed(2);
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
           labs.className="flex justify-between w-full text-xs mt-1";
@@ -320,9 +320,19 @@
           occBars.appendChild(col);
           const table=document.createElement("table");
           table.className="w-full text-sm border-collapse mb-4";
-          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1" colspan="2">${d.name}</th></tr></thead><tbody><tr><td class="border px-2 py-1">New build</td><td class="border px-2 py-1">£${d.new.toFixed(2)}</td></tr><tr><td class="border px-2 py-1">20‑yr old</td><td class="border px-2 py-1">£${d.old.toFixed(2)}</td></tr></tbody>`; occTables.appendChild(table);
-          nb.style.height=(d.new/max*120)+"px";
-          ob.style.height=(d.old/max*120)+"px";
+          const headers=['Net Effective Rent','Rates','Annualised costs','Hard FM','Soft FM','Management Fees','TOTAL /sq ft','Total per workstation'];
+          const keys=['netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalSqft','totalWorkstation'];
+          const headRow='<tr class="bg-gray-100"><th class="border px-2 py-1">Building age</th>'+headers.map(h=>`<th class="border px-2 py-1">${h}</th>`).join('')+'</tr>';
+          function buildRow(label,obj){
+            return '<tr><td class="border px-2 py-1">'+label+'</td>'+keys.map(k=>{
+              const v=obj[k];
+              return `<td class="border px-2 py-1">£${k==='totalWorkstation'?Math.round(v).toLocaleString():v.toFixed(2)}</td>`;
+            }).join('')+'</tr>';
+          }
+          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1" colspan="${keys.length+1}">${d.name}</th></tr>${headRow}</thead><tbody>${buildRow('New build',d.new)}${buildRow('20‑yr old',d.old)}</tbody>`;
+          occTables.appendChild(table);
+          nb.style.height=(d.new.totalSqft/max*120)+"px";
+          ob.style.height=(d.old.totalSqft/max*120)+"px";
         });
       }
 
@@ -392,7 +402,7 @@
           const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9});
           const cost=COSTS[loc.name];
           if(cost){
-            marker.bindTooltip(`<strong>${loc.name}</strong><br/>New build: £${cost.new.toFixed(2)} per sq ft<br/>20‑year old: £${cost.old.toFixed(2)} per sq ft`,{direction:'top',offset:[0,-8]});
+            marker.bindTooltip(`<strong>${loc.name}</strong><br/>New build: £${cost.new.totalSqft.toFixed(2)} per sq ft<br/>20‑year old: £${cost.old.totalSqft.toFixed(2)} per sq ft`,{direction:'top',offset:[0,-8]});
           }else{
             marker.bindTooltip(`<strong>${loc.name}</strong>`,{direction:'top',offset:[0,-8]});
           }
