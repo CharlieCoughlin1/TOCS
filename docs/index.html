@@ -42,8 +42,11 @@
     }
     .tab-btn{padding:0.5rem 1rem;border-bottom:2px solid transparent;}
     .tab-btn.active{border-color:var(--lsh-red);color:var(--lsh-red);font-weight:700;}
-    .occ-bar-new{background:var(--lsh-red);}
-    .occ-bar-old{background:#6b7280;}
+    .occ-bar-new{background:var(--lsh-red);transition:height .3s ease;}
+    .occ-bar-old{background:#6b7280;transition:height .3s ease;}
+    .compare-popup .btn{padding:0.25rem 0.5rem;font-size:0.75rem;border-radius:0.25rem;}
+    .compare-popup .btn-red{background:var(--lsh-red);color:#fff;}
+    .compare-popup .btn-gray{background:#e5e7eb;color:#111827;}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -134,7 +137,7 @@
 
       <div id="occWrapper" class="hidden">
         <div class="flex justify-between items-center mb-4">
-          <button id="occClear" class="text-sm underline">Clear</button>
+          <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
         </div>
         <div id="occBars" class="flex gap-4 items-end mb-4"></div>
         <table id="occTable" class="w-full text-sm border-collapse">
@@ -303,21 +306,42 @@
           const col=document.createElement('div');
           col.className='flex flex-col items-center';
           const label=document.createElement('div');
-          label.className='text-sm font-din-bold mb-1';
+          label.className='text-sm font-din-bold mb-1 text-center';
           label.textContent=d.name;
+
+          const nbWrap=document.createElement('div');
+          nbWrap.className='flex flex-col items-center';
           const nb=document.createElement('div');
           nb.className='occ-bar-new text-white text-xs flex items-center justify-center w-8';
-          nb.style.height=(d.new/max*120)+'px';
+          nb.style.height='0px';
           nb.textContent='£'+d.new;
+          const nbLab=document.createElement('div');
+          nbLab.className='text-xs mt-1';
+          nbLab.textContent='New';
+          nbWrap.appendChild(nb); nbWrap.appendChild(nbLab);
+
+          const obWrap=document.createElement('div');
+          obWrap.className='flex flex-col items-center mt-2';
           const ob=document.createElement('div');
-          ob.className='occ-bar-old text-white text-xs flex items-center justify-center w-8 mt-1';
-          ob.style.height=(d.old/max*120)+'px';
+          ob.className='occ-bar-old text-white text-xs flex items-center justify-center w-8';
+          ob.style.height='0px';
           ob.textContent='£'+d.old;
-          col.appendChild(label);col.appendChild(nb);col.appendChild(ob);
+          const obLab=document.createElement('div');
+          obLab.className='text-xs mt-1';
+          obLab.textContent='20yr';
+          obWrap.appendChild(ob); obWrap.appendChild(obLab);
+
+          col.appendChild(label);col.appendChild(nbWrap);col.appendChild(obWrap);
           occBars.appendChild(col);
+
           const row=document.createElement('tr');
           row.innerHTML=`<td class="border px-2 py-1">${d.name}</td><td class="border px-2 py-1">£${d.new}</td><td class="border px-2 py-1">£${d.old}</td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td>`;
           occBody.appendChild(row);
+
+          requestAnimationFrame(()=>{
+            nb.style.height=(d.new/max*120)+'px';
+            ob.style.height=(d.old/max*120)+'px';
+          });
         });
       }
 
@@ -381,6 +405,7 @@
         });
 
         const markers={};
+        let choicePopup=null;
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
         LOCS.forEach(loc=>{
           const base=BASE[loc.name];
@@ -398,17 +423,30 @@
             if(occTab.classList.contains('active')){
               const baseCost=BASE[loc.name];
               const newCost=Math.round(baseCost*AGE.New);
+              if(choicePopup) map.closePopup(choicePopup);
               if(occData.length>0){
-                if(confirm('Compare costs with current selection?')){
-                  if(occData.length>=5){alert('Maximum 5 locations'); return;}
-                  occData.push({name:loc.name,new:newCost,old:baseCost});
-                }else{
-                  occData=[{name:loc.name,new:newCost,old:baseCost}];
-                }
+                const content=`<div class="compare-popup flex gap-2"><button class="btn btn-red" id="cmpBtn">Compare</button><button class="btn btn-gray" id="repBtn">Replace</button></div>`;
+                choicePopup=L.popup({closeButton:false,autoClose:true,className:'compare-popup'})
+                  .setLatLng(loc.coords)
+                  .setContent(content)
+                  .openOn(map);
+                setTimeout(()=>{
+                  document.getElementById('cmpBtn').addEventListener('click',()=>{
+                    map.closePopup(choicePopup); choicePopup=null;
+                    if(occData.length>=5){alert('Maximum 5 locations'); return;}
+                    occData.push({name:loc.name,new:newCost,old:baseCost});
+                    updateOccUI();
+                  });
+                  document.getElementById('repBtn').addEventListener('click',()=>{
+                    map.closePopup(choicePopup); choicePopup=null;
+                    occData=[{name:loc.name,new:newCost,old:baseCost}];
+                    updateOccUI();
+                  });
+                },0);
               }else{
                 occData=[{name:loc.name,new:newCost,old:baseCost}];
+                updateOccUI();
               }
-              updateOccUI();
             }
           });
           markers[loc.name]=marker;
