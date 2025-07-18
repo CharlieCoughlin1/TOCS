@@ -450,7 +450,7 @@
         function showMarkers(region){
           Object.values(markers).forEach(m=>{ if(map.hasLayer(m)) m.remove(); });
           LOCS.forEach(loc=>{
-            if(loc.main || (region!=='All UK' && loc.region===region)){
+            if(region==='All UK' || loc.region===region || loc.main){
               markers[loc.name].addTo(map);
             }
           });
