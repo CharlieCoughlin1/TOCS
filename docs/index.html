@@ -40,6 +40,10 @@
       display:block;
       line-height:1.2;
     }
+    .tab-btn{padding:0.5rem 1rem;border-bottom:2px solid transparent;}
+    .tab-btn.active{border-color:var(--lsh-red);color:var(--lsh-red);font-weight:700;}
+    .occ-bar-new{background:var(--lsh-red);}
+    .occ-bar-old{background:#6b7280;}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -51,76 +55,104 @@
   </header>
 
   <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
-    <!-- Calculator -->
-    <section class="bg-white p-6 rounded-lg shadow-md order-1">
-      <h2 class="text-2xl md:text-3xl font-din-bold mb-6 text-lsh-red">UK office cost calculator</h2>
-
-      <label for="modeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
-      <select id="modeSelect" class="w-full border rounded p-2 mb-1 bg-white">
-        <option value="" disabled selected>Please select</option>
-        <option value="people">Number of people → cost</option>
-        <option value="budget">Budget → capacity</option>
-      </select>
-      <p id="modeError" class="err-msg mb-3">Please select an option</p>
-
-      <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
-      <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
-        <option value="" disabled selected>Please select</option>
-      </select>
-      <p id="locationError" class="err-msg mb-3">Please select a location</p>
-
-      <label for="ageSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Building age</label>
-      <select id="ageSelect" class="w-full border rounded p-2 mb-1 bg-white">
-        <option value="" disabled selected>Please select</option>
-        <option value="New">New build</option>
-        <option value="20">20‑year old</option>
-      </select>
-      <p id="ageError" class="err-msg mb-3">Please select building age</p>
-
-      <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
-      <select id="typeSelect" class="w-full border rounded p-2 mb-1 bg-white">
-        <option value="" disabled selected>Please select</option>
-        <option value="Corporate">Corporate</option>
-        <option value="Financial">Financial</option>
-        <option value="Insurance">Insurance</option>
-        <option value="Professional">Professional</option>
-        <option value="Public">Public</option>
-      </select>
-      <p id="typeError" class="err-msg mb-3">Please select workstation type</p>
-
-      <!-- People input -->
-      <div id="peopleGroup" class="mb-3 hidden">
-        <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many people?</label>
-        <input type="number" id="peopleInput" class="w-full border rounded p-2" placeholder="e.g. 25" />
-        <p id="peopleError" class="err-msg mt-1">Enter a number &gt; 0</p>
-      </div>
-
-      <!-- Budget input -->
-      <div id="budgetGroup" class="mb-3 hidden">
-        <label for="budgetInput" class="block text-lg font-din-bold text-gray-700 mb-1">Annual budget (£)</label>
-        <input type="text" id="budgetInput" inputmode="numeric" class="w-full border rounded p-2" placeholder="e.g. 750,000" />
-        <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
-      </div>
-
-      <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold w-full">Calculate</button>
-
-      <div id="resultWrapper" class="mt-6 hidden space-y-3">
-        <div id="areaResult"></div>
-        <div id="costResult"></div>
-        <div id="peopleResult"></div>
-      </div>
-
-      <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Assumes <strong>12&nbsp;m² per person</strong>. All prices are placeholders.</p>
-    </section>
 
     <!-- Map -->
-    <section class="bg-white p-6 rounded-lg shadow-md order-2">
+    <section class="bg-white p-6 rounded-lg shadow-md order-1" id="mapSection">
       <h2 class="text-2xl md:text-3xl font-din-bold mb-4 text-lsh-red">UK office locations</h2>
       <div id="regionToggle" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="map" class="rounded"></div>
       <p class="mt-4 text-sm text-gray-500 font-din-light">Hover a marker to view rental rates; click to select. Use the buttons above to zoom to a region.</p>
     </section>
-  </main>
+
+    <!-- Calculator / Occupancy -->
+    <section class="bg-white p-6 rounded-lg shadow-md order-2" id="calcSection">
+      <div class="mb-4 flex gap-2">
+        <button id="calcTab" class="tab-btn active">Space calculator</button>
+        <button id="occTab" class="tab-btn">Occupancy costs</button>
+      </div>
+
+      <div id="calcWrapper">
+        <h2 class="text-2xl md:text-3xl font-din-bold mb-6 text-lsh-red">UK office cost calculator</h2>
+
+        <label for="modeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
+        <select id="modeSelect" class="w-full border rounded p-2 mb-1 bg-white">
+          <option value="" disabled selected>Please select</option>
+          <option value="people">Number of people → cost</option>
+          <option value="budget">Budget → capacity</option>
+        </select>
+        <p id="modeError" class="err-msg mb-3">Please select an option</p>
+
+        <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
+        <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
+          <option value="" disabled selected>Please select</option>
+        </select>
+        <p id="locationError" class="err-msg mb-3">Please select a location</p>
+
+        <label for="ageSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Building age</label>
+        <select id="ageSelect" class="w-full border rounded p-2 mb-1 bg-white">
+          <option value="" disabled selected>Please select</option>
+          <option value="New">New build</option>
+          <option value="20">20‑year old</option>
+        </select>
+        <p id="ageError" class="err-msg mb-3">Please select building age</p>
+
+        <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
+        <select id="typeSelect" class="w-full border rounded p-2 mb-1 bg-white">
+          <option value="" disabled selected>Please select</option>
+          <option value="Corporate">Corporate</option>
+          <option value="Financial">Financial</option>
+          <option value="Insurance">Insurance</option>
+          <option value="Professional">Professional</option>
+          <option value="Public">Public</option>
+        </select>
+        <p id="typeError" class="err-msg mb-3">Please select workstation type</p>
+
+        <!-- People input -->
+        <div id="peopleGroup" class="mb-3 hidden">
+          <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many people?</label>
+          <input type="number" id="peopleInput" class="w-full border rounded p-2" placeholder="e.g. 25" />
+          <p id="peopleError" class="err-msg mt-1">Enter a number &gt; 0</p>
+        </div>
+
+        <!-- Budget input -->
+        <div id="budgetGroup" class="mb-3 hidden">
+          <label for="budgetInput" class="block text-lg font-din-bold text-gray-700 mb-1">Annual budget (£)</label>
+          <input type="text" id="budgetInput" inputmode="numeric" class="w-full border rounded p-2" placeholder="e.g. 750,000" />
+          <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
+        </div>
+
+        <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold w-full">Calculate</button>
+
+        <div id="resultWrapper" class="mt-6 hidden space-y-3">
+          <div id="areaResult"></div>
+          <div id="costResult"></div>
+          <div id="peopleResult"></div>
+        </div>
+
+        <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Assumes <strong>12&nbsp;m² per person</strong>. All prices are placeholders.</p>
+      </div>
+
+      <div id="occWrapper" class="hidden">
+        <div class="flex justify-between items-center mb-4">
+          <button id="occClear" class="text-sm underline">Clear</button>
+        </div>
+        <div id="occBars" class="flex gap-4 items-end mb-4"></div>
+        <table id="occTable" class="w-full text-sm border-collapse">
+          <thead>
+            <tr class="bg-gray-100">
+              <th class="border px-2 py-1">Location</th>
+              <th class="border px-2 py-1">New build</th>
+              <th class="border px-2 py-1">20‑yr old</th>
+              <th class="border px-2 py-1">&nbsp;</th>
+              <th class="border px-2 py-1">&nbsp;</th>
+              <th class="border px-2 py-1">&nbsp;</th>
+              <th class="border px-2 py-1">&nbsp;</th>
+            </tr>
+          </thead>
+          <tbody id="occBody"></tbody>
+        </table>
+      </div>
+    </section>
 
   <footer class="text-center text-sm text-gray-400 py-6 font-din-light">© Lambert Smith Hampton — Prototype tool for illustration only.</footer>
 
@@ -220,6 +252,10 @@
       const calcBtn=$('calcBtn');
       const areaR=$('areaResult'); const costR=$('costResult'); const pplR=$('peopleResult'); const resWrap=$('resultWrapper');
       const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),type:$('typeError'),people:$('peopleError'),budget:$('budgetError')};
+      const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
+      const calcTab=$('calcTab'); const occTab=$('occTab');
+      const occBars=$('occBars'); const occBody=$('occBody'); const occClear=$('occClear');
+      let occData=[];
 
       // populate locations dropdown
       LOCS.forEach(loc=>{
@@ -240,6 +276,52 @@
         else calcBtn.textContent='Calculate';
       }
       modeSel.addEventListener('change',toggleInputs);
+
+      function switchTab(tab){
+        if(tab==='calc'){
+          calcWrap.classList.remove('hidden');
+          occWrap.classList.add('hidden');
+          calcTab.classList.add('active');
+          occTab.classList.remove('active');
+        }else{
+          calcWrap.classList.add('hidden');
+          occWrap.classList.remove('hidden');
+          calcTab.classList.remove('active');
+          occTab.classList.add('active');
+        }
+      }
+      calcTab.addEventListener('click',()=>switchTab('calc'));
+      occTab.addEventListener('click',()=>switchTab('occ'));
+
+      function updateOccUI(){
+        occBars.innerHTML='';
+        occBody.innerHTML='';
+        if(occData.length===0){occWrap.classList.add('hidden');return;}
+        occWrap.classList.remove('hidden');
+        const max=Math.max(...occData.flatMap(d=>[d.new,d.old]));
+        occData.forEach(d=>{
+          const col=document.createElement('div');
+          col.className='flex flex-col items-center';
+          const label=document.createElement('div');
+          label.className='text-sm font-din-bold mb-1';
+          label.textContent=d.name;
+          const nb=document.createElement('div');
+          nb.className='occ-bar-new text-white text-xs flex items-center justify-center w-8';
+          nb.style.height=(d.new/max*120)+'px';
+          nb.textContent='£'+d.new;
+          const ob=document.createElement('div');
+          ob.className='occ-bar-old text-white text-xs flex items-center justify-center w-8 mt-1';
+          ob.style.height=(d.old/max*120)+'px';
+          ob.textContent='£'+d.old;
+          col.appendChild(label);col.appendChild(nb);col.appendChild(ob);
+          occBars.appendChild(col);
+          const row=document.createElement('tr');
+          row.innerHTML=`<td class="border px-2 py-1">${d.name}</td><td class="border px-2 py-1">£${d.new}</td><td class="border px-2 py-1">£${d.old}</td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td>`;
+          occBody.appendChild(row);
+        });
+      }
+
+      occClear.addEventListener('click',()=>{occData=[]; updateOccUI();});
 
       // auto‑comma budget
       budInp.addEventListener('input',()=>{
@@ -278,6 +360,7 @@
       calcBtn.addEventListener('click',performCalc);
 
       toggleInputs(); // initialise visibility
+      switchTab('calc');
 
       // Map ------------------------------------------------------------------
       if(typeof L!=='undefined'){
@@ -312,6 +395,21 @@
             locSel.value=loc.name;
             marker.openTooltip();
             if(!resWrap.classList.contains('hidden')) performCalc();
+            if(occTab.classList.contains('active')){
+              const baseCost=BASE[loc.name];
+              const newCost=Math.round(baseCost*AGE.New);
+              if(occData.length>0){
+                if(confirm('Compare costs with current selection?')){
+                  if(occData.length>=5){alert('Maximum 5 locations'); return;}
+                  occData.push({name:loc.name,new:newCost,old:baseCost});
+                }else{
+                  occData=[{name:loc.name,new:newCost,old:baseCost}];
+                }
+              }else{
+                occData=[{name:loc.name,new:newCost,old:baseCost}];
+              }
+              updateOccUI();
+            }
           });
           markers[loc.name]=marker;
         });
