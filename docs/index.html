@@ -47,6 +47,16 @@
     .compare-popup .btn{padding:0.25rem 0.5rem;font-size:0.75rem;border-radius:0.25rem;}
     .compare-popup .btn-red{background:var(--lsh-red);color:#fff;}
     .compare-popup .btn-gray{background:#e5e7eb;color:#111827;}
+    /* bar labels */
+    .bar-label{line-height:1;text-align:center;}
+    .bar-label small{font-size:0.65rem;}
+    /* table extra columns hidden until expanded */
+    .extra-col{display:none;}
+    #occTables.expanded .extra-col{display:table-cell;}
+    /* expand section to full width when tables expanded */
+    @media (min-width:768px){
+      #calcSection.expanded{grid-column:1 / -1;}
+    }
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -139,6 +149,7 @@
       <div id="occWrapper" class="hidden">
         <div class="flex justify-between items-center mb-4">
           <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
+          <button id="occExpand" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Expand</button>
         </div>
         <div id="occBars" class="flex gap-4 items-end mb-4"></div>
         <div id="occTables"></div>
@@ -247,7 +258,9 @@
       const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),type:$('typeError'),people:$('peopleError'),budget:$('budgetError')};
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
-      const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt");
+      const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt"); const occExpand=$("occExpand");
+      const calcSection=$("calcSection");
+      let expanded=false;
       let occData=[];
       // populate locations dropdown
       LOCS.forEach(loc=>{
@@ -275,11 +288,13 @@
           occWrap.classList.add('hidden');
           calcTab.classList.add('active');
           occTab.classList.remove('active');
+          occPrompt.classList.add('hidden');
         }else{
           calcWrap.classList.add('hidden');
           occWrap.classList.remove('hidden');
           calcTab.classList.remove('active');
           occTab.classList.add('active');
+          if(occData.length===0) occPrompt.classList.remove('hidden');
         }
       }
       calcTab.addEventListener('click',()=>switchTab('calc'));
@@ -288,11 +303,15 @@
       function updateOccUI(){
         occBars.innerHTML="";
         occTables.innerHTML="";
-        if(occData.length===0){
-          occWrap.classList.add("hidden");
-          occPrompt.classList.remove("hidden");
-          return;
-        }
+       if(occData.length===0){
+         occWrap.classList.add("hidden");
+         occPrompt.classList.remove("hidden");
+        calcSection.classList.remove('expanded');
+        occTables.classList.remove('expanded');
+        expanded=false;
+        occExpand.textContent='Expand';
+         return;
+       }
         occPrompt.classList.add("hidden");
         occWrap.classList.remove("hidden");
         const max=Math.max(...occData.flatMap(d=>[d.new.totalSqft,d.old.totalSqft]));
@@ -305,13 +324,13 @@
           const bars=document.createElement("div");
           bars.className="flex items-end gap-2";
           const nb=document.createElement("div");
-          nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-8";
+          nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-10";
           nb.style.height="0px";
-          nb.textContent="£"+d.new.totalSqft.toFixed(2);
+          nb.innerHTML=`<div class="bar-label">£${d.new.totalSqft.toFixed(2)}<br><small>psf</small></div>`;
           const ob=document.createElement("div");
-          ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-8";
+          ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-10";
           ob.style.height="0px";
-          ob.textContent="£"+d.old.totalSqft.toFixed(2);
+          ob.innerHTML=`<div class="bar-label">£${d.old.totalSqft.toFixed(2)}<br><small>psf</small></div>`;
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
           labs.className="flex justify-between w-full text-xs mt-1";
@@ -320,13 +339,13 @@
           occBars.appendChild(col);
           const table=document.createElement("table");
           table.className="w-full text-sm border-collapse mb-4";
-          const headers=['Net Effective Rent','Rates','Annualised costs','Hard FM','Soft FM','Management Fees','TOTAL /sq ft','Total per workstation'];
-          const keys=['netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalSqft','totalWorkstation'];
-          const headRow='<tr class="bg-gray-100"><th class="border px-2 py-1">Building age</th>'+headers.map(h=>`<th class="border px-2 py-1">${h}</th>`).join('')+'</tr>';
+          const headers=['Total / sq ft','Net effective rent / sq ft','Rates / sq ft','Annualised costs / sq ft','Hard FM / sq ft','Soft FM / sq ft','Management fees / sq ft','Total per workstation'];
+          const keys=['totalSqft','netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalWorkstation'];
+          const headRow='<tr class="bg-gray-100"><th class="border px-2 py-1">Building age</th>'+headers.map((h,i)=>`<th class="border px-2 py-1${i>=4?' extra-col':''}">${h}</th>`).join('')+'</tr>';
           function buildRow(label,obj){
-            return '<tr><td class="border px-2 py-1">'+label+'</td>'+keys.map(k=>{
+            return '<tr><td class="border px-2 py-1">'+label+'</td>'+keys.map((k,i)=>{
               const v=obj[k];
-              return `<td class="border px-2 py-1">£${k==='totalWorkstation'?Math.round(v).toLocaleString():v.toFixed(2)}</td>`;
+              return `<td class="border px-2 py-1${i>=4?' extra-col':''}">£${k==='totalWorkstation'?Math.round(v).toLocaleString():v.toFixed(2)}</td>`;
             }).join('')+'</tr>';
           }
           table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1" colspan="${keys.length+1}">${d.name}</th></tr>${headRow}</thead><tbody>${buildRow('New build',d.new)}${buildRow('20‑yr old',d.old)}</tbody>`;
@@ -334,9 +353,13 @@
           nb.style.height=(d.new.totalSqft/max*120)+"px";
           ob.style.height=(d.old.totalSqft/max*120)+"px";
         });
+        calcSection.classList.toggle('expanded', expanded);
+        occTables.classList.toggle('expanded', expanded);
+        occExpand.textContent = expanded ? 'Collapse' : 'Expand';
       }
 
       occClear.addEventListener('click',()=>{occData=[]; updateOccUI();});
+      occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
       // auto‑comma budget
       budInp.addEventListener('input',()=>{
