@@ -152,7 +152,7 @@
           <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
         </div>
         <div id="occBars" class="flex gap-4 items-end mb-4"></div>
-        <div class="flex justify-end mb-2">
+        <div id="occExpandWrap" class="flex justify-end mb-2">
           <button id="occExpand" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Expand</button>
         </div>
         <div id="occTables"></div>
@@ -261,6 +261,7 @@
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt"); const occExpand=$("occExpand");
+      const occExpandWrap=$('occExpandWrap');
       const calcSection=$("calcSection");
       let expanded=false;
       let occData=[];
@@ -317,31 +318,33 @@
         occTables.classList.remove('expanded');
         expanded=false;
         occExpand.textContent='Expand';
+        occExpandWrap.classList.add('hidden');
          return;
        }
         occPrompt.classList.add("hidden");
         occWrap.classList.remove("hidden");
+        occExpandWrap.classList.remove('hidden');
         const max=Math.max(...occData.flatMap(d=>[d.new.totalSqft,d.old.totalSqft]));
         occData.forEach(d=>{
           const col=document.createElement("div");
-          col.className="flex flex-col items-center";
+          col.className="flex flex-col items-center p-2 border rounded";
           const label=document.createElement("div");
-          label.className="text-sm font-din-bold mb-1 text-center";
+          label.className="text-sm font-din-bold mb-1 text-center min-h-6";
           label.textContent=d.name;
           const bars=document.createElement("div");
           bars.className="flex items-end gap-2";
           const nb=document.createElement("div");
-          nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-10";
+          nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-12";
           nb.style.height="0px";
           nb.innerHTML=`<div class="bar-label">£${d.new.totalSqft.toFixed(2)}<br><small>psf</small></div>`;
           const ob=document.createElement("div");
-          ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-10";
+          ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-12";
           ob.style.height="0px";
           ob.innerHTML=`<div class="bar-label">£${d.old.totalSqft.toFixed(2)}<br><small>psf</small></div>`;
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
-          labs.className="flex justify-between w-full text-xs mt-1";
-          labs.innerHTML="<span>New</span><span>20yr</span>";
+          labs.className="flex justify-between w-full text-[0.65rem] mt-1";
+          labs.innerHTML="<span>New build</span><span>20yr-old</span>";
           col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
           occBars.appendChild(col);
           const table=document.createElement("table");
