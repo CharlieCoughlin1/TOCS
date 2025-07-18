@@ -60,7 +60,7 @@
   <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
 
     <!-- Map -->
-    <section class="bg-white p-6 rounded-lg shadow-md order-1 md:order-2" id="mapSection">
+    <section class="bg-white p-6 rounded-lg shadow-md order-2 md:order-1" id="mapSection">
       <h2 class="text-2xl md:text-3xl font-din-bold mb-4 text-lsh-red">UK office locations</h2>
       <div id="regionToggle" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="map" class="rounded"></div>
@@ -68,7 +68,7 @@
     </section>
 
     <!-- Calculator / Occupancy -->
-    <section class="bg-white p-6 rounded-lg shadow-md order-2 md:order-1" id="calcSection">
+    <section class="bg-white p-6 rounded-lg shadow-md order-1 md:order-2" id="calcSection">
       <div class="mb-4 flex gap-2">
         <button id="calcTab" class="tab-btn active">Space calculator</button>
         <button id="occTab" class="tab-btn">Occupancy costs</button>
@@ -135,25 +135,13 @@
         <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Assumes <strong>12&nbsp;m² per person</strong>. All prices are placeholders.</p>
       </div>
 
+      <div id="occPrompt" class="mb-4 text-gray-500">Please select a location on the map to get started</div>
       <div id="occWrapper" class="hidden">
         <div class="flex justify-between items-center mb-4">
           <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
         </div>
         <div id="occBars" class="flex gap-4 items-end mb-4"></div>
-        <table id="occTable" class="w-full text-sm border-collapse">
-          <thead>
-            <tr class="bg-gray-100">
-              <th class="border px-2 py-1">Location</th>
-              <th class="border px-2 py-1">New build</th>
-              <th class="border px-2 py-1">20‑yr old</th>
-              <th class="border px-2 py-1">&nbsp;</th>
-              <th class="border px-2 py-1">&nbsp;</th>
-              <th class="border px-2 py-1">&nbsp;</th>
-              <th class="border px-2 py-1">&nbsp;</th>
-            </tr>
-          </thead>
-          <tbody id="occBody"></tbody>
-        </table>
+        <div id="occTables"></div>
       </div>
     </section>
   </main>
@@ -258,9 +246,8 @@
       const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),type:$('typeError'),people:$('peopleError'),budget:$('budgetError')};
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
-      const occBars=$('occBars'); const occBody=$('occBody'); const occClear=$('occClear');
+      const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt");
       let occData=[];
-
       // populate locations dropdown
       LOCS.forEach(loc=>{
         const opt=document.createElement('option');
@@ -298,50 +285,43 @@
       occTab.addEventListener('click',()=>switchTab('occ'));
 
       function updateOccUI(){
-        occBars.innerHTML='';
-        occBody.innerHTML='';
-        if(occData.length===0){occWrap.classList.add('hidden');return;}
-        occWrap.classList.remove('hidden');
+        occBars.innerHTML="";
+        occTables.innerHTML="";
+        if(occData.length===0){
+          occWrap.classList.add("hidden");
+          occPrompt.classList.remove("hidden");
+          return;
+        }
+        occPrompt.classList.add("hidden");
+        occWrap.classList.remove("hidden");
         const max=Math.max(...occData.flatMap(d=>[d.new,d.old]));
         occData.forEach(d=>{
-          const col=document.createElement('div');
-          col.className='flex flex-col items-center';
-          const label=document.createElement('div');
-          label.className='text-sm font-din-bold mb-1 text-center';
+          const col=document.createElement("div");
+          col.className="flex flex-col items-center";
+          const label=document.createElement("div");
+          label.className="text-sm font-din-bold mb-1 text-center";
           label.textContent=d.name;
-
-          const nbWrap=document.createElement('div');
-          nbWrap.className='flex flex-col items-center';
-          const nb=document.createElement('div');
-          nb.className='occ-bar-new text-white text-xs flex items-center justify-center w-8';
-          nb.style.height='0px';
-          nb.textContent='£'+d.new;
-          const nbLab=document.createElement('div');
-          nbLab.className='text-xs mt-1';
-          nbLab.textContent='New';
-          nbWrap.appendChild(nb); nbWrap.appendChild(nbLab);
-
-          const obWrap=document.createElement('div');
-          obWrap.className='flex flex-col items-center mt-2';
-          const ob=document.createElement('div');
-          ob.className='occ-bar-old text-white text-xs flex items-center justify-center w-8';
-          ob.style.height='0px';
-          ob.textContent='£'+d.old;
-          const obLab=document.createElement('div');
-          obLab.className='text-xs mt-1';
-          obLab.textContent='20yr';
-          obWrap.appendChild(ob); obWrap.appendChild(obLab);
-
-          col.appendChild(label);col.appendChild(nbWrap);col.appendChild(obWrap);
+          const bars=document.createElement("div");
+          bars.className="flex items-end gap-2";
+          const nb=document.createElement("div");
+          nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-8";
+          nb.style.height="0px";
+          nb.textContent="£"+d.new;
+          const ob=document.createElement("div");
+          ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-8";
+          ob.style.height="0px";
+          ob.textContent="£"+d.old;
+          bars.appendChild(nb); bars.appendChild(ob);
+          const labs=document.createElement("div");
+          labs.className="flex justify-between w-full text-xs mt-1";
+          labs.innerHTML="<span>New</span><span>20yr</span>";
+          col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
           occBars.appendChild(col);
-
-          const row=document.createElement('tr');
-          row.innerHTML=`<td class="border px-2 py-1">${d.name}</td><td class="border px-2 py-1">£${d.new}</td><td class="border px-2 py-1">£${d.old}</td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td><td class="border px-2 py-1"></td>`;
-          occBody.appendChild(row);
-
-          requestAnimationFrame(()=>{
-            nb.style.height=(d.new/max*120)+'px';
-            ob.style.height=(d.old/max*120)+'px';
+          const table=document.createElement("table");
+          table.className="w-full text-sm border-collapse mb-4";
+          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1" colspan="2">${d.name}</th></tr></thead><tbody><tr><td class="border px-2 py-1">New build</td><td class="border px-2 py-1">£${d.new}</td></tr><tr><td class="border px-2 py-1">20‑yr old</td><td class="border px-2 py-1">£${d.old}</td></tr></tbody>`; occTables.appendChild(table);
+            nb.style.height=(d.new/max*120)+"px";
+            ob.style.height=(d.old/max*120)+"px";
           });
         });
       }
@@ -440,7 +420,7 @@
                   });
                   document.getElementById('repBtn').addEventListener('click',()=>{
                     map.closePopup(choicePopup); choicePopup=null;
-                    occData=[{name:loc.name,new:newCost,old:baseCost}];
+                    occData[occData.length-1]={name:loc.name,new:newCost,old:baseCost};
                     updateOccUI();
                   });
                 },0);
