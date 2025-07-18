@@ -149,6 +149,7 @@
   <footer class="text-center text-sm text-gray-400 py-6 font-din-light">© Lambert Smith Hampton — Prototype tool for illustration only.</footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+  <script src="costs.js"></script>
   <script>
     if(typeof L==='undefined'){console.error('Leaflet failed to load.');}
     (function(){
@@ -211,7 +212,7 @@
         {name:'Warrington',coords:[53.3925,-2.5802],region:'North West'}
       ];
 
-      // assign placeholder rent values for each location
+      // assign placeholder rent values for calculator
       const BASE = {};
       LOCS.forEach((loc,i)=>{ const val=200 + i*10; loc.base=val; BASE[loc.name]=val; });
 
@@ -306,11 +307,11 @@
           const nb=document.createElement("div");
           nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-8";
           nb.style.height="0px";
-          nb.textContent="£"+d.new;
+          nb.textContent="£"+d.new.toFixed(2);
           const ob=document.createElement("div");
           ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-8";
           ob.style.height="0px";
-          ob.textContent="£"+d.old;
+          ob.textContent="£"+d.old.toFixed(2);
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
           labs.className="flex justify-between w-full text-xs mt-1";
@@ -319,7 +320,7 @@
           occBars.appendChild(col);
           const table=document.createElement("table");
           table.className="w-full text-sm border-collapse mb-4";
-          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1" colspan="2">${d.name}</th></tr></thead><tbody><tr><td class="border px-2 py-1">New build</td><td class="border px-2 py-1">£${d.new}</td></tr><tr><td class="border px-2 py-1">20‑yr old</td><td class="border px-2 py-1">£${d.old}</td></tr></tbody>`; occTables.appendChild(table);
+          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1" colspan="2">${d.name}</th></tr></thead><tbody><tr><td class="border px-2 py-1">New build</td><td class="border px-2 py-1">£${d.new.toFixed(2)}</td></tr><tr><td class="border px-2 py-1">20‑yr old</td><td class="border px-2 py-1">£${d.old.toFixed(2)}</td></tr></tbody>`; occTables.appendChild(table);
           nb.style.height=(d.new/max*120)+"px";
           ob.style.height=(d.old/max*120)+"px";
         });
@@ -388,10 +389,13 @@
         let choicePopup=null;
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
         LOCS.forEach(loc=>{
-          const base=BASE[loc.name];
           const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9});
-          const newRent=base!==undefined?Math.round(base*AGE.New):null;
-          marker.bindTooltip(base!==undefined?`<strong>${loc.name}</strong><br/>New build: £${newRent}/m²<br/>20‑yr build: £${base}/m²`:`<strong>${loc.name}</strong>`,{direction:'top',offset:[0,-8]});
+          const cost=COSTS[loc.name];
+          if(cost){
+            marker.bindTooltip(`<strong>${loc.name}</strong><br/>New build: £${cost.new.toFixed(2)} per sq ft<br/>20‑year old: £${cost.old.toFixed(2)} per sq ft`,{direction:'top',offset:[0,-8]});
+          }else{
+            marker.bindTooltip(`<strong>${loc.name}</strong>`,{direction:'top',offset:[0,-8]});
+          }
           marker.on('mouseover',function(){this.openTooltip();});
           marker.on('mouseout',function(){this.closeTooltip();});
           marker.on('click',()=>{
@@ -401,8 +405,9 @@
             marker.openTooltip();
             if(!resWrap.classList.contains('hidden')) performCalc();
             if(occTab.classList.contains('active')){
-              const baseCost=BASE[loc.name];
-              const newCost=Math.round(baseCost*AGE.New);
+              const cost=COSTS[loc.name]||{new:null,old:null};
+              const newCost=cost.new;
+              const oldCost=cost.old;
               if(choicePopup) map.closePopup(choicePopup);
               if(occData.length>0){
                 const content=`<div class="compare-popup flex gap-2"><button class="btn btn-red" id="cmpBtn">Compare</button><button class="btn btn-gray" id="repBtn">Replace</button></div>`;
@@ -414,17 +419,17 @@
                   document.getElementById('cmpBtn').addEventListener('click',()=>{
                     map.closePopup(choicePopup); choicePopup=null;
                     if(occData.length>=5){alert('Maximum 5 locations'); return;}
-                    occData.push({name:loc.name,new:newCost,old:baseCost});
+                    occData.push({name:loc.name,new:newCost,old:oldCost});
                     updateOccUI();
                   });
                   document.getElementById('repBtn').addEventListener('click',()=>{
                     map.closePopup(choicePopup); choicePopup=null;
-                    occData[occData.length-1]={name:loc.name,new:newCost,old:baseCost};
+                    occData[occData.length-1]={name:loc.name,new:newCost,old:oldCost};
                     updateOccUI();
                   });
                 },0);
               }else{
-                occData=[{name:loc.name,new:newCost,old:baseCost}];
+                occData=[{name:loc.name,new:newCost,old:oldCost}];
                 updateOccUI();
               }
             }
