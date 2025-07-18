@@ -69,13 +69,13 @@
 
     <!-- Calculator / Occupancy -->
     <section class="bg-white p-6 rounded-lg shadow-md order-1 md:order-2" id="calcSection">
+        <h2 class="text-2xl md:text-3xl font-din-bold mb-4 text-lsh-red">UK office cost calculator</h2>
       <div class="mb-4 flex gap-2">
         <button id="calcTab" class="tab-btn active">Space calculator</button>
         <button id="occTab" class="tab-btn">Occupancy costs</button>
       </div>
-
       <div id="calcWrapper">
-        <h2 class="text-2xl md:text-3xl font-din-bold mb-6 text-lsh-red">UK office cost calculator</h2>
+
 
         <label for="modeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
         <select id="modeSelect" class="w-full border rounded p-2 mb-1 bg-white">
@@ -217,7 +217,7 @@
       LOCS.forEach((loc,i)=>{ const val=200 + i*10; loc.base=val; BASE[loc.name]=val; });
 
       const REGIONS=[
-        {name:'All UK',center:[54,-2.5],zoom:5.5},
+        {name:'All UK',center:[54,-2.5],zoom:4.5},
         {name:'London',center:[51.5072,-0.1276],zoom:11},
         {name:'South East',center:[51.3,-0.7],zoom:8},
         {name:'South West',center:[51,-3],zoom:7},
@@ -402,7 +402,7 @@
           const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9});
           const cost=COSTS[loc.name];
           if(cost){
-            marker.bindTooltip(`<strong>${loc.name}</strong><br/>New build: £${cost.new.totalSqft.toFixed(2)} per sq ft<br/>20‑year old: £${cost.old.totalSqft.toFixed(2)} per sq ft`,{direction:'top',offset:[0,-8]});
+            marker.bindTooltip(`<div class="text-xs"><div class="font-din-bold text-sm">${loc.name}</div><div class="font-semibold">New build: <span class="font-light">£${cost.new.totalSqft.toFixed(2)} psf</span></div><div class="font-semibold">20‑year old: <span class="font-light">£${cost.old.totalSqft.toFixed(2)} psf</span></div></div>`,{direction:'top',offset:[0,-8]});
           }else{
             marker.bindTooltip(`<strong>${loc.name}</strong>`,{direction:'top',offset:[0,-8]});
           }
