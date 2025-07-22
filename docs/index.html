@@ -175,12 +175,13 @@
       const TYPE_SPACE={ Average:1, Corporate:1.2, Finance:0.74, Professional:1.27, Public:0.98, Tech:0.87 };
       const LOCS=[
         {name:'Edinburgh',coords:[55.9533,-3.1883],region:'Scotland',main:true},
-        {name:'Birmingham',coords:[52.4862,-1.8904],region:'West Midlands',main:true},
+        {name:'Birmingham',coords:[52.4862,-1.8904],region:'West Midlands'},
         {name:'Bristol',coords:[51.4545,-2.5879],region:'South West',main:true},
         {name:'Liverpool',coords:[53.4084,-2.9916],region:'North West',main:true},
         {name:'Manchester',coords:[53.4808,-2.2426],region:'North West',main:true},
         {name:'Leeds',coords:[53.7997,-1.5492],region:'Yorkshire & Humber',main:true},
-        {name:'Reading',coords:[51.4543,-0.9781],region:'South East',main:true},
+        {name:'London',coords:[51.5072,-0.1276],region:'London',main:true,regionMarker:true},
+        {name:'Reading',coords:[51.4543,-0.9781],region:'South East'},
         {name:'London - City',coords:[51.5155,-0.0922],region:'London'},
         {name:'London - Docklands',coords:[51.508,-0.0195],region:'London'},
         {name:'London – Hammersmith',coords:[51.492,-0.223],region:'London'},
@@ -190,17 +191,16 @@
         {name:'London - West End non-core',coords:[51.517,-0.143],region:'London'},
         {name:'Aberdeen',coords:[57.1497,-2.0943],region:'Scotland'},
         {name:'Basingstoke',coords:[51.2667,-1.0879],region:'South East'},
-        {name:'Belfast',coords:[54.597,-5.93],region:'Northern Ireland'},
+        {name:'Belfast',coords:[54.597,-5.93],region:'Northern Ireland',main:true},
         {name:'Bournemouth',coords:[50.7209,-1.9048],region:'South West'},
         {name:'Bracknell',coords:[51.416,-0.753],region:'South East'},
         {name:'Brighton',coords:[50.8225,-0.1372],region:'South East'},
         {name:'Cambridge',coords:[52.2053,0.1218],region:'East of England'},
-        {name:'Cardiff',coords:[51.4816,-3.1791],region:'Wales'},
+        {name:'Cardiff',coords:[51.4816,-3.1791],region:'Wales',main:true},
         {name:'Crawley',coords:[51.1091,-0.1872],region:'South East'},
-        {name:'Croydon',coords:[51.3762,-0.0982],region:'South East'},
         {name:'Exeter',coords:[50.7184,-3.5339],region:'South West'},
         {name:'Farnborough',coords:[51.2828,-0.7571],region:'South East'},
-        {name:'Glasgow',coords:[55.8642,-4.2518],region:'Scotland'},
+        {name:'Glasgow',coords:[55.8642,-4.2518],region:'Scotland',main:true},
         {name:'Guildford',coords:[51.2362,-0.5704],region:'South East'},
         {name:'Heathrow',coords:[51.47,-0.4543],region:'South East'},
         {name:'High Wycombe',coords:[51.628,-0.748],region:'South East'},
@@ -208,7 +208,7 @@
         {name:'Maidenhead',coords:[51.5223,-0.7199],region:'South East'},
         {name:'Maidstone',coords:[51.2721,0.5347],region:'South East'},
         {name:'Milton Keynes',coords:[52.0406,-0.7594],region:'South East'},
-        {name:'Newcastle',coords:[54.9783,-1.6178],region:'North East'},
+        {name:'Newcastle',coords:[54.9783,-1.6178],region:'North East',main:true},
         {name:'Northampton',coords:[52.2405,-0.9027],region:'East Midlands'},
         {name:'Norwich',coords:[52.6309,1.2974],region:'East of England'},
         {name:'Nottingham',coords:[52.9548,-1.1581],region:'East Midlands'},
@@ -270,6 +270,7 @@
       let occData=[];
       // populate locations dropdown
       LOCS.forEach(loc=>{
+        if(loc.regionMarker) return;
         const opt=document.createElement('option');
         opt.value=loc.name;
         opt.textContent=loc.name;
@@ -445,6 +446,18 @@
           marker.on('mouseover',function(){this.openTooltip();});
           marker.on('mouseout',function(){this.closeTooltip();});
           marker.on('click',()=>{
+            if(loc.regionMarker){
+              const region=REGIONS.find(r=>r.name===loc.region);
+              if(region){
+                regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+                const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
+                if(btn) btn.classList.add('active');
+                map.setView(region.center,region.zoom);
+                showMarkers(region.name);
+                alert('Please select a central London location');
+              }
+              return;
+            }
             resetMarkers();
             marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
             locSel.value=loc.name;
