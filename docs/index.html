@@ -171,9 +171,18 @@
         </div>
         <p id="occLimitMsg" class="hidden text-xs text-lsh-red mb-2">You can compare up to 3 locations.</p>
         <div id="occTables"></div>
-        <div id="occDownloadWrap" class="flex justify-end gap-2 mt-2 hidden">
-          <button id="downloadCsv" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">CSV</button>
-          <button id="downloadXls" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Excel</button>
+        <div id="occDownloadWrap" class="flex justify-end mt-2 hidden">
+          <div class="relative">
+            <button id="downloadBtn" class="p-1" aria-label="Download">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a1 1 0 001 1h14a1 1 0 001-1v-1m-5-4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+            </button>
+            <div id="downloadMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
+              <button id="downloadCsv" class="block w-full text-left">CSV</button>
+              <button id="downloadXls" class="block w-full text-left">Excel</button>
+            </div>
+          </div>
         </div>
         <p class="text-xs text-gray-500" id="occUnits">All costs are per sq ft.</p>
       </div>
@@ -284,6 +293,8 @@
       const filterNew=$('filterNew'); const filterOld=$('filterOld');
       const occExpandWrap=$('occExpandWrap'); const occLimitMsg=$('occLimitMsg');
       const occDownloadWrap=$('occDownloadWrap');
+      const downloadBtn=$('downloadBtn');
+      const downloadMenu=$('downloadMenu');
       const downloadCsv=$('downloadCsv');
       const downloadXls=$('downloadXls');
       const calcSection=$("calcSection");
@@ -409,27 +420,30 @@
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
       function buildCSV(){
-        const headers=['Location','Building age','Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
-        const lines=[headers.join(',')];
+        const headers=['Building age','Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
+        const lines=[];
+        const q=v=>`"${String(v).replace(/"/g,'""')}"`;
         occData.forEach(d=>{
           function row(label,obj){
             return [
-              d.name,
-              label,
-              `\u00A3${obj.totalSqft.toFixed(2)}`,
-              `\u00A3${obj.netEffectiveRent.toFixed(2)}`,
-              `\u00A3${obj.rates.toFixed(2)}`,
-              `\u00A3${obj.annualisedCosts.toFixed(2)}`,
-              `\u00A3${obj.hardFM.toFixed(2)}`,
-              `\u00A3${obj.softFM.toFixed(2)}`,
-              `\u00A3${obj.managementFees.toFixed(2)}`,
-              `\u00A3${Math.round(obj.totalWorkstation).toLocaleString()}`
+              q(label),
+              q(`\u00A3${obj.totalSqft.toFixed(2)}`),
+              q(`\u00A3${obj.netEffectiveRent.toFixed(2)}`),
+              q(`\u00A3${obj.rates.toFixed(2)}`),
+              q(`\u00A3${obj.annualisedCosts.toFixed(2)}`),
+              q(`\u00A3${obj.hardFM.toFixed(2)}`),
+              q(`\u00A3${obj.softFM.toFixed(2)}`),
+              q(`\u00A3${obj.managementFees.toFixed(2)}`),
+              q(`\u00A3${Math.round(obj.totalWorkstation).toLocaleString()}`)
             ].join(',');
           }
+          lines.push(q(d.name));
+          lines.push(headers.map(h=>q(h)).join(','));
           lines.push(row('New build',d.new));
           lines.push(row('20-yr old',d.old));
+          lines.push('');
         });
-        return lines.join('\n');
+        return lines.join('\r\n');
       }
 
       function downloadFile(format){
@@ -445,8 +459,11 @@
         setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
       }
 
-      downloadCsv.addEventListener('click',()=>downloadFile('csv'));
-      downloadXls.addEventListener('click',()=>downloadFile('excel'));
+      downloadBtn.addEventListener('click',()=>{
+        downloadMenu.classList.toggle('hidden');
+      });
+      downloadCsv.addEventListener('click',()=>{downloadFile('csv'); downloadMenu.classList.add('hidden');});
+      downloadXls.addEventListener('click',()=>{downloadFile('excel'); downloadMenu.classList.add('hidden');});
 
       // auto‑comma budget
       budInp.addEventListener('input',()=>{
@@ -478,7 +495,7 @@
           const sqm=budget/cpsqm;
           const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
           renderResult(areaR,'Area achievable',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
-          renderResult(pplR,'People accommodated',`${Math.floor(sqm/sqmPerPerson).toLocaleString()}`);
+          renderResult(pplR,'People accommodated',`${Math.round(sqm/sqmPerPerson).toLocaleString()}`);
           costR.innerHTML='';
         }
         resWrap.classList.remove('hidden');
