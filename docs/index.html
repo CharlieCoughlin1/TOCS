@@ -258,9 +258,9 @@
 
 
       const REGIONS=[
-        {name:'All UK',center:[54,-2.5],zoom:4.5},
+        {name:'All UK',center:[53.8,-3],zoom:4.5},
         {name:'London',center:[51.5072,-0.1276],zoom:11},
-        {name:'South East',center:[51.55,-0.7],zoom:8},
+        {name:'South East',center:[51.45,-0.7],zoom:8},
         {name:'South West',center:[51,-3],zoom:7},
         {name:'East Midlands',center:[52.9,-1.2],zoom:7},
         {name:'West Midlands',center:[52.5,-2],zoom:7},
@@ -459,8 +459,8 @@
 
       function downloadFile(format){
         const csv='\uFEFF'+buildCSV();
-        const mime=format==='excel'? 'application/vnd.ms-excel' : 'text/csv';
-        const ext=format==='excel'? '.xls' : '.csv';
+        const mime=format==='excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
+        const ext=format==='excel' ? '.xlsx' : '.csv';
         const blob=new Blob([csv],{type:mime});
         const link=document.createElement('a');
         link.href=URL.createObjectURL(blob);
@@ -527,6 +527,18 @@
           const size=map.getSize();
           return (p.y<40||size.y-p.y<40)?'right':'top';
         }
+        function comparePopupConfig(latlng){
+          const ttDir=tooltipDir(latlng);
+          const p=map.latLngToContainerPoint(latlng);
+          const size=map.getSize();
+          if(ttDir==='top'){
+            if(size.y-p.y>60) return {dir:'bottom',offset:[0,8]};
+            return {dir:p.x>size.x/2?'left':'right',offset:[p.x>size.x/2?-8:8,0]};
+          }else{ // tooltip to the right
+            if(p.x>80) return {dir:'left',offset:[-8,0]};
+            return {dir:(size.y-p.y>60?'bottom':'top'),offset:[0,(size.y-p.y>60?8:-8)]};
+          }
+        }
         const regionToggle=$('regionToggle');
         REGIONS.forEach(({name,center,zoom},i)=>{
           const btn=document.createElement('button');
@@ -591,7 +603,8 @@
                 const content = occData.length>=3
                   ? `<div class="compare-popup"><button class="btn btn-gray" id="repBtn">Replace</button></div>`
                   : `<div class="compare-popup flex gap-2"><button class="btn btn-red" id="cmpBtn">Compare</button><button class="btn btn-gray" id="repBtn">Replace</button></div>`;
-                choicePopup=L.tooltip({direction:'bottom',interactive:true,className:'compare-popup',opacity:1,offset:[0,8]})
+                const cfg=comparePopupConfig(marker.getLatLng());
+                choicePopup=L.tooltip({direction:cfg.dir,interactive:true,className:'compare-popup',opacity:1,offset:cfg.offset})
                   .setLatLng(loc.coords)
                   .setContent(content)
                   .addTo(map);
