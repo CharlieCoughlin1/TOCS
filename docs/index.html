@@ -329,7 +329,7 @@
         const max=Math.max(...occData.flatMap(d=>[d.new.totalSqft,d.old.totalSqft]));
         occData.forEach(d=>{
           const col=document.createElement("div");
-          col.className="flex-1 flex flex-col items-center p-2 border rounded h-56 justify-between";
+          col.className="flex-1 flex flex-col items-center p-2 border rounded h-56";
           const label=document.createElement("div");
           label.className="text-sm font-din-bold mb-1 text-center h-10 flex items-center justify-center";
           label.textContent=d.name;
@@ -454,27 +454,27 @@
               const cost=COSTS[loc.name]||{new:null,old:null};
               const newCost=cost.new;
               const oldCost=cost.old;
-              if(choicePopup) map.closePopup(choicePopup);
+              if(choicePopup) map.removeLayer(choicePopup);
               if(occData.length>0){
                 const content = occData.length>=3
                   ? `<div class="compare-popup"><button class="btn btn-gray" id="repBtn">Replace</button></div>`
                   : `<div class="compare-popup flex gap-2"><button class="btn btn-red" id="cmpBtn">Compare</button><button class="btn btn-gray" id="repBtn">Replace</button></div>`;
-                choicePopup=L.popup({closeButton:false,autoClose:true,className:'compare-popup'})
+                choicePopup=L.tooltip({direction:'bottom',interactive:true,className:'compare-popup',opacity:1,offset:[0,8]})
                   .setLatLng(loc.coords)
                   .setContent(content)
-                  .openOn(map);
+                  .addTo(map);
                 setTimeout(()=>{
                   const cmp=document.getElementById('cmpBtn');
                   if(cmp){
                     cmp.addEventListener('click',()=>{
-                      map.closePopup(choicePopup); choicePopup=null;
+                      map.removeLayer(choicePopup); choicePopup=null;
                       document.getElementById('occLimitMsg').classList.add('hidden');
                       occData.push({name:loc.name,new:newCost,old:oldCost});
                       updateOccUI();
                     });
                   }
                   document.getElementById('repBtn').addEventListener('click',()=>{
-                    map.closePopup(choicePopup); choicePopup=null;
+                    map.removeLayer(choicePopup); choicePopup=null;
                     document.getElementById('occLimitMsg').classList.add('hidden');
                     occData[occData.length-1]={name:loc.name,new:newCost,old:oldCost};
                     updateOccUI();
