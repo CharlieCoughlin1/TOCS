@@ -50,6 +50,8 @@
     /* bar labels */
     .bar-label{line-height:1;text-align:center;}
     .bar-label small{font-size:0.65rem;}
+    /* occupancy bar age labels */
+    .occ-age-label{font-size:0.5rem;white-space:nowrap;}
     /* table extra columns hidden until expanded */
     .extra-col{display:none;}
     #occTables.expanded .extra-col{display:table-cell;}
@@ -343,7 +345,7 @@
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
           labs.className="flex gap-2 mt-1";
-          labs.innerHTML='<span class="text-[0.55rem] w-16 text-center">New build</span><span class="text-[0.55rem] w-16 text-center">20-yr old</span>';
+          labs.innerHTML='<span class="occ-age-label w-16 text-center">New build</span><span class="occ-age-label w-16 text-center">20-yr old</span>';
           col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
           occBars.appendChild(col);
           const table=document.createElement("table");
