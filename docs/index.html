@@ -51,13 +51,14 @@
     .bar-label{line-height:1;text-align:center;}
     .bar-label small{font-size:0.65rem;}
     /* category labels under bars */
-    .bar-cat{font-size:0.55rem;line-height:1;text-align:center;}
+    .bar-cat{font-size:0.65rem;line-height:1;text-align:center;}
     /* table extra columns hidden until expanded */
     .extra-col{display:none;}
     #occTables.expanded .extra-col{display:table-cell;}
     /* tables scroll horizontally when expanded */
     #occTables{overflow-x:auto;}
-    #occTables.expanded table{min-width:40rem;}
+    #occTables.expanded table{min-width:52rem;}
+    #occTables th{white-space:nowrap;}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -344,7 +345,7 @@
           ob.innerHTML=`<div class="bar-label">£${d.old.totalSqft.toFixed(2)}<br><small>psf</small></div>`;
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
-          labs.className="flex gap-2 mt-1";
+          labs.className="flex gap-2 mt-0.5";
           labs.innerHTML='<span class="bar-cat w-16">New build</span><span class="bar-cat w-16">20-yr old</span>';
           col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
           occBars.appendChild(col);
@@ -352,7 +353,7 @@
           table.className="w-full text-sm border-collapse mb-4";
           const headers=['Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
           const keys=['totalSqft','netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalWorkstation'];
-          const headRow='<tr class="bg-gray-100"><th class="border px-2 py-1 text-center">Building age</th>'+headers.map((h,i)=>`<th class="border px-2 py-1 text-center${i>=4?' extra-col':''}">${h}</th>`).join('')+'</tr>';
+          const headRow='<tr class="bg-gray-50"><th class="border px-2 py-1 text-center">Building age</th>'+headers.map((h,i)=>`<th class="border px-2 py-1 text-center${i>=4?' extra-col':''}">${h}</th>`).join('')+'</tr>';
           function buildRow(label,obj){
             return '<tr><td class="border px-2 py-1 text-center">'+label+'</td>'+keys.map((k,i)=>{
               const v=obj[k];
@@ -455,22 +456,23 @@
               const oldCost=cost.old;
               if(choicePopup) map.closePopup(choicePopup);
               if(occData.length>0){
-                const content=`<div class="compare-popup flex gap-2"><button class="btn btn-red" id="cmpBtn">Compare</button><button class="btn btn-gray" id="repBtn">Replace</button></div>`;
+                const content = occData.length>=3
+                  ? `<div class="compare-popup"><button class="btn btn-gray" id="repBtn">Replace</button></div>`
+                  : `<div class="compare-popup flex gap-2"><button class="btn btn-red" id="cmpBtn">Compare</button><button class="btn btn-gray" id="repBtn">Replace</button></div>`;
                 choicePopup=L.popup({closeButton:false,autoClose:true,className:'compare-popup'})
                   .setLatLng(loc.coords)
                   .setContent(content)
                   .openOn(map);
                 setTimeout(()=>{
-                  document.getElementById('cmpBtn').addEventListener('click',()=>{
-                    map.closePopup(choicePopup); choicePopup=null;
-                    if(occData.length>=3){
-                      document.getElementById('occLimitMsg').classList.remove('hidden');
-                      return;
-                    }
-                    document.getElementById('occLimitMsg').classList.add('hidden');
-                    occData.push({name:loc.name,new:newCost,old:oldCost});
-                    updateOccUI();
-                  });
+                  const cmp=document.getElementById('cmpBtn');
+                  if(cmp){
+                    cmp.addEventListener('click',()=>{
+                      map.closePopup(choicePopup); choicePopup=null;
+                      document.getElementById('occLimitMsg').classList.add('hidden');
+                      occData.push({name:loc.name,new:newCost,old:oldCost});
+                      updateOccUI();
+                    });
+                  }
                   document.getElementById('repBtn').addEventListener('click',()=>{
                     map.closePopup(choicePopup); choicePopup=null;
                     document.getElementById('occLimitMsg').classList.add('hidden');
