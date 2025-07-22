@@ -160,8 +160,8 @@
               </svg>
             </button>
             <div id="occFilterMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
-              <label class="flex items-center gap-1"><input type="checkbox" id="filterNew" checked> New build</label>
-              <label class="flex items-center gap-1"><input type="checkbox" id="filterOld" checked> 20‑yr old</label>
+              <label class="flex items-center gap-1 whitespace-nowrap"><input type="checkbox" id="filterNew" checked> New build</label>
+              <label class="flex items-center gap-1 whitespace-nowrap"><input type="checkbox" id="filterOld" checked> 20‑yr old</label>
             </div>
           </div>
         </div>
@@ -171,6 +171,10 @@
         </div>
         <p id="occLimitMsg" class="hidden text-xs text-lsh-red mb-2">You can compare up to 3 locations.</p>
         <div id="occTables"></div>
+        <div id="occDownloadWrap" class="flex justify-end gap-2 mt-2 hidden">
+          <button id="downloadCsv" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">CSV</button>
+          <button id="downloadXls" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Excel</button>
+        </div>
         <p class="text-xs text-gray-500" id="occUnits">All costs are per sq ft.</p>
       </div>
     </section>
@@ -279,6 +283,9 @@
       const occFilterBtn=$('occFilterBtn'); const occFilterMenu=$('occFilterMenu');
       const filterNew=$('filterNew'); const filterOld=$('filterOld');
       const occExpandWrap=$('occExpandWrap'); const occLimitMsg=$('occLimitMsg');
+      const occDownloadWrap=$('occDownloadWrap');
+      const downloadCsv=$('downloadCsv');
+      const downloadXls=$('downloadXls');
       const calcSection=$("calcSection");
       let expanded=false;
       let occData=[];
@@ -337,11 +344,13 @@
         expanded=false;
         occExpand.textContent='Expand';
         occExpandWrap.classList.add('hidden');
+        occDownloadWrap.classList.add('hidden');
          return;
        }
         occPrompt.classList.add("hidden");
         occWrap.classList.remove("hidden");
         occExpandWrap.classList.remove('hidden');
+        occDownloadWrap.classList.remove('hidden');
         const max=Math.max(...occData.flatMap(d=>[d.new.totalSqft,d.old.totalSqft]));
         occData.forEach(d=>{
           const col=document.createElement("div");
@@ -398,6 +407,46 @@
 
       occClear.addEventListener('click',()=>{occData=[]; document.getElementById('occLimitMsg').classList.add('hidden'); updateOccUI();});
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
+
+      function buildCSV(){
+        const headers=['Location','Building age','Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
+        const lines=[headers.join(',')];
+        occData.forEach(d=>{
+          function row(label,obj){
+            return [
+              d.name,
+              label,
+              `\u00A3${obj.totalSqft.toFixed(2)}`,
+              `\u00A3${obj.netEffectiveRent.toFixed(2)}`,
+              `\u00A3${obj.rates.toFixed(2)}`,
+              `\u00A3${obj.annualisedCosts.toFixed(2)}`,
+              `\u00A3${obj.hardFM.toFixed(2)}`,
+              `\u00A3${obj.softFM.toFixed(2)}`,
+              `\u00A3${obj.managementFees.toFixed(2)}`,
+              `\u00A3${Math.round(obj.totalWorkstation).toLocaleString()}`
+            ].join(',');
+          }
+          lines.push(row('New build',d.new));
+          lines.push(row('20-yr old',d.old));
+        });
+        return lines.join('\n');
+      }
+
+      function downloadFile(format){
+        const csv=buildCSV();
+        const mime=format==='excel'? 'application/vnd.ms-excel' : 'text/csv';
+        const ext=format==='excel'? '.xls' : '.csv';
+        const blob=new Blob([csv],{type:mime});
+        const link=document.createElement('a');
+        link.href=URL.createObjectURL(blob);
+        link.download='occupancy-costs'+ext;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
+      }
+
+      downloadCsv.addEventListener('click',()=>downloadFile('csv'));
+      downloadXls.addEventListener('click',()=>downloadFile('excel'));
 
       // auto‑comma budget
       budInp.addEventListener('input',()=>{
@@ -456,7 +505,12 @@
             if(name==='All UK'){
               map.setView(REGIONS[0].center,REGIONS[0].zoom);
             }else if(bounds){
-              map.fitBounds(bounds,{padding:[20,20]});
+              if(bounds.getNorthEast().equals(bounds.getSouthWest())){
+                const r=REGIONS.find(r=>r.name===name);
+                if(r) map.setView(r.center,r.zoom);
+              }else{
+                map.fitBounds(bounds,{padding:[20,20]});
+              }
             }
           });
           regionToggle.appendChild(btn);
@@ -484,7 +538,11 @@
                 if(btn) btn.classList.add('active');
                 const bounds=showMarkers(region.name);
                 if(bounds){
-                  map.fitBounds(bounds,{padding:[20,20]});
+                  if(bounds.getNorthEast().equals(bounds.getSouthWest())){
+                    map.setView(region.center,region.zoom);
+                  }else{
+                    map.fitBounds(bounds,{padding:[20,20]});
+                  }
                 }
               }
               return;
@@ -563,7 +621,11 @@
             if(btn) btn.classList.add('active');
             const bounds=showMarkers(region.name);
             if(bounds){
-              map.fitBounds(bounds,{padding:[20,20]});
+              if(bounds.getNorthEast().equals(bounds.getSouthWest())){
+                map.setView(region.center,region.zoom);
+              }else{
+                map.fitBounds(bounds,{padding:[20,20]});
+              }
             }
           }
           resetMarkers();
