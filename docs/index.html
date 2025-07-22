@@ -329,12 +329,12 @@
         const max=Math.max(...occData.flatMap(d=>[d.new.totalSqft,d.old.totalSqft]));
         occData.forEach(d=>{
           const col=document.createElement("div");
-          col.className="flex-1 flex flex-col items-center p-2 border rounded h-56";
+          col.className="flex-1 flex flex-col items-center justify-between p-2 border rounded h-56";
           const label=document.createElement("div");
           label.className="text-sm font-din-bold mb-1 text-center h-10 flex items-center justify-center";
           label.textContent=d.name;
           const bars=document.createElement("div");
-          bars.className="flex items-end gap-2";
+          bars.className="flex-1 flex items-end gap-2";
           const nb=document.createElement("div");
           nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-16";
           nb.style.height="0px";
@@ -490,13 +490,26 @@
           markers[loc.name]=marker;
         });
 
+        let boundary=null;
         function showMarkers(region){
+          if(boundary){ map.removeLayer(boundary); boundary=null; }
           Object.values(markers).forEach(m=>{ if(map.hasLayer(m)) m.remove(); });
+          const coords=[];
           LOCS.forEach(loc=>{
-            if(loc.main || (region!=='All UK' && loc.region===region)){
+            if(region==='All UK'){
+              if(loc.main){ markers[loc.name].addTo(map); coords.push(loc.coords); }
+            }else if(loc.region===region){
               markers[loc.name].addTo(map);
+              coords.push(loc.coords);
             }
           });
+          if(region!=='All UK' && coords.length){
+            const lats=coords.map(c=>c[0]); const lngs=coords.map(c=>c[1]);
+            const south=Math.min(...lats); const north=Math.max(...lats);
+            const west=Math.min(...lngs); const east=Math.max(...lngs);
+            boundary=L.rectangle([[south,west],[north,east]],{color:'#cc2030',weight:1,fill:false});
+            boundary.addTo(map);
+          }
           resetMarkers();
         }
 
