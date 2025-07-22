@@ -260,7 +260,7 @@
       const REGIONS=[
         {name:'All UK',center:[54,-2.5],zoom:4.5},
         {name:'London',center:[51.5072,-0.1276],zoom:11},
-        {name:'South East',center:[51.3,-0.7],zoom:8},
+        {name:'South East',center:[51.55,-0.7],zoom:8},
         {name:'South West',center:[51,-3],zoom:7},
         {name:'East Midlands',center:[52.9,-1.2],zoom:7},
         {name:'West Midlands',center:[52.5,-2],zoom:7},
@@ -444,7 +444,7 @@
             `£${obj.hardFM.toFixed(2)}`,
             `£${obj.softFM.toFixed(2)}`,
             `£${obj.managementFees.toFixed(2)}`,
-            `£${Math.round(obj.totalWorkstation).toLocaleString()}`
+            `"£${Math.round(obj.totalWorkstation).toLocaleString()}"`
           ].join(',');
         }
         occData.forEach(d=>{
@@ -521,6 +521,12 @@
       if(typeof L!=='undefined'){
         const map=L.map('map',{zoomControl:false,attributionControl:false}).setView(REGIONS[0].center,REGIONS[0].zoom);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',attribution:'&copy; OpenStreetMap & CartoDB'}).addTo(map);
+
+        function tooltipDir(latlng){
+          const p=map.latLngToContainerPoint(latlng);
+          const size=map.getSize();
+          return (p.y<40||size.y-p.y<40)?'right':'top';
+        }
         const regionToggle=$('regionToggle');
         REGIONS.forEach(({name,center,zoom},i)=>{
           const btn=document.createElement('button');
@@ -547,7 +553,12 @@
           }else{
             marker.bindTooltip(`<div class="tooltip-name font-din-bold text-sm text-center">${loc.name}</div>`,{direction:'top',offset:[0,-8]});
           }
-          marker.on('mouseover',function(){this.openTooltip();});
+          marker.on('mouseover',function(){
+            const tt=this.getTooltip();
+            tt.options.direction=tooltipDir(this.getLatLng());
+            tt.update();
+            this.openTooltip();
+          });
           marker.on('mouseout',function(){this.closeTooltip();});
           marker.on('click',()=>{
             if(loc.regionMarker){
@@ -564,7 +575,12 @@
             resetMarkers();
             marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
             locSel.value=loc.name;
-            marker.openTooltip();
+            {
+              const tt=marker.getTooltip();
+              tt.options.direction=tooltipDir(marker.getLatLng());
+              tt.update();
+              marker.openTooltip();
+            }
             if(!resWrap.classList.contains('hidden')) performCalc();
             if(occTab.classList.contains('active')){
               const cost=COSTS[loc.name]||{new:null,old:null};
@@ -640,6 +656,9 @@
           const marker=markers[selected.name];
           if(marker){
             marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
+            const tt=marker.getTooltip();
+            tt.options.direction=tooltipDir(marker.getLatLng());
+            tt.update();
             marker.openTooltip();
           }
           if(!resWrap.classList.contains('hidden')) performCalc();
