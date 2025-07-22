@@ -53,10 +53,9 @@
     /* table extra columns hidden until expanded */
     .extra-col{display:none;}
     #occTables.expanded .extra-col{display:table-cell;}
-    /* expand section to the left when tables expanded */
-    @media (min-width:768px){
-      #calcSection.expanded{position:relative;width:calc(100% + 20rem);left:-20rem;}
-    }
+    /* tables scroll horizontally when expanded */
+    #occTables{overflow-x:auto;}
+    #occTables.expanded table{min-width:40rem;}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -315,7 +314,6 @@
        if(occData.length===0){
          occWrap.classList.add("hidden");
          occPrompt.classList.remove("hidden");
-        calcSection.classList.remove('expanded');
         occTables.classList.remove('expanded');
         expanded=false;
         occExpand.textContent='Expand';
@@ -345,7 +343,7 @@
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
           labs.className="flex gap-2 mt-1";
-          labs.innerHTML='<span class="text-[0.45rem] w-16 text-center">New build</span><span class="text-[0.45rem] w-16 text-center">20yr-old</span>';
+          labs.innerHTML='<span class="text-[0.55rem] w-16 text-center">New build</span><span class="text-[0.55rem] w-16 text-center">20-yr old</span>';
           col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
           occBars.appendChild(col);
           const table=document.createElement("table");
@@ -364,7 +362,6 @@
           nb.style.height=(d.new.totalSqft/max*120)+"px";
           ob.style.height=(d.old.totalSqft/max*120)+"px";
         });
-        calcSection.classList.toggle('expanded', expanded);
         occTables.classList.toggle('expanded', expanded);
         occExpand.textContent = expanded ? 'Collapse' : 'Expand';
       }
