@@ -382,7 +382,14 @@
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
           labs.className="flex gap-2 mt-0.5";
-          labs.innerHTML='<span class="bar-cat w-16">New build</span><span class="bar-cat w-16">20-yr old</span>';
+          const labNew=document.createElement('span');
+          labNew.className='bar-cat w-16';
+          labNew.textContent='New build';
+          const labOld=document.createElement('span');
+          labOld.className='bar-cat w-16';
+          labOld.textContent='20-yr old';
+          labs.appendChild(labNew);
+          labs.appendChild(labOld);
           col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
           occBars.appendChild(col);
           const table=document.createElement("table");
@@ -396,11 +403,16 @@
               return `<td class="border px-2 py-1 text-center${i>=4?' extra-col':''}">£${k==='totalWorkstation'?Math.round(v).toLocaleString():v.toFixed(2)}</td>`;
             }).join('')+'</tr>';
           }
-          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1 text-center" colspan="${keys.length+1}">${d.name}</th></tr>${headRow}</thead><tbody>${buildRow('New build',d.new)}${buildRow('20‑yr old',d.old)}</tbody>`;
+          let rows='';
+          if(showNew) rows+=buildRow('New build',d.new);
+          if(showOld) rows+=buildRow('20‑yr old',d.old);
+          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1 text-center" colspan="${keys.length+1}">${d.name}</th></tr>${headRow}</thead><tbody>${rows}</tbody>`;
           occTables.appendChild(table);
           function applyHeights(){
             nb.style.opacity=showNew?"1":"0";
             ob.style.opacity=showOld?"1":"0";
+            labNew.style.opacity=showNew?"1":"0";
+            labOld.style.opacity=showOld?"1":"0";
             nb.style.height=showNew?(d.new.totalSqft/max*120)+"px":"0px";
             ob.style.height=showOld?(d.old.totalSqft/max*120)+"px":"0px";
           }
@@ -422,32 +434,31 @@
       function buildCSV(){
         const headers=['Building age','Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
         const lines=[];
-        const q=v=>`"${String(v).replace(/"/g,'""')}"`;
+        function row(label,obj){
+          return [
+            label,
+            `£${obj.totalSqft.toFixed(2)}`,
+            `£${obj.netEffectiveRent.toFixed(2)}`,
+            `£${obj.rates.toFixed(2)}`,
+            `£${obj.annualisedCosts.toFixed(2)}`,
+            `£${obj.hardFM.toFixed(2)}`,
+            `£${obj.softFM.toFixed(2)}`,
+            `£${obj.managementFees.toFixed(2)}`,
+            `£${Math.round(obj.totalWorkstation).toLocaleString()}`
+          ].join(',');
+        }
         occData.forEach(d=>{
-          function row(label,obj){
-            return [
-              q(label),
-              q(`\u00A3${obj.totalSqft.toFixed(2)}`),
-              q(`\u00A3${obj.netEffectiveRent.toFixed(2)}`),
-              q(`\u00A3${obj.rates.toFixed(2)}`),
-              q(`\u00A3${obj.annualisedCosts.toFixed(2)}`),
-              q(`\u00A3${obj.hardFM.toFixed(2)}`),
-              q(`\u00A3${obj.softFM.toFixed(2)}`),
-              q(`\u00A3${obj.managementFees.toFixed(2)}`),
-              q(`\u00A3${Math.round(obj.totalWorkstation).toLocaleString()}`)
-            ].join(',');
-          }
-          lines.push(q(d.name));
-          lines.push(headers.map(h=>q(h)).join(','));
-          lines.push(row('New build',d.new));
-          lines.push(row('20-yr old',d.old));
+          lines.push(d.name);
+          lines.push(headers.join(','));
+          if(showNew) lines.push(row('New build',d.new));
+          if(showOld) lines.push(row('20-yr old',d.old));
           lines.push('');
         });
         return lines.join('\r\n');
       }
 
       function downloadFile(format){
-        const csv=buildCSV();
+        const csv='\uFEFF'+buildCSV();
         const mime=format==='excel'? 'application/vnd.ms-excel' : 'text/csv';
         const ext=format==='excel'? '.xls' : '.csv';
         const blob=new Blob([csv],{type:mime});
@@ -518,17 +529,9 @@
           btn.addEventListener('click',()=>{
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
             btn.classList.add('active');
-            const bounds=showMarkers(name);
-            if(name==='All UK'){
-              map.setView(REGIONS[0].center,REGIONS[0].zoom);
-            }else if(bounds){
-              if(bounds.getNorthEast().equals(bounds.getSouthWest())){
-                const r=REGIONS.find(r=>r.name===name);
-                if(r) map.setView(r.center,r.zoom);
-              }else{
-                map.fitBounds(bounds,{padding:[20,20]});
-              }
-            }
+            showMarkers(name);
+            const r=REGIONS.find(r=>r.name===name);
+            if(r) map.setView(r.center,r.zoom);
           });
           regionToggle.appendChild(btn);
         });
@@ -553,14 +556,8 @@
                 regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
                 const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
                 if(btn) btn.classList.add('active');
-                const bounds=showMarkers(region.name);
-                if(bounds){
-                  if(bounds.getNorthEast().equals(bounds.getSouthWest())){
-                    map.setView(region.center,region.zoom);
-                  }else{
-                    map.fitBounds(bounds,{padding:[20,20]});
-                  }
-                }
+                showMarkers(region.name);
+                map.setView(region.center,region.zoom);
               }
               return;
             }
@@ -636,14 +633,8 @@
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
             const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
             if(btn) btn.classList.add('active');
-            const bounds=showMarkers(region.name);
-            if(bounds){
-              if(bounds.getNorthEast().equals(bounds.getSouthWest())){
-                map.setView(region.center,region.zoom);
-              }else{
-                map.fitBounds(bounds,{padding:[20,20]});
-              }
-            }
+            showMarkers(region.name);
+            map.setView(region.center,region.zoom);
           }
           resetMarkers();
           const marker=markers[selected.name];
