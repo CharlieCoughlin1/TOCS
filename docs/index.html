@@ -426,8 +426,12 @@
           btn.addEventListener('click',()=>{
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
             btn.classList.add('active');
-            map.setView(center,zoom);
-            showMarkers(name);
+            const bounds=showMarkers(name);
+            if(name==='All UK'){
+              map.setView(REGIONS[0].center,REGIONS[0].zoom);
+            }else if(bounds){
+              map.fitBounds(bounds,{padding:[20,20]});
+            }
           });
           regionToggle.appendChild(btn);
         });
@@ -452,9 +456,10 @@
                 regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
                 const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
                 if(btn) btn.classList.add('active');
-                map.setView(region.center,region.zoom);
-                showMarkers(region.name);
-                alert('Please select a central London location');
+                const bounds=showMarkers(region.name);
+                if(bounds){
+                  map.fitBounds(bounds,{padding:[20,20]});
+                }
               }
               return;
             }
@@ -503,9 +508,7 @@
           markers[loc.name]=marker;
         });
 
-        let boundary=null;
         function showMarkers(region){
-          if(boundary){ map.removeLayer(boundary); boundary=null; }
           Object.values(markers).forEach(m=>{ if(map.hasLayer(m)) m.remove(); });
           const coords=[];
           LOCS.forEach(loc=>{
@@ -516,14 +519,8 @@
               coords.push(loc.coords);
             }
           });
-          if(region!=='All UK' && coords.length){
-            const lats=coords.map(c=>c[0]); const lngs=coords.map(c=>c[1]);
-            const south=Math.min(...lats); const north=Math.max(...lats);
-            const west=Math.min(...lngs); const east=Math.max(...lngs);
-            boundary=L.rectangle([[south,west],[north,east]],{color:'#cc2030',weight:1,fill:false});
-            boundary.addTo(map);
-          }
           resetMarkers();
+          return coords.length? L.latLngBounds(coords): null;
         }
 
         showMarkers('All UK');
@@ -537,8 +534,10 @@
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
             const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
             if(btn) btn.classList.add('active');
-            map.setView(region.center,region.zoom);
-            showMarkers(region.name);
+            const bounds=showMarkers(region.name);
+            if(bounds){
+              map.fitBounds(bounds,{padding:[20,20]});
+            }
           }
           resetMarkers();
           const marker=markers[selected.name];
