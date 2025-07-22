@@ -242,28 +242,6 @@ const COSTS =
       "totalWorkstation": 7409.0
     }
   },
-  "Croydon": {
-    "new": {
-      "netEffectiveRent": 32.81,
-      "rates": 14.8,
-      "annualisedCosts": 10.42,
-      "hardFM": 20.82,
-      "softFM": 10.26,
-      "managementFees": 2.15,
-      "totalSqft": 91.26,
-      "totalWorkstation": 9126.0
-    },
-    "old": {
-      "netEffectiveRent": 25.81,
-      "rates": 10.00192742,
-      "annualisedCosts": 10.4212,
-      "hardFM": 25.08435853,
-      "softFM": 10.260016,
-      "managementFees": 1.91,
-      "totalSqft": 83.48750195,
-      "totalWorkstation": 8348.0
-    }
-  },
   "Edinburgh": {
     "new": {
       "netEffectiveRent": 41.44,
