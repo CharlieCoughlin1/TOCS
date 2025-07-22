@@ -42,8 +42,9 @@
     }
     .tab-btn{padding:0.5rem 1rem;border-bottom:2px solid transparent;}
     .tab-btn.active{border-color:var(--lsh-red);color:var(--lsh-red);font-weight:700;}
-    .occ-bar-new{background:var(--lsh-red);transition:height .3s ease;}
-    .occ-bar-old{background:#6b7280;transition:height .3s ease;}
+    .occ-bar-new{background:var(--lsh-red);transition:height .3s ease,opacity .3s ease;}
+    .occ-bar-old{background:#6b7280;transition:height .3s ease,opacity .3s ease;}
+    .tooltip-name{background:var(--lsh-red);color:#fff;border-radius:0.25rem;padding:0.125rem 0.25rem;}
     .compare-popup .btn{padding:0.25rem 0.5rem;font-size:0.75rem;border-radius:0.25rem;}
     .compare-popup .btn-red{background:var(--lsh-red);color:#fff;}
     .compare-popup .btn-gray{background:#e5e7eb;color:#111827;}
@@ -150,8 +151,19 @@
 
       <div id="occPrompt" class="mb-4 text-gray-500">Please select a location on the map to get started</div>
       <div id="occWrapper" class="hidden">
-        <div class="flex justify-between items-center mb-4">
+        <div class="flex justify-between items-center mb-4 relative">
           <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
+          <div class="relative">
+            <button id="occFilterBtn" class="p-1" aria-label="Filter">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-.553.894l-4 2A1 1 0 019 21v-8.586L3.293 6.707A1 1 0 013 6V4z" />
+              </svg>
+            </button>
+            <div id="occFilterMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
+              <label class="flex items-center gap-1"><input type="checkbox" id="filterNew" checked> New build</label>
+              <label class="flex items-center gap-1"><input type="checkbox" id="filterOld" checked> 20‑yr old</label>
+            </div>
+          </div>
         </div>
         <div id="occBars" class="flex gap-4 items-end mb-4 w-full"></div>
         <div id="occExpandWrap" class="flex justify-end mb-2">
@@ -216,7 +228,7 @@
         {name:'Portsmouth',coords:[50.8198,-1.088],region:'South East'},
         {name:'Preston',coords:[53.7632,-2.7031],region:'North West'},
         {name:'Richmond',coords:[51.4613,-0.303],region:'South East'},
-        {name:'Sheffield',coords:[53.3811,-1.4701],region:'Yorkshire & Humber'},
+        {name:'Sheffield',coords:[53.3811,-1.4701],region:'Yorkshire & Humber',main:true},
         {name:'Slough',coords:[51.5105,-0.5954],region:'South East'},
         {name:'Southampton',coords:[50.9097,-1.4044],region:'South East'},
         {name:'St Albans',coords:[51.7527,-0.3394],region:'South East'},
@@ -264,10 +276,13 @@
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt"); const occExpand=$("occExpand");
+      const occFilterBtn=$('occFilterBtn'); const occFilterMenu=$('occFilterMenu');
+      const filterNew=$('filterNew'); const filterOld=$('filterOld');
       const occExpandWrap=$('occExpandWrap'); const occLimitMsg=$('occLimitMsg');
       const calcSection=$("calcSection");
       let expanded=false;
       let occData=[];
+      let showNew=true, showOld=true;
       // populate locations dropdown
       LOCS.forEach(loc=>{
         if(loc.regionMarker) return;
@@ -363,12 +378,23 @@
           }
           table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1 text-center" colspan="${keys.length+1}">${d.name}</th></tr>${headRow}</thead><tbody>${buildRow('New build',d.new)}${buildRow('20‑yr old',d.old)}</tbody>`;
           occTables.appendChild(table);
-          nb.style.height=(d.new.totalSqft/max*120)+"px";
-          ob.style.height=(d.old.totalSqft/max*120)+"px";
+          function applyHeights(){
+            nb.style.opacity=showNew?"1":"0";
+            ob.style.opacity=showOld?"1":"0";
+            nb.style.height=showNew?(d.new.totalSqft/max*120)+"px":"0px";
+            ob.style.height=showOld?(d.old.totalSqft/max*120)+"px":"0px";
+          }
+          setTimeout(applyHeights,20);
         });
         occTables.classList.toggle('expanded', expanded);
         occExpand.textContent = expanded ? 'Collapse' : 'Expand';
       }
+
+      occFilterBtn.addEventListener('click',()=>{
+        occFilterMenu.classList.toggle('hidden');
+      });
+      filterNew.addEventListener('change',()=>{showNew=filterNew.checked; updateOccUI();});
+      filterOld.addEventListener('change',()=>{showOld=filterOld.checked; updateOccUI();});
 
       occClear.addEventListener('click',()=>{occData=[]; document.getElementById('occLimitMsg').classList.add('hidden'); updateOccUI();});
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
@@ -443,9 +469,9 @@
           const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9});
           const cost=COSTS[loc.name];
           if(cost){
-            marker.bindTooltip(`<div class="text-xs"><div class="font-din-bold text-sm">${loc.name}</div><div class="font-semibold">New build: <span class="font-light">£${cost.new.totalSqft.toFixed(2)} psf</span></div><div class="font-semibold">20‑year old: <span class="font-light">£${cost.old.totalSqft.toFixed(2)} psf</span></div></div>`,{direction:'top',offset:[0,-8]});
+            marker.bindTooltip(`<div class="text-xs"><div class="tooltip-name font-din-bold text-sm mb-1 text-center">${loc.name}</div><div class="font-semibold">New build: <span class="font-light">£${cost.new.totalSqft.toFixed(2)} psf</span></div><div class="font-semibold">20‑yr old: <span class="font-light">£${cost.old.totalSqft.toFixed(2)} psf</span></div></div>`,{direction:'top',offset:[0,-8]});
           }else{
-            marker.bindTooltip(`<strong>${loc.name}</strong>`,{direction:'top',offset:[0,-8]});
+            marker.bindTooltip(`<div class="tooltip-name font-din-bold text-sm text-center">${loc.name}</div>`,{direction:'top',offset:[0,-8]});
           }
           marker.on('mouseover',function(){this.openTooltip();});
           marker.on('mouseout',function(){this.closeTooltip();});
@@ -515,6 +541,7 @@
             if(region==='All UK'){
               if(loc.main){ markers[loc.name].addTo(map); coords.push(loc.coords); }
             }else if(loc.region===region){
+              if(loc.name==='London') return;
               markers[loc.name].addTo(map);
               coords.push(loc.coords);
             }
