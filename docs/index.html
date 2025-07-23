@@ -366,7 +366,10 @@
         occWrap.classList.remove("hidden");
         occExpandWrap.classList.remove('hidden');
         occDownloadWrap.classList.remove('hidden');
-        const max=Math.max(...occData.flatMap(d=>[d.new.totalSqft,d.old.totalSqft]));
+        const max=Math.max(...occData.flatMap(d=>[
+          d.new?.totalSqft||0,
+          d.old?.totalSqft||0
+        ]));
         occData.forEach(d=>{
           const col=document.createElement("div");
           col.className="bar-col flex flex-col items-center justify-between p-2 border rounded h-56";
@@ -378,11 +381,11 @@
           const nb=document.createElement("div");
           nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-16";
           nb.style.height="0px";
-          nb.innerHTML=`<div class="bar-label">£${d.new.totalSqft.toFixed(2)}<br><small>psf</small></div>`;
+          nb.innerHTML=`<div class="bar-label">${d.new?`£${d.new.totalSqft.toFixed(2)}`:'N/A'}<br><small>psf</small></div>`;
           const ob=document.createElement("div");
           ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-16";
           ob.style.height="0px";
-          ob.innerHTML=`<div class="bar-label">£${d.old.totalSqft.toFixed(2)}<br><small>psf</small></div>`;
+          ob.innerHTML=`<div class="bar-label">${d.old?`£${d.old.totalSqft.toFixed(2)}`:'N/A'}<br><small>psf</small></div>`;
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
           labs.className="flex gap-2 mt-0.5";
@@ -402,6 +405,7 @@
           const keys=['totalSqft','netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalWorkstation'];
           const headRow='<tr class="bg-gray-50"><th class="border px-2 py-1 text-center">Building age</th>'+headers.map((h,i)=>`<th class="border px-2 py-1 text-center${i>=4?' extra-col':''}">${h}</th>`).join('')+'</tr>';
           function buildRow(label,obj){
+            if(!obj) return '';
             return '<tr><td class="border px-2 py-1 text-center">'+label+'</td>'+keys.map((k,i)=>{
               const v=obj[k];
               return `<td class="border px-2 py-1 text-center${i>=4?' extra-col':''}">£${k==='totalWorkstation'?Math.round(v).toLocaleString():v.toFixed(2)}</td>`;
@@ -417,8 +421,8 @@
             ob.style.opacity=showOld?"1":"0";
             labNew.style.opacity=showNew?"1":"0";
             labOld.style.opacity=showOld?"1":"0";
-            nb.style.height=showNew?(d.new.totalSqft/max*120)+"px":"0px";
-            ob.style.height=showOld?(d.old.totalSqft/max*120)+"px":"0px";
+            nb.style.height=showNew&&d.new?(d.new.totalSqft/max*120)+"px":"0px";
+            ob.style.height=showOld&&d.old?(d.old.totalSqft/max*120)+"px":"0px";
           }
           setTimeout(applyHeights,20);
         });
@@ -574,7 +578,11 @@
           const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9});
           const cost=COSTS[loc.name];
           if(cost){
-            marker.bindTooltip(`<div class="text-xs"><div class="tooltip-name font-din-bold text-sm mb-1 text-center">${loc.name}</div><div class="font-semibold">New build: <span class="font-light">£${cost.new.totalSqft.toFixed(2)} psf</span></div><div class="font-semibold">20‑yr old: <span class="font-light">£${cost.old.totalSqft.toFixed(2)} psf</span></div></div>`,{direction:'top',offset:[0,-8]});
+            let tip = `<div class="text-xs"><div class="tooltip-name font-din-bold text-sm mb-1 text-center">${loc.name}</div>`;
+            if(cost.new) tip += `<div class="font-semibold">New build: <span class="font-light">£${cost.new.totalSqft.toFixed(2)} psf</span></div>`;
+            if(cost.old) tip += `<div class="font-semibold">20‑yr old: <span class="font-light">£${cost.old.totalSqft.toFixed(2)} psf</span></div>`;
+            tip += '</div>';
+            marker.bindTooltip(tip,{direction:'top',offset:[0,-8]});
           }else{
             marker.bindTooltip(`<div class="tooltip-name font-din-bold text-sm text-center">${loc.name}</div>`,{direction:'top',offset:[0,-8]});
           }
@@ -608,9 +616,9 @@
             }
             if(!resWrap.classList.contains('hidden')) performCalc();
             if(occTab.classList.contains('active')){
-              const cost=COSTS[loc.name]||{new:null,old:null};
-              const newCost=cost.new;
-              const oldCost=cost.old;
+              const cost=COSTS[loc.name]||{};
+              const newCost=cost.new||null;
+              const oldCost=cost.old||null;
               if(choicePopup) map.removeLayer(choicePopup);
               if(occData.length>0){
                 const content = occData.length>=3
