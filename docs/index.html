@@ -22,6 +22,9 @@
     .region-btn{ background:#e5e7eb; padding:0.25rem 0.5rem; border-radius:0.25rem; font-size:0.875rem; cursor:pointer; }
     .region-btn:hover{ background:#d1d5db; }
     .region-btn.active{ background:var(--lsh-red); color:#fff; }
+    .select-btn{ background:#e5e7eb; padding:0.25rem 0.5rem; border-radius:0.25rem; font-size:0.875rem; cursor:pointer; }
+    .select-btn:hover{ background:#d1d5db; }
+    .select-btn.active{ background:var(--lsh-red); color:#fff; }
     .error{ border-color:#dc2626!important; }
     .err-msg{ display:none; color:#dc2626; font-size:0.75rem; }
     /* result label (smaller, lighter) */
@@ -93,12 +96,11 @@
       <div id="calcWrapper">
 
 
-        <label for="modeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
-        <select id="modeSelect" class="w-full border rounded p-2 mb-1 bg-white">
-          <option value="" disabled selected>Please select</option>
-          <option value="people">Number of people → cost</option>
-          <option value="budget">Budget → capacity</option>
-        </select>
+        <label class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
+        <div id="modeBtns" class="flex gap-2 mb-1">
+          <button class="select-btn" data-value="people">Number of people → cost</button>
+          <button class="select-btn" data-value="budget">Budget → capacity</button>
+        </div>
         <p id="modeError" class="err-msg mb-3">Please select an option</p>
 
         <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
@@ -107,12 +109,11 @@
         </select>
         <p id="locationError" class="err-msg mb-3">Please select a location</p>
 
-        <label for="ageSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Building age</label>
-        <select id="ageSelect" class="w-full border rounded p-2 mb-1 bg-white">
-          <option value="" disabled selected>Please select</option>
-          <option value="New">New build</option>
-          <option value="20">20‑year old</option>
-        </select>
+        <label class="block text-lg font-din-bold text-gray-700 mb-1">Building age</label>
+        <div id="ageBtns" class="flex gap-2 mb-1">
+          <button class="select-btn" data-value="New">New build</button>
+          <button class="select-btn" data-value="20">20‑year old</button>
+        </div>
         <p id="ageError" class="err-msg mb-3">Please select building age</p>
 
         <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
@@ -284,7 +285,12 @@
         el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
       }
       // -----------------------------
-      const modeSel=$('modeSelect'); const locSel=$('locationSelect'); const ageSel=$('ageSelect'); const typeSel=$('typeSelect');
+      const locSel=$('locationSelect'); const typeSel=$('typeSelect');
+      const modeGroup=$('modeBtns'); const ageGroup=$('ageBtns');
+      const modeButtons=modeGroup.querySelectorAll('button');
+      const ageButtons=ageGroup.querySelectorAll('button');
+      let modeValue='';
+      let ageValue='';
       const pplInp=$('peopleInput'); const budInp=$('budgetInput');
       const pplGrp=$('peopleGroup'); const budGrp=$('budgetGroup');
       const calcBtn=$('calcBtn');
@@ -322,22 +328,42 @@
         locSel.appendChild(opt);
       });
 
-      function clearErr(){Object.values(errs).forEach(e=>e.style.display='none'); [modeSel,locSel,ageSel,typeSel,pplInp,budInp].forEach(el=>el.classList.remove('error'));}
+      modeButtons.forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          modeValue=btn.dataset.value;
+          modeButtons.forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+          toggleInputs();
+        });
+      });
+      ageButtons.forEach(btn=>{
+        btn.addEventListener('click',()=>{
+          ageValue=btn.dataset.value;
+          ageButtons.forEach(b=>b.classList.remove('active'));
+          btn.classList.add('active');
+        });
+      });
+
+      function clearErr(){
+        Object.values(errs).forEach(e=>e.style.display='none');
+        [locSel,typeSel,pplInp,budInp].forEach(el=>el.classList.remove('error'));
+        modeGroup.classList.remove('error');
+        ageGroup.classList.remove('error');
+      }
       function costPerSqm(){
         const data=COSTS[locSel.value];
-        const age=AGE_MAP[ageSel.value];
+        const age=AGE_MAP[ageValue];
         if(!data||!age||!data[age]) return 0;
         return data[age].totalSqft*SQM_TO_SQFT;
       }
       function toggleInputs(){
-        pplGrp.classList.toggle('hidden',modeSel.value!=='people');
-        budGrp.classList.toggle('hidden',modeSel.value!=='budget');
+        pplGrp.classList.toggle('hidden',modeValue!=='people');
+        budGrp.classList.toggle('hidden',modeValue!=='budget');
         resWrap.classList.add('hidden');
-        if(modeSel.value==='people') calcBtn.textContent='Calculate cost';
-        else if(modeSel.value==='budget') calcBtn.textContent='Calculate capacity';
+        if(modeValue==='people') calcBtn.textContent='Calculate cost';
+        else if(modeValue==='budget') calcBtn.textContent='Calculate capacity';
         else calcBtn.textContent='Calculate';
       }
-      modeSel.addEventListener('change',toggleInputs);
 
       function switchTab(tab){
         if(tab==='calc'){
@@ -509,13 +535,13 @@
 
       function performCalc(){
         clearErr(); let bad=false;
-        if(!modeSel.value){errs.mode.style.display='block'; modeSel.classList.add('error'); bad=true; }
+        if(!modeValue){errs.mode.style.display='block'; modeGroup.classList.add('error'); bad=true; }
         if(!locSel.value){errs.location.style.display='block'; locSel.classList.add('error'); bad=true; }
-        if(!ageSel.value){errs.age.style.display='block'; ageSel.classList.add('error'); bad=true; }
+        if(!ageValue){errs.age.style.display='block'; ageGroup.classList.add('error'); bad=true; }
         if(!typeSel.value){errs.type.style.display='block'; typeSel.classList.add('error'); bad=true; }
 
         const cpsqm=costPerSqm();
-        if(modeSel.value==='people'){
+        if(modeValue==='people'){
           const n=parseInt(pplInp.value,10);
           if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
           if(bad) return;
@@ -524,7 +550,7 @@
           renderResult(areaR,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
           renderResult(costR,'Annual cost',`£${Math.round(sqm*cpsqm).toLocaleString()}`);
           pplR.innerHTML='';
-        }else if(modeSel.value==='budget'){
+        }else if(modeValue==='budget'){
           const budget=parseInt(budInp.value.replace(/,/g,''),10);
           if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
           if(bad) return;
