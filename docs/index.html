@@ -197,7 +197,6 @@
             </button>
             <div id="calcDownloadMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
               <button id="calcDownloadCsv" class="block w-full text-left">CSV</button>
-              <button id="calcDownloadXls" class="block w-full text-left">Excel</button>
             </div>
           </div>
         </div>
@@ -236,7 +235,6 @@
             </button>
             <div id="downloadMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
               <button id="downloadCsv" class="block w-full text-left">CSV</button>
-              <button id="downloadXls" class="block w-full text-left">Excel</button>
             </div>
           </div>
         </div>
@@ -373,12 +371,10 @@
       const downloadBtn=$('downloadBtn');
       const downloadMenu=$('downloadMenu');
       const downloadCsv=$('downloadCsv');
-      const downloadXls=$('downloadXls');
       const calcDownloadWrap=$('calcDownloadWrap');
       const calcDownloadBtn=$('calcDownloadBtn');
       const calcDownloadMenu=$('calcDownloadMenu');
       const calcDownloadCsv=$('calcDownloadCsv');
-      const calcDownloadXls=$('calcDownloadXls');
       const calcSection=$("calcSection");
       let expanded=false;
       let occData=[];
@@ -596,14 +592,12 @@
         return lines.join('\r\n');
       }
 
-      function downloadFile(format){
+      function downloadFile(){
         const csv='\uFEFF'+buildCSV();
-        const mime=format==='excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
-        const ext=format==='excel' ? '.xlsx' : '.csv';
-        const blob=new Blob([csv],{type:mime});
+        const blob=new Blob([csv],{type:'text/csv'});
         const link=document.createElement('a');
         link.href=URL.createObjectURL(blob);
-        link.download='occupancy-costs'+ext;
+        link.download='occupancy-costs.csv';
         document.body.appendChild(link);
         link.click();
         setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
@@ -611,36 +605,45 @@
 
       function buildCalcCSV(){
         const usePeople=modeValue==='people';
-        const header=usePeople?
-          ['Location','Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)']:
-          ['Location','Area achievable (m\u00B2)','Area achievable (ft\u00B2)','People accommodated'];
+        const metricHeaders=usePeople?
+          ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)']:
+          ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','People accommodated'];
+        const header=['Location','Building age',usePeople?'People':'Budget (\u00A3)','Workstation type',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const typeLabel=typeSel.value || '';
-        const inputLine=usePeople?
-          `People,${pplInp.value}`:
-          `Budget,${budInp.value}`;
-        const lines=[
-          `Building age,"${ageLabel}"`,
-          `Workstation type,"${typeLabel}"`,
-          inputLine,
-          '',
-          header.join(',')
-        ];
+        const lines=[header.join(',')];
         const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
         const n=usePeople?parseInt(pplInp.value,10):0;
         const budget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
+        function q(str){return `"${String(str).replace(/"/g,'""')}"`;}
         function addRow(loc){
           const cpsqm=costPerSqm(loc);
           if(usePeople){
             const sqm=n*sqmPerPerson;
             const sqft=sqm*SQM_TO_SQFT;
             const cost=Math.round(sqm*cpsqm);
-            lines.push([`"${loc}"`,sqm.toFixed(2),sqft.toFixed(0),cost].join(','));
+            lines.push([
+              q(loc),
+              ageLabel,
+              n,
+              q(typeLabel),
+              sqm.toFixed(2),
+              sqft.toFixed(0),
+              cost
+            ].join(','));
           }else{
             const sqm=budget/cpsqm;
             const sqft=sqm*SQM_TO_SQFT;
             const ppl=Math.round(sqm/sqmPerPerson);
-            lines.push([`"${loc}"`,Math.round(sqm),Math.round(sqft),ppl].join(','));
+            lines.push([
+              q(loc),
+              ageLabel,
+              q(budInp.value),
+              q(typeLabel),
+              Math.round(sqm),
+              Math.round(sqft),
+              ppl
+            ].join(','));
           }
         }
         addRow(locSel.value);
@@ -648,14 +651,12 @@
         return lines.join('\r\n');
       }
 
-      function downloadCalcFile(format){
+      function downloadCalcFile(){
         const csv='\uFEFF'+buildCalcCSV();
-        const mime=format==='excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
-        const ext=format==='excel' ? '.xlsx' : '.csv';
-        const blob=new Blob([csv],{type:mime});
+        const blob=new Blob([csv],{type:'text/csv'});
         const link=document.createElement('a');
         link.href=URL.createObjectURL(blob);
-        link.download='space-calculator'+ext;
+        link.download='space-calculator.csv';
         document.body.appendChild(link);
         link.click();
         setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
@@ -666,13 +667,11 @@
         downloadMenu.classList.toggle('hidden');
       });
       downloadMenu.addEventListener('click',e=>e.stopPropagation());
-      downloadCsv.addEventListener('click',()=>{downloadFile('csv'); downloadMenu.classList.add('hidden');});
-      downloadXls.addEventListener('click',()=>{downloadFile('excel'); downloadMenu.classList.add('hidden');});
+      downloadCsv.addEventListener('click',()=>{downloadFile(); downloadMenu.classList.add('hidden');});
 
       calcDownloadBtn.addEventListener('click',e=>{e.stopPropagation(); calcDownloadMenu.classList.toggle('hidden');});
       calcDownloadMenu.addEventListener('click',e=>e.stopPropagation());
-      calcDownloadCsv.addEventListener('click',()=>{downloadCalcFile('csv'); calcDownloadMenu.classList.add('hidden');});
-      calcDownloadXls.addEventListener('click',()=>{downloadCalcFile('excel'); calcDownloadMenu.classList.add('hidden');});
+      calcDownloadCsv.addEventListener('click',()=>{downloadCalcFile(); calcDownloadMenu.classList.add('hidden');});
 
       document.addEventListener('click',()=>{
         occFilterMenu.classList.add('hidden');
