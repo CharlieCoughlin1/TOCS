@@ -94,7 +94,9 @@
         <button id="occTab" class="tab-btn">Occupancy costs</button>
       </div>
       <div id="calcWrapper">
-
+        <div class="flex justify-end mb-4">
+          <button id="calcClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
+        </div>
 
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
         <div id="modeBtns" class="flex gap-2 mb-1">
@@ -110,11 +112,22 @@
         </div>
         <p id="ageError" class="err-msg mb-3">Please select building age</p>
 
-        <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
-        <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
-          <option value="" disabled selected>Please select</option>
-        </select>
-        <p id="locationError" class="err-msg mb-3">Please select a location</p>
+        <div class="md:flex gap-4">
+          <div class="flex-1">
+            <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
+            <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
+              <option value="" disabled selected>Please select</option>
+            </select>
+            <p id="locationError" class="err-msg mb-3">Please select a location</p>
+          </div>
+          <div id="loc2Wrap" class="flex-1 hidden">
+            <label for="locationSelect2" class="block text-lg font-din-bold text-gray-700 mb-1">Location 2</label>
+            <select id="locationSelect2" class="w-full border rounded p-2 mb-1 bg-white">
+              <option value="" disabled selected>Please select</option>
+            </select>
+          </div>
+        </div>
+        <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location to compare results.</p>
 
         <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
         <select id="typeSelect" class="w-full border rounded p-2 mb-1 bg-white">
@@ -144,10 +157,21 @@
 
         <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold w-full">Calculate</button>
 
-        <div id="resultWrapper" class="mt-6 hidden space-y-3">
-          <div id="areaResult"></div>
-          <div id="costResult"></div>
-          <div id="peopleResult"></div>
+        <div id="resultWrapper" class="mt-6 hidden">
+          <div id="resultContainer" class="grid md:grid-cols-2 gap-4 text-center">
+            <div id="resultBox1" class="space-y-3">
+              <h3 id="resultTitle1" class="font-din-bold"></h3>
+              <div id="areaResult1"></div>
+              <div id="costResult1"></div>
+              <div id="peopleResult1"></div>
+            </div>
+            <div id="resultBox2" class="space-y-3 md:border-l md:pl-4 hidden">
+              <h3 id="resultTitle2" class="font-din-bold"></h3>
+              <div id="areaResult2"></div>
+              <div id="costResult2"></div>
+              <div id="peopleResult2"></div>
+            </div>
+          </div>
         </div>
 
         <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Calculations use LSH cost data and assume <strong>12&nbsp;m² per average workstation</strong>.</p>
@@ -285,7 +309,12 @@
         el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
       }
       // -----------------------------
-      const locSel=$('locationSelect'); const typeSel=$('typeSelect');
+      const locSel=$('locationSelect');
+      const locSel2=$('locationSelect2');
+      const loc2Wrap=$('loc2Wrap');
+      const comparePrompt=$('comparePrompt');
+      const calcClear=$('calcClear');
+      const typeSel=$('typeSelect');
       const modeGroup=$('modeBtns'); const ageGroup=$('ageBtns');
       const modeButtons=modeGroup.querySelectorAll('button');
       const ageButtons=ageGroup.querySelectorAll('button');
@@ -294,7 +323,9 @@
       const pplInp=$('peopleInput'); const budInp=$('budgetInput');
       const pplGrp=$('peopleGroup'); const budGrp=$('budgetGroup');
       const calcBtn=$('calcBtn');
-      const areaR=$('areaResult'); const costR=$('costResult'); const pplR=$('peopleResult'); const resWrap=$('resultWrapper');
+      const areaR1=$('areaResult1'); const costR1=$('costResult1'); const pplR1=$('peopleResult1');
+      const areaR2=$('areaResult2'); const costR2=$('costResult2'); const pplR2=$('peopleResult2');
+      const title1=$('resultTitle1'); const title2=$('resultTitle2'); const box2=$('resultBox2'); const resWrap=$('resultWrapper');
       const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),type:$('typeError'),people:$('peopleError'),budget:$('budgetError')};
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
@@ -326,6 +357,7 @@
         opt.value=loc.name;
         opt.textContent=loc.name;
         locSel.appendChild(opt);
+        locSel2.appendChild(opt.cloneNode(true));
       });
 
       modeButtons.forEach(btn=>{
@@ -351,8 +383,8 @@
         modeGroup.classList.remove('error');
         ageGroup.classList.remove('error');
       }
-      function costPerSqm(){
-        const data=COSTS[locSel.value];
+      function costPerSqm(loc){
+        const data=COSTS[loc];
         const age=AGE_MAP[ageValue];
         if(!data||!age||!data[age]) return 0;
         return data[age].totalSqft*SQM_TO_SQFT;
@@ -367,6 +399,10 @@
         if(showPeople) calcBtn.textContent='Calculate cost';
         else if(showBudget) calcBtn.textContent='Calculate capacity';
         else calcBtn.textContent='Calculate';
+      }
+
+      function updateComparePrompt(){
+        comparePrompt.classList.toggle('hidden',!(locSel.value && !locSel2.value));
       }
 
       function switchTab(tab){
@@ -477,6 +513,17 @@
       filterOld.addEventListener('change',()=>{showOld=filterOld.checked; updateOccUI();});
 
       occClear.addEventListener('click',()=>{occData=[]; document.getElementById('occLimitMsg').classList.add('hidden'); updateOccUI();});
+      calcClear.addEventListener('click',()=>{
+        modeValue=''; ageValue='';
+        [locSel,locSel2,typeSel,pplInp,budInp].forEach(el=>{el.value='';});
+        modeButtons.forEach(b=>b.classList.remove('active'));
+        ageButtons.forEach(b=>b.classList.remove('active'));
+        loc2Wrap.classList.add('hidden');
+        resWrap.classList.add('hidden');
+        resetMarkers();
+        updateComparePrompt();
+        toggleInputs();
+      });
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
       function buildCSV(){
@@ -544,32 +591,46 @@
         if(!ageValue){errs.age.style.display='block'; ageGroup.classList.add('error'); bad=true; }
         if(!typeSel.value){errs.type.style.display='block'; typeSel.classList.add('error'); bad=true; }
 
-        const cpsqm=costPerSqm();
-        if(modeValue==='people'){
-          const n=parseInt(pplInp.value,10);
+        const usePeople=modeValue==='people';
+        let n,budget; const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
+        if(usePeople){
+          n=parseInt(pplInp.value,10);
           if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
-          if(bad) return;
-          const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
-          const sqm=n*sqmPerPerson;
-          renderResult(areaR,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
-          renderResult(costR,'Annual cost',`£${Math.round(sqm*cpsqm).toLocaleString()}`);
-          pplR.innerHTML='';
         }else if(modeValue==='budget'){
-          const budget=parseInt(budInp.value.replace(/,/g,''),10);
+          budget=parseInt(budInp.value.replace(/,/g,''),10);
           if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
-          if(bad) return;
-          const sqm=budget/cpsqm;
-          const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
-          renderResult(areaR,'Area achievable',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
-          renderResult(pplR,'People accommodated',`${Math.round(sqm/sqmPerPerson).toLocaleString()}`);
-          costR.innerHTML='';
+        }
+        if(bad) return;
+        function calcLoc(loc,areaEl,costEl,pplEl,titleEl){
+          const cpsqm=costPerSqm(loc);
+          titleEl.textContent=loc;
+          if(usePeople){
+            const sqm=n*sqmPerPerson;
+            renderResult(areaEl,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
+            renderResult(costEl,'Annual cost',`£${Math.round(sqm*cpsqm).toLocaleString()}`);
+            pplEl.innerHTML='';
+          }else{
+            const sqm=budget/cpsqm;
+            renderResult(areaEl,'Area achievable',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
+            renderResult(pplEl,'People accommodated',`${Math.round(sqm/sqmPerPerson).toLocaleString()}`);
+            costEl.innerHTML='';
+          }
+        }
+        calcLoc(locSel.value,areaR1,costR1,pplR1,title1);
+        if(locSel2.value){
+          calcLoc(locSel2.value,areaR2,costR2,pplR2,title2);
+          box2.classList.remove('hidden');
+        }else{
+          box2.classList.add('hidden');
         }
         resWrap.classList.remove('hidden');
+        updateComparePrompt();
       }
 
       calcBtn.addEventListener('click',performCalc);
 
       toggleInputs(); // initialise visibility
+      updateComparePrompt();
       switchTab('calc');
 
       // Map ------------------------------------------------------------------
@@ -645,15 +706,59 @@
             }
             resetMarkers();
             marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
-            locSel.value=loc.name;
             {
               const tt=marker.getTooltip();
               tt.options.direction=tooltipDir(marker.getLatLng());
               tt.update();
               marker.openTooltip();
             }
-            if(!resWrap.classList.contains('hidden')) performCalc();
-            if(occTab.classList.contains('active')){
+            if(calcTab.classList.contains('active')){
+              if(!locSel.value){
+                locSel.value=loc.name;
+                updateComparePrompt();
+                if(!resWrap.classList.contains('hidden')) performCalc();
+              }else if(locSel.value!==loc.name && !locSel2.value){
+                if(choicePopup) map.removeLayer(choicePopup);
+                const cfg=comparePopupConfig(marker.getLatLng());
+                choicePopup=L.tooltip({direction:cfg.dir,interactive:true,className:'compare-popup',opacity:1,offset:cfg.offset})
+                  .setLatLng(loc.coords)
+                  .setContent(`<div class="compare-popup flex gap-2"><button class="btn btn-red" id="calcCmpBtn">Compare</button><button class="btn btn-gray" id="calcRepBtn">Replace</button></div>`)
+                  .addTo(map);
+                setTimeout(()=>{
+                  document.getElementById('calcCmpBtn').addEventListener('click',()=>{
+                    map.removeLayer(choicePopup); choicePopup=null;
+                    locSel2.value=loc.name;
+                    loc2Wrap.classList.remove('hidden');
+                    performCalc();
+                    updateComparePrompt();
+                  });
+                  document.getElementById('calcRepBtn').addEventListener('click',()=>{
+                    map.removeLayer(choicePopup); choicePopup=null;
+                    locSel.value=loc.name;
+                    performCalc();
+                    updateComparePrompt();
+                  });
+                },0);
+              }else if(locSel.value!==loc.name){
+                if(choicePopup) map.removeLayer(choicePopup);
+                const cfg=comparePopupConfig(marker.getLatLng());
+                choicePopup=L.tooltip({direction:cfg.dir,interactive:true,className:'compare-popup',opacity:1,offset:cfg.offset})
+                  .setLatLng(loc.coords)
+                  .setContent(`<div class="compare-popup"><button class="btn btn-gray" id="calcRepBtn">Replace</button></div>`)
+                  .addTo(map);
+                setTimeout(()=>{
+                  document.getElementById('calcRepBtn').addEventListener('click',()=>{
+                    map.removeLayer(choicePopup); choicePopup=null;
+                    locSel2.value=loc.name;
+                    performCalc();
+                    updateComparePrompt();
+                  });
+                },0);
+              }else{
+                locSel.value=loc.name;
+                if(!resWrap.classList.contains('hidden')) performCalc();
+              }
+            } else if(occTab.classList.contains('active')){
               const cost=COSTS[loc.name]||{};
               const newCost=cost.new||null;
               const oldCost=cost.old||null;
@@ -734,6 +839,32 @@
             marker.openTooltip();
           }
           if(!resWrap.classList.contains('hidden')) performCalc();
+          updateComparePrompt();
+        });
+
+        locSel2.addEventListener('change',()=>{
+          const selected=LOCS.find(l=>l.name===locSel2.value);
+          if(!selected) return;
+          loc2Wrap.classList.toggle('hidden',!locSel2.value);
+          const region=REGIONS.find(r=>r.name===selected.region);
+          if(region){
+            regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+            const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
+            if(btn) btn.classList.add('active');
+            showMarkers(region.name);
+            map.setView(region.center,region.zoom);
+          }
+          resetMarkers();
+          const marker=markers[selected.name];
+          if(marker){
+            marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
+            const tt=marker.getTooltip();
+            tt.options.direction=tooltipDir(marker.getLatLng());
+            tt.update();
+            marker.openTooltip();
+          }
+          if(!resWrap.classList.contains('hidden')) performCalc();
+          updateComparePrompt();
         });
 
         window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(),0));
