@@ -310,7 +310,16 @@
         {name:'Warrington',coords:[53.3925,-2.5802],region:'North West'}
       ];
       // Ensure any ligature characters are converted to plain text for consistency
-      LOCS.forEach(loc=>{loc.name=loc.name.replace(/\uFB01/g,'fi');});
+      LOCS.forEach(loc=>{
+        loc.name = loc.name
+          .replace(/\uFB00/g,'ff')  // ﬀ
+          .replace(/\uFB01/g,'fi')  // ﬁ
+          .replace(/\uFB02/g,'fl')  // ﬂ
+          .replace(/\uFB03/g,'ffi') // ﬃ
+          .replace(/\uFB04/g,'ffl') // ﬄ
+          .replace(/\uFB05/g,'ft')  // ﬅ
+          .replace(/\uFB06/g,'st'); // ﬆ
+      });
 
 
 
