@@ -305,9 +305,17 @@
       let expanded=false;
       let occData=[];
       let showNew=true, showOld=true;
-      // populate locations dropdown
-      LOCS.forEach(loc=>{
-        if(loc.regionMarker) return;
+      // populate locations dropdown with London first then major cities
+      const londonLocs=LOCS
+        .filter(l=>l.region==='London' && !l.regionMarker)
+        .sort((a,b)=>a.name.localeCompare(b.name));
+      const mainLocs=LOCS
+        .filter(l=>l.main && l.region!=='London')
+        .sort((a,b)=>a.name.localeCompare(b.name));
+      const otherLocs=LOCS
+        .filter(l=>!l.regionMarker && l.region!=='London' && !l.main)
+        .sort((a,b)=>a.name.localeCompare(b.name));
+      [...londonLocs,...mainLocs,...otherLocs].forEach(loc=>{
         const opt=document.createElement('option');
         opt.value=loc.name;
         opt.textContent=loc.name;
