@@ -614,7 +614,18 @@
         const header=usePeople?
           ['Location','Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)']:
           ['Location','Area achievable (m\u00B2)','Area achievable (ft\u00B2)','People accommodated'];
-        const lines=[header.join(',')];
+        const ageLabel=ageValue==='New'? 'New build':'20-yr old';
+        const typeLabel=typeSel.value || '';
+        const inputLine=usePeople?
+          `People,${pplInp.value}`:
+          `Budget,${budInp.value}`;
+        const lines=[
+          `Building age,"${ageLabel}"`,
+          `Workstation type,"${typeLabel}"`,
+          inputLine,
+          '',
+          header.join(',')
+        ];
         const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
         const n=usePeople?parseInt(pplInp.value,10):0;
         const budget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
