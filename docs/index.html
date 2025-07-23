@@ -330,7 +330,8 @@
 
       const $=id=>document.getElementById(id);
       // ---------- helpers ----------
-      const SQM_TO_SQFT = 10.7639;
+      // more precise sqm to sqft conversion
+      const SQM_TO_SQFT = 10.76391041671;
       function renderResult(el,label,valueStr){
         el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
       }
@@ -784,7 +785,9 @@
         const markers={};
         let choicePopup=null;
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
-        function highlightSelections(showTips=true){
+       function highlightSelections(showTips=true){
+          // close any previously opened tooltips
+          Object.values(markers).forEach(m=>m.closeTooltip());
           const coords=[];
           const activeMarkers=[];
           [locSel.value,locSel2.value].forEach(n=>{
