@@ -309,6 +309,8 @@
         {name:'Swansea',coords:[51.6214,-3.9439],region:'Wales'},
         {name:'Warrington',coords:[53.3925,-2.5802],region:'North West'}
       ];
+      // Ensure any ligature characters are converted to plain text for consistency
+      LOCS.forEach(loc=>{loc.name=loc.name.replace(/\uFB01/g,'fi');});
 
 
 
