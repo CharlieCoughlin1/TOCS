@@ -46,7 +46,9 @@
       line-height:1.2;
       white-space:nowrap;
     }
-    .result-scroll{overflow-x:auto;}
+    .result-scroll{overflow-x:hidden;overflow-y:hidden;}
+    .result-scroll.need-scroll{overflow-x:auto;}
+    #resultContainer.compare .result-value{font-size:1.5rem;}
     #resultContainer.single{text-align:left;}
     #resultContainer.compare{text-align:center;}
     .tab-btn{padding:0.5rem 1rem;border-bottom:2px solid transparent;}
@@ -318,6 +320,12 @@
       function renderResult(el,label,valueStr){
         el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
       }
+      function updateScrollbars(){
+        document.querySelectorAll('.result-scroll').forEach(el=>{
+          if(el.scrollWidth>el.clientWidth) el.classList.add('need-scroll');
+          else el.classList.remove('need-scroll');
+        });
+      }
       // -----------------------------
       const locSel=$('locationSelect');
       const locSel2=$('locationSelect2');
@@ -535,7 +543,7 @@
         resetMarkers();
         updateComparePrompt();
         toggleInputs();
-        highlightSelections();
+        highlightSelections(false);
       });
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
@@ -638,11 +646,12 @@
        }else{
          box2.classList.add('hidden');
         resultContainer.classList.add('single');
-        resultContainer.classList.remove('compare');
+       resultContainer.classList.remove('compare');
        }
        resWrap.classList.remove('hidden');
        resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
        updateComparePrompt();
+       updateScrollbars();
       }
 
       calcBtn.addEventListener('click',performCalc);
@@ -685,7 +694,7 @@
             showMarkers(name);
             const r=REGIONS.find(r=>r.name===name);
             if(r) map.setView(r.center,r.zoom);
-            highlightSelections();
+            highlightSelections(false);
           });
           regionToggle.appendChild(btn);
         });
@@ -693,7 +702,7 @@
         const markers={};
         let choicePopup=null;
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
-        function highlightSelections(){
+        function highlightSelections(showTips=true){
           const coords=[];
           [locSel.value,locSel2.value].forEach(n=>{
             if(n){
@@ -701,18 +710,22 @@
               if(m){
                 if(!map.hasLayer(m)) m.addTo(map);
                 m.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
-                const tt=m.getTooltip();
-                tt.options.direction=tooltipDir(m.getLatLng());
-                tt.update();
-                m.openTooltip();
+                if(showTips){
+                  const tt=m.getTooltip();
+                  tt.options.direction=tooltipDir(m.getLatLng());
+                  tt.update();
+                  m.openTooltip();
+                }
                 coords.push(m.getLatLng());
               }
             }
           });
-          if(coords.length===1){
-            map.setView(coords[0], map.getZoom());
-          }else if(coords.length===2){
-            map.fitBounds(L.latLngBounds(coords),{padding:[20,20]});
+          if(showTips){
+            if(coords.length===1){
+              map.setView(coords[0], map.getZoom());
+            }else if(coords.length===2){
+              map.fitBounds(L.latLngBounds(coords),{paddingBottomRight:[20,20],paddingTopLeft:[20,60]});
+            }
           }
         }
         LOCS.forEach(loc=>{
@@ -865,7 +878,7 @@
         }
 
         showMarkers('All UK');
-        highlightSelections();
+        highlightSelections(false);
 
         // respond to location dropdown changes
         locSel.addEventListener('change',()=>{
@@ -904,7 +917,11 @@
           updateComparePrompt();
         });
 
-        window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(),0));
+        window.addEventListener('load',()=>{
+          setTimeout(()=>map.invalidateSize(),0);
+          updateScrollbars();
+        });
+        window.addEventListener('resize',updateScrollbars);
 
       }
     })();
