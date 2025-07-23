@@ -103,18 +103,18 @@
         </div>
         <p id="modeError" class="err-msg mb-3">Please select an option</p>
 
-        <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
-        <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
-          <option value="" disabled selected>Please select</option>
-        </select>
-        <p id="locationError" class="err-msg mb-3">Please select a location</p>
-
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Building age</label>
         <div id="ageBtns" class="flex gap-2 mb-1">
           <button class="select-btn" data-value="New">New build</button>
           <button class="select-btn" data-value="20">20‑year old</button>
         </div>
         <p id="ageError" class="err-msg mb-3">Please select building age</p>
+
+        <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
+        <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
+          <option value="" disabled selected>Please select</option>
+        </select>
+        <p id="locationError" class="err-msg mb-3">Please select a location</p>
 
         <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
         <select id="typeSelect" class="w-full border rounded p-2 mb-1 bg-white">
@@ -341,6 +341,7 @@
           ageValue=btn.dataset.value;
           ageButtons.forEach(b=>b.classList.remove('active'));
           btn.classList.add('active');
+          if(!resWrap.classList.contains('hidden')) performCalc();
         });
       });
 
@@ -357,11 +358,14 @@
         return data[age].totalSqft*SQM_TO_SQFT;
       }
       function toggleInputs(){
-        pplGrp.classList.toggle('hidden',modeValue!=='people');
-        budGrp.classList.toggle('hidden',modeValue!=='budget');
+        const showPeople=modeValue==='people';
+        const showBudget=modeValue==='budget';
+        pplGrp.classList.toggle('hidden',!showPeople);
+        budGrp.classList.toggle('hidden',!showBudget);
+        calcBtn.classList.toggle('mt-3',!showPeople&&!showBudget);
         resWrap.classList.add('hidden');
-        if(modeValue==='people') calcBtn.textContent='Calculate cost';
-        else if(modeValue==='budget') calcBtn.textContent='Calculate capacity';
+        if(showPeople) calcBtn.textContent='Calculate cost';
+        else if(showBudget) calcBtn.textContent='Calculate capacity';
         else calcBtn.textContent='Calculate';
       }
 
