@@ -188,6 +188,20 @@
           </div>
         </div>
 
+        <div id="calcDownloadWrap" class="flex justify-end mt-2 hidden">
+          <div class="relative">
+            <button id="calcDownloadBtn" class="p-1" aria-label="Download">
+              <svg xmlns="http://www.w3.org/2000/svg" class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a1 1 0 001 1h14a1 1 0 001-1v-1m-5-4l-3 3m0 0l-3-3m3 3V4" />
+              </svg>
+            </button>
+            <div id="calcDownloadMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
+              <button id="calcDownloadCsv" class="block w-full text-left">CSV</button>
+              <button id="calcDownloadXls" class="block w-full text-left">Excel</button>
+            </div>
+          </div>
+        </div>
+
         <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Calculations use LSH cost data and assume <strong>12&nbsp;m² per average workstation</strong>.</p>
       </div>
 
@@ -360,6 +374,11 @@
       const downloadMenu=$('downloadMenu');
       const downloadCsv=$('downloadCsv');
       const downloadXls=$('downloadXls');
+      const calcDownloadWrap=$('calcDownloadWrap');
+      const calcDownloadBtn=$('calcDownloadBtn');
+      const calcDownloadMenu=$('calcDownloadMenu');
+      const calcDownloadCsv=$('calcDownloadCsv');
+      const calcDownloadXls=$('calcDownloadXls');
       const calcSection=$("calcSection");
       let expanded=false;
       let occData=[];
@@ -418,6 +437,7 @@
         budGrp.classList.toggle('hidden',!showBudget);
         calcBtnWrap.classList.toggle('mt-3',!showPeople&&!showBudget);
         resWrap.classList.add('hidden');
+        calcDownloadWrap.classList.add('hidden');
         if(showPeople) calcBtn.textContent='Calculate cost';
         else if(showBudget) calcBtn.textContent='Calculate capacity';
         else calcBtn.textContent='Calculate';
@@ -542,6 +562,7 @@
         ageButtons.forEach(b=>b.classList.remove('active'));
         loc2Wrap.classList.add('hidden');
         resWrap.classList.add('hidden');
+        calcDownloadWrap.classList.add('hidden');
         resetMarkers();
         updateComparePrompt();
         toggleInputs();
@@ -588,6 +609,47 @@
         setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
       }
 
+      function buildCalcCSV(){
+        const usePeople=modeValue==='people';
+        const header=usePeople?
+          ['Location','Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)']:
+          ['Location','Area achievable (m\u00B2)','Area achievable (ft\u00B2)','People accommodated'];
+        const lines=[header.join(',')];
+        const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
+        const n=usePeople?parseInt(pplInp.value,10):0;
+        const budget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
+        function addRow(loc){
+          const cpsqm=costPerSqm(loc);
+          if(usePeople){
+            const sqm=n*sqmPerPerson;
+            const sqft=sqm*SQM_TO_SQFT;
+            const cost=Math.round(sqm*cpsqm);
+            lines.push([`"${loc}"`,sqm.toFixed(2),sqft.toFixed(0),cost].join(','));
+          }else{
+            const sqm=budget/cpsqm;
+            const sqft=sqm*SQM_TO_SQFT;
+            const ppl=Math.round(sqm/sqmPerPerson);
+            lines.push([`"${loc}"`,Math.round(sqm),Math.round(sqft),ppl].join(','));
+          }
+        }
+        addRow(locSel.value);
+        if(locSel2.value) addRow(locSel2.value);
+        return lines.join('\r\n');
+      }
+
+      function downloadCalcFile(format){
+        const csv='\uFEFF'+buildCalcCSV();
+        const mime=format==='excel' ? 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' : 'text/csv';
+        const ext=format==='excel' ? '.xlsx' : '.csv';
+        const blob=new Blob([csv],{type:mime});
+        const link=document.createElement('a');
+        link.href=URL.createObjectURL(blob);
+        link.download='space-calculator'+ext;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
+      }
+
       downloadBtn.addEventListener('click',e=>{
         e.stopPropagation();
         downloadMenu.classList.toggle('hidden');
@@ -596,9 +658,15 @@
       downloadCsv.addEventListener('click',()=>{downloadFile('csv'); downloadMenu.classList.add('hidden');});
       downloadXls.addEventListener('click',()=>{downloadFile('excel'); downloadMenu.classList.add('hidden');});
 
+      calcDownloadBtn.addEventListener('click',e=>{e.stopPropagation(); calcDownloadMenu.classList.toggle('hidden');});
+      calcDownloadMenu.addEventListener('click',e=>e.stopPropagation());
+      calcDownloadCsv.addEventListener('click',()=>{downloadCalcFile('csv'); calcDownloadMenu.classList.add('hidden');});
+      calcDownloadXls.addEventListener('click',()=>{downloadCalcFile('excel'); calcDownloadMenu.classList.add('hidden');});
+
       document.addEventListener('click',()=>{
         occFilterMenu.classList.add('hidden');
         downloadMenu.classList.add('hidden');
+        calcDownloadMenu.classList.add('hidden');
       });
 
       // auto‑comma budget
@@ -650,11 +718,12 @@
         resultContainer.classList.add('single');
        resultContainer.classList.remove('compare');
        }
-        resWrap.classList.remove('hidden');
-        resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
-        updateComparePrompt();
-        updateScrollbars();
-        setTimeout(updateScrollbars,50);
+       resWrap.classList.remove('hidden');
+       resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
+       calcDownloadWrap.classList.remove('hidden');
+       updateComparePrompt();
+       updateScrollbars();
+       setTimeout(updateScrollbars,50);
       }
 
       calcBtn.addEventListener('click',performCalc);
