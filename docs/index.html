@@ -48,6 +48,7 @@
     }
     .result-scroll{overflow-x:hidden;overflow-y:hidden;}
     .result-scroll.need-scroll{overflow-x:auto;}
+    .result-title{white-space:nowrap;}
     #resultContainer.compare .result-value{font-size:1.5rem;}
     #resultContainer.single{text-align:left;}
     #resultContainer.compare{text-align:center;}
@@ -172,13 +173,13 @@
         <div id="resultWrapper" class="mt-6 hidden">
           <div id="resultContainer" class="grid md:grid-cols-2 gap-4">
             <div id="resultBox1" class="space-y-3">
-              <h3 id="resultTitle1" class="font-din-bold text-xl"></h3>
+              <h3 id="resultTitle1" class="font-din-bold text-xl result-scroll result-title"></h3>
               <div id="areaResult1" class="result-scroll"></div>
               <div id="costResult1" class="result-scroll"></div>
               <div id="peopleResult1" class="result-scroll"></div>
             </div>
             <div id="resultBox2" class="space-y-3 md:border-l md:pl-4 hidden">
-              <h3 id="resultTitle2" class="font-din-bold text-xl"></h3>
+              <h3 id="resultTitle2" class="font-din-bold text-xl result-scroll result-title"></h3>
               <div id="areaResult2" class="result-scroll"></div>
               <div id="costResult2" class="result-scroll"></div>
               <div id="peopleResult2" class="result-scroll"></div>
@@ -322,7 +323,7 @@
       }
       function updateScrollbars(){
         document.querySelectorAll('.result-scroll').forEach(el=>{
-          if(el.scrollWidth>el.clientWidth) el.classList.add('need-scroll');
+          if(el.scrollWidth - el.clientWidth > 1) el.classList.add('need-scroll');
           else el.classList.remove('need-scroll');
         });
       }
@@ -704,27 +705,37 @@
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
         function highlightSelections(showTips=true){
           const coords=[];
+          const activeMarkers=[];
           [locSel.value,locSel2.value].forEach(n=>{
             if(n){
               const m=markers[n];
               if(m){
                 if(!map.hasLayer(m)) m.addTo(map);
                 m.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
-                if(showTips){
-                  const tt=m.getTooltip();
-                  tt.options.direction=tooltipDir(m.getLatLng());
-                  tt.update();
-                  m.openTooltip();
-                }
+                activeMarkers.push(m);
                 coords.push(m.getLatLng());
               }
             }
           });
+
+          function openTips(){
+            activeMarkers.forEach(m=>{
+              const tt=m.getTooltip();
+              tt.options.direction=tooltipDir(m.getLatLng());
+              tt.update();
+              m.openTooltip();
+            });
+          }
+
           if(showTips){
             if(coords.length===1){
+              map.once('moveend',openTips);
               map.setView(coords[0], map.getZoom());
             }else if(coords.length===2){
-              map.fitBounds(L.latLngBounds(coords),{paddingBottomRight:[20,20],paddingTopLeft:[20,60]});
+              map.once('moveend',openTips);
+              map.fitBounds(L.latLngBounds(coords),{padding:[60,60],maxZoom:8});
+            }else{
+              openTips();
             }
           }
         }
