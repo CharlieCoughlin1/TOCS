@@ -46,6 +46,7 @@
       line-height:1.2;
       white-space:nowrap;
     }
+    .result-scroll{overflow-x:auto;}
     #resultContainer.single{text-align:left;}
     #resultContainer.compare{text-align:center;}
     .tab-btn{padding:0.5rem 1rem;border-bottom:2px solid transparent;}
@@ -170,15 +171,15 @@
           <div id="resultContainer" class="grid md:grid-cols-2 gap-4">
             <div id="resultBox1" class="space-y-3">
               <h3 id="resultTitle1" class="font-din-bold text-xl"></h3>
-              <div id="areaResult1"></div>
-              <div id="costResult1"></div>
-              <div id="peopleResult1"></div>
+              <div id="areaResult1" class="result-scroll"></div>
+              <div id="costResult1" class="result-scroll"></div>
+              <div id="peopleResult1" class="result-scroll"></div>
             </div>
             <div id="resultBox2" class="space-y-3 md:border-l md:pl-4 hidden">
               <h3 id="resultTitle2" class="font-din-bold text-xl"></h3>
-              <div id="areaResult2"></div>
-              <div id="costResult2"></div>
-              <div id="peopleResult2"></div>
+              <div id="areaResult2" class="result-scroll"></div>
+              <div id="costResult2" class="result-scroll"></div>
+              <div id="peopleResult2" class="result-scroll"></div>
             </div>
           </div>
         </div>
@@ -316,18 +317,6 @@
       const SQM_TO_SQFT = 10.7639;
       function renderResult(el,label,valueStr){
         el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
-        adjustFont(el);
-      }
-      function adjustFont(wrapper){
-        const val=wrapper.querySelector('.result-value');
-        if(!val) return;
-        val.style.fontSize='1.875rem';
-        let size=parseFloat(getComputedStyle(val).fontSize);
-        const max=wrapper.clientWidth;
-        while(val.scrollWidth>max && size>12){
-          size-=1;
-          val.style.fontSize=size+'px';
-        }
       }
       // -----------------------------
       const locSel=$('locationSelect');
@@ -639,7 +628,6 @@
             renderResult(pplEl,'People accommodated',`${Math.round(sqm/sqmPerPerson).toLocaleString()}`);
             costEl.innerHTML='';
           }
-        adjustFont(areaEl); adjustFont(costEl); adjustFont(pplEl);
         }
        calcLoc(locSel.value,areaR1,costR1,pplR1,title1);
        if(locSel2.value){
@@ -769,11 +757,7 @@
             if(calcTab.classList.contains('active')){
               if(!locSel.value){
                 locSel.value=loc.name;
-                regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-                const allBtn=Array.from(regionToggle.children).find(b=>b.textContent==='All UK');
-                if(allBtn) allBtn.classList.add('active');
-                showMarkers('All UK', true);
-                map.setView(REGIONS[0].center,REGIONS[0].zoom);
+                loc2Wrap.classList.remove('hidden');
                 updateComparePrompt();
                 if(!resWrap.classList.contains('hidden')) performCalc();
               }else if(locSel.value!==loc.name && !locSel2.value){
@@ -795,11 +779,7 @@
               document.getElementById('calcRepBtn').addEventListener('click',()=>{
                 map.removeLayer(choicePopup); choicePopup=null;
                 locSel.value=loc.name;
-                regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-                const allBtn=Array.from(regionToggle.children).find(b=>b.textContent==='All UK');
-                if(allBtn) allBtn.classList.add('active');
-                showMarkers('All UK', true);
-                map.setView(REGIONS[0].center,REGIONS[0].zoom);
+                loc2Wrap.classList.remove('hidden');
                 performCalc();
                 updateComparePrompt();
                 highlightSelections();
@@ -816,6 +796,7 @@
                   document.getElementById('calcRepBtn').addEventListener('click',()=>{
                 map.removeLayer(choicePopup); choicePopup=null;
                 locSel2.value=loc.name;
+                loc2Wrap.classList.remove('hidden');
                 performCalc();
                 updateComparePrompt();
                 highlightSelections();
@@ -891,13 +872,8 @@
           const selected=LOCS.find(l=>l.name===locSel.value);
           if(!selected) return;
           const region=REGIONS.find(r=>r.name===selected.region);
-          if(!locSel2.value){
-            regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-            const allBtn=Array.from(regionToggle.children).find(b=>b.textContent==='All UK');
-            if(allBtn) allBtn.classList.add('active');
-            showMarkers('All UK', true);
-            map.setView(REGIONS[0].center,REGIONS[0].zoom);
-          } else if(region){
+          loc2Wrap.classList.remove('hidden');
+          if(region && locSel2.value){
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
             const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
             if(btn) btn.classList.add('active');
@@ -913,7 +889,7 @@
         locSel2.addEventListener('change',()=>{
           const selected=LOCS.find(l=>l.name===locSel2.value);
           if(!selected) return;
-          loc2Wrap.classList.toggle('hidden',!locSel2.value);
+          loc2Wrap.classList.remove('hidden');
           const region=REGIONS.find(r=>r.name===selected.region);
           if(region){
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
@@ -930,8 +906,6 @@
 
         window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(),0));
 
-        function adjustAllFonts(){[areaR1,costR1,pplR1,areaR2,costR2,pplR2].forEach(adjustFont);}
-        window.addEventListener('resize',adjustAllFonts);
       }
     })();
   </script>
