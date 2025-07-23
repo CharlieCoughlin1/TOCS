@@ -752,18 +752,21 @@
         function tooltipDir(latlng){
           const p=map.latLngToContainerPoint(latlng);
           const size=map.getSize();
-          return (p.y<40||size.y-p.y<40)?'right':'top';
+          if(p.x<80) return "right";
+          if(size.x-p.x<80) return "left";
+          if(p.y<40||size.y-p.y<40) return "right";
+          return "top";
         }
         function comparePopupConfig(latlng){
           const ttDir=tooltipDir(latlng);
           const p=map.latLngToContainerPoint(latlng);
           const size=map.getSize();
           if(ttDir==='top'){
-            if(size.y-p.y>60) return {dir:'bottom',offset:[0,8]};
+            if(size.y-p.y>80) return {dir:'bottom',offset:[0,8]};
             return {dir:p.x>size.x/2?'left':'right',offset:[p.x>size.x/2?-8:8,0]};
           }else{ // tooltip to the right
-            if(p.x>80) return {dir:'left',offset:[-8,0]};
-            return {dir:(size.y-p.y>60?'bottom':'top'),offset:[0,(size.y-p.y>60?8:-8)]};
+            if(p.x>120) return {dir:'left',offset:[-8,0]};
+            return {dir:(size.y-p.y>80?'bottom':'top'),offset:[0,(size.y-p.y>80?8:-8)]};
           }
         }
         const regionToggle=$('regionToggle');
@@ -821,7 +824,7 @@
             }else if(coords.length===2){
               map.once('moveend',openTips);
               const bounds=L.latLngBounds(coords);
-              let zoom=map.getBoundsZoom(bounds,false,[60,60]);
+              let zoom=map.getBoundsZoom(bounds,false,[120,120]);
               const dist=coords[0].distanceTo(coords[1]);
               if(dist<500) zoom=Math.max(zoom,16);
               else if(dist<1000) zoom=Math.max(zoom,15);
@@ -1007,14 +1010,8 @@
           const selected=LOCS.find(l=>l.name===locSel2.value);
           if(!selected) return;
           loc2Wrap.classList.remove('hidden');
-          const region=REGIONS.find(r=>r.name===selected.region);
-          if(region){
-            regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
-            const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
-            if(btn) btn.classList.add('active');
-            showMarkers(region.name);
-            map.setView(region.center,region.zoom);
-          }
+          regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+          showMarkers('All UK');
           resetMarkers();
           highlightSelections();
           if(!resWrap.classList.contains('hidden')) performCalc();
