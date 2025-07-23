@@ -69,6 +69,10 @@
     /* allow occupancy bars to scroll horizontally */
     #occBars{overflow-x:auto;}
     #occBars .bar-col{flex:0 0 8rem;}
+    button{transition:transform .1s ease;}
+    button:active{transform:scale(.95);}
+    .fade-in{animation:fadeIn .3s ease;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(.5rem);}to{opacity:1;transform:translateY(0);}}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -127,7 +131,7 @@
             </select>
           </div>
         </div>
-        <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location to compare results.</p>
+        <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location on the map to compare results.</p>
 
         <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
         <select id="typeSelect" class="w-full border rounded p-2 mb-1 bg-white">
@@ -155,7 +159,7 @@
           <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
         </div>
 
-        <div class="flex items-center gap-2 mt-2">
+        <div id="calcBtnWrap" class="flex items-center gap-2 mt-2">
           <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold flex-1">Calculate</button>
           <button id="calcClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-2 rounded font-din-bold">Clear</button>
         </div>
@@ -338,6 +342,7 @@
       const pplInp=$('peopleInput'); const budInp=$('budgetInput');
       const pplGrp=$('peopleGroup'); const budGrp=$('budgetGroup');
       const calcBtn=$('calcBtn');
+      const calcBtnWrap=$('calcBtnWrap');
       const areaR1=$('areaResult1'); const costR1=$('costResult1'); const pplR1=$('peopleResult1');
       const areaR2=$('areaResult2'); const costR2=$('costResult2'); const pplR2=$('peopleResult2');
       const resultContainer=$('resultContainer');
@@ -410,7 +415,7 @@
         const showBudget=modeValue==='budget';
         pplGrp.classList.toggle('hidden',!showPeople);
         budGrp.classList.toggle('hidden',!showBudget);
-        calcBtn.classList.toggle('mt-3',!showPeople&&!showBudget);
+        calcBtnWrap.classList.toggle('mt-3',!showPeople&&!showBudget);
         resWrap.classList.add('hidden');
         if(showPeople) calcBtn.textContent='Calculate cost';
         else if(showBudget) calcBtn.textContent='Calculate capacity';
@@ -646,6 +651,7 @@
         resultContainer.classList.remove('compare');
        }
        resWrap.classList.remove('hidden');
+       resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
        updateComparePrompt();
       }
 
@@ -761,6 +767,11 @@
             if(calcTab.classList.contains('active')){
               if(!locSel.value){
                 locSel.value=loc.name;
+                regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+                const allBtn=Array.from(regionToggle.children).find(b=>b.textContent==='All UK');
+                if(allBtn) allBtn.classList.add('active');
+                showMarkers('All UK', true);
+                map.setView(REGIONS[0].center,REGIONS[0].zoom);
                 updateComparePrompt();
                 if(!resWrap.classList.contains('hidden')) performCalc();
               }else if(locSel.value!==loc.name && !locSel2.value){
@@ -782,6 +793,11 @@
               document.getElementById('calcRepBtn').addEventListener('click',()=>{
                 map.removeLayer(choicePopup); choicePopup=null;
                 locSel.value=loc.name;
+                regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+                const allBtn=Array.from(regionToggle.children).find(b=>b.textContent==='All UK');
+                if(allBtn) allBtn.classList.add('active');
+                showMarkers('All UK', true);
+                map.setView(REGIONS[0].center,REGIONS[0].zoom);
                 performCalc();
                 updateComparePrompt();
                 highlightSelections();
@@ -849,12 +865,12 @@
           markers[loc.name]=marker;
         });
 
-        function showMarkers(region){
+        function showMarkers(region,all=false){
           Object.values(markers).forEach(m=>{ if(map.hasLayer(m)) m.remove(); });
           const coords=[];
           LOCS.forEach(loc=>{
             if(region==='All UK'){
-              if(loc.main){ markers[loc.name].addTo(map); coords.push(loc.coords); }
+              if(all || loc.main){ markers[loc.name].addTo(map); coords.push(loc.coords); }
             }else if(loc.region===region){
               if(loc.name==='London') return;
               markers[loc.name].addTo(map);
@@ -873,7 +889,13 @@
           const selected=LOCS.find(l=>l.name===locSel.value);
           if(!selected) return;
           const region=REGIONS.find(r=>r.name===selected.region);
-          if(region){
+          if(!locSel2.value){
+            regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
+            const allBtn=Array.from(regionToggle.children).find(b=>b.textContent==='All UK');
+            if(allBtn) allBtn.classList.add('active');
+            showMarkers('All UK', true);
+            map.setView(REGIONS[0].center,REGIONS[0].zoom);
+          } else if(region){
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
             const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
             if(btn) btn.classList.add('active');
@@ -905,6 +927,9 @@
         });
 
         window.addEventListener('load',()=>setTimeout(()=>map.invalidateSize(),0));
+
+        function adjustAllFonts(){[areaR1,costR1,pplR1,areaR2,costR2,pplR2].forEach(adjustFont);}
+        window.addEventListener('resize',adjustAllFonts);
       }
     })();
   </script>
