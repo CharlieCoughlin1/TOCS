@@ -312,7 +312,7 @@
       ];
       // Ensure any ligature characters are converted to plain text for consistency
       LOCS.forEach(loc=>{
-        loc.name = loc.name
+        loc.name = loc.name.normalize('NFKD')
           .replace(/\uFB00/g,'ff')  // ﬀ
           .replace(/\uFB01/g,'fi')  // ﬁ
           .replace(/\uFB02/g,'fl')  // ﬂ
@@ -404,8 +404,9 @@
         .sort((a,b)=>a.name.localeCompare(b.name));
       [...londonLocs,...mainLocs,...otherLocs].forEach(loc=>{
         const opt=document.createElement('option');
+        const displayName = loc.name.normalize('NFKD');
         opt.value=loc.name;
-        opt.textContent=loc.name;
+        opt.textContent=displayName;
         locSel.appendChild(opt);
         locSel2.appendChild(opt.cloneNode(true));
       });
