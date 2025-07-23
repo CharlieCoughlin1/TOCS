@@ -60,6 +60,9 @@
     #occTables{overflow-x:auto;}
     #occTables.expanded table{min-width:52rem;}
     #occTables th{white-space:nowrap;}
+    /* allow occupancy bars to scroll horizontally */
+    #occBars{overflow-x:auto;}
+    #occBars .bar-col{flex:0 0 8rem;}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -365,7 +368,7 @@
         const max=Math.max(...occData.flatMap(d=>[d.new.totalSqft,d.old.totalSqft]));
         occData.forEach(d=>{
           const col=document.createElement("div");
-          col.className="flex-1 flex flex-col items-center justify-between p-2 border rounded h-56";
+          col.className="bar-col flex flex-col items-center justify-between p-2 border rounded h-56";
           const label=document.createElement("div");
           label.className="text-sm font-din-bold mb-1 text-center h-10 flex items-center justify-center";
           label.textContent=d.name;
@@ -422,9 +425,11 @@
         occExpand.textContent = expanded ? 'Collapse' : 'Expand';
       }
 
-      occFilterBtn.addEventListener('click',()=>{
+      occFilterBtn.addEventListener('click',e=>{
+        e.stopPropagation();
         occFilterMenu.classList.toggle('hidden');
       });
+      occFilterMenu.addEventListener('click',e=>e.stopPropagation());
       filterNew.addEventListener('change',()=>{showNew=filterNew.checked; updateOccUI();});
       filterOld.addEventListener('change',()=>{showOld=filterOld.checked; updateOccUI();});
 
@@ -470,11 +475,18 @@
         setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
       }
 
-      downloadBtn.addEventListener('click',()=>{
+      downloadBtn.addEventListener('click',e=>{
+        e.stopPropagation();
         downloadMenu.classList.toggle('hidden');
       });
+      downloadMenu.addEventListener('click',e=>e.stopPropagation());
       downloadCsv.addEventListener('click',()=>{downloadFile('csv'); downloadMenu.classList.add('hidden');});
       downloadXls.addEventListener('click',()=>{downloadFile('excel'); downloadMenu.classList.add('hidden');});
+
+      document.addEventListener('click',()=>{
+        occFilterMenu.classList.add('hidden');
+        downloadMenu.classList.add('hidden');
+      });
 
       // auto‑comma budget
       budInp.addEventListener('input',()=>{
