@@ -814,7 +814,13 @@
               map.setView(coords[0], map.getZoom());
             }else if(coords.length===2){
               map.once('moveend',openTips);
-              map.fitBounds(L.latLngBounds(coords),{padding:[60,60],maxZoom:11});
+              const bounds=L.latLngBounds(coords);
+              let zoom=map.getBoundsZoom(bounds,false,[60,60]);
+              const dist=coords[0].distanceTo(coords[1]);
+              if(dist<500) zoom=Math.max(zoom,16);
+              else if(dist<1000) zoom=Math.max(zoom,15);
+              else if(dist<2000) zoom=Math.max(zoom,14);
+              map.setView(bounds.getCenter(),zoom);
             }else{
               openTips();
             }
