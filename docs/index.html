@@ -42,7 +42,10 @@
       color:#111827;               /* gray-900 */
       display:block;
       line-height:1.2;
+      white-space:nowrap;
     }
+    #resultContainer.single{text-align:left;}
+    #resultContainer.compare{text-align:center;}
     .tab-btn{padding:0.5rem 1rem;border-bottom:2px solid transparent;}
     .tab-btn.active{border-color:var(--lsh-red);color:var(--lsh-red);font-weight:700;}
     .occ-bar-new{background:var(--lsh-red);transition:height .3s ease,opacity .3s ease;}
@@ -94,9 +97,6 @@
         <button id="occTab" class="tab-btn">Occupancy costs</button>
       </div>
       <div id="calcWrapper">
-        <div class="flex justify-end mb-4">
-          <button id="calcClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
-        </div>
 
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
         <div id="modeBtns" class="flex gap-2 mb-1">
@@ -155,18 +155,21 @@
           <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
         </div>
 
-        <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold w-full">Calculate</button>
+        <div class="flex items-center gap-2 mt-2">
+          <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold flex-1">Calculate</button>
+          <button id="calcClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-2 rounded font-din-bold">Clear</button>
+        </div>
 
         <div id="resultWrapper" class="mt-6 hidden">
-          <div id="resultContainer" class="grid md:grid-cols-2 gap-4 text-center">
+          <div id="resultContainer" class="grid md:grid-cols-2 gap-4">
             <div id="resultBox1" class="space-y-3">
-              <h3 id="resultTitle1" class="font-din-bold"></h3>
+              <h3 id="resultTitle1" class="font-din-bold text-xl"></h3>
               <div id="areaResult1"></div>
               <div id="costResult1"></div>
               <div id="peopleResult1"></div>
             </div>
             <div id="resultBox2" class="space-y-3 md:border-l md:pl-4 hidden">
-              <h3 id="resultTitle2" class="font-din-bold"></h3>
+              <h3 id="resultTitle2" class="font-din-bold text-xl"></h3>
               <div id="areaResult2"></div>
               <div id="costResult2"></div>
               <div id="peopleResult2"></div>
@@ -307,6 +310,18 @@
       const SQM_TO_SQFT = 10.7639;
       function renderResult(el,label,valueStr){
         el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
+        adjustFont(el);
+      }
+      function adjustFont(wrapper){
+        const val=wrapper.querySelector('.result-value');
+        if(!val) return;
+        val.style.fontSize='1.875rem';
+        let size=parseFloat(getComputedStyle(val).fontSize);
+        const max=wrapper.clientWidth;
+        while(val.scrollWidth>max && size>12){
+          size-=1;
+          val.style.fontSize=size+'px';
+        }
       }
       // -----------------------------
       const locSel=$('locationSelect');
@@ -325,6 +340,7 @@
       const calcBtn=$('calcBtn');
       const areaR1=$('areaResult1'); const costR1=$('costResult1'); const pplR1=$('peopleResult1');
       const areaR2=$('areaResult2'); const costR2=$('costResult2'); const pplR2=$('peopleResult2');
+      const resultContainer=$('resultContainer');
       const title1=$('resultTitle1'); const title2=$('resultTitle2'); const box2=$('resultBox2'); const resWrap=$('resultWrapper');
       const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),type:$('typeError'),people:$('peopleError'),budget:$('budgetError')};
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
@@ -523,6 +539,7 @@
         resetMarkers();
         updateComparePrompt();
         toggleInputs();
+        highlightSelections();
       });
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
@@ -601,9 +618,9 @@
           if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
         }
         if(bad) return;
-        function calcLoc(loc,areaEl,costEl,pplEl,titleEl){
-          const cpsqm=costPerSqm(loc);
-          titleEl.textContent=loc;
+       function calcLoc(loc,areaEl,costEl,pplEl,titleEl){
+         const cpsqm=costPerSqm(loc);
+         titleEl.textContent=loc;
           if(usePeople){
             const sqm=n*sqmPerPerson;
             renderResult(areaEl,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
@@ -615,19 +632,25 @@
             renderResult(pplEl,'People accommodated',`${Math.round(sqm/sqmPerPerson).toLocaleString()}`);
             costEl.innerHTML='';
           }
+        adjustFont(areaEl); adjustFont(costEl); adjustFont(pplEl);
         }
-        calcLoc(locSel.value,areaR1,costR1,pplR1,title1);
-        if(locSel2.value){
-          calcLoc(locSel2.value,areaR2,costR2,pplR2,title2);
-          box2.classList.remove('hidden');
-        }else{
-          box2.classList.add('hidden');
-        }
-        resWrap.classList.remove('hidden');
-        updateComparePrompt();
+       calcLoc(locSel.value,areaR1,costR1,pplR1,title1);
+       if(locSel2.value){
+         calcLoc(locSel2.value,areaR2,costR2,pplR2,title2);
+         box2.classList.remove('hidden');
+        resultContainer.classList.add('compare');
+        resultContainer.classList.remove('single');
+       }else{
+         box2.classList.add('hidden');
+        resultContainer.classList.add('single');
+        resultContainer.classList.remove('compare');
+       }
+       resWrap.classList.remove('hidden');
+       updateComparePrompt();
       }
 
       calcBtn.addEventListener('click',performCalc);
+      typeSel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc();});
 
       toggleInputs(); // initialise visibility
       updateComparePrompt();
@@ -666,6 +689,7 @@
             showMarkers(name);
             const r=REGIONS.find(r=>r.name===name);
             if(r) map.setView(r.center,r.zoom);
+            highlightSelections();
           });
           regionToggle.appendChild(btn);
         });
@@ -673,6 +697,28 @@
         const markers={};
         let choicePopup=null;
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
+        function highlightSelections(){
+          const coords=[];
+          [locSel.value,locSel2.value].forEach(n=>{
+            if(n){
+              const m=markers[n];
+              if(m){
+                if(!map.hasLayer(m)) m.addTo(map);
+                m.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
+                const tt=m.getTooltip();
+                tt.options.direction=tooltipDir(m.getLatLng());
+                tt.update();
+                m.openTooltip();
+                coords.push(m.getLatLng());
+              }
+            }
+          });
+          if(coords.length===1){
+            map.setView(coords[0], map.getZoom());
+          }else if(coords.length===2){
+            map.fitBounds(L.latLngBounds(coords),{padding:[20,20]});
+          }
+        }
         LOCS.forEach(loc=>{
           const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9});
           const cost=COSTS[loc.name];
@@ -727,17 +773,19 @@
                 setTimeout(()=>{
                   document.getElementById('calcCmpBtn').addEventListener('click',()=>{
                     map.removeLayer(choicePopup); choicePopup=null;
-                    locSel2.value=loc.name;
-                    loc2Wrap.classList.remove('hidden');
-                    performCalc();
-                    updateComparePrompt();
-                  });
-                  document.getElementById('calcRepBtn').addEventListener('click',()=>{
-                    map.removeLayer(choicePopup); choicePopup=null;
-                    locSel.value=loc.name;
-                    performCalc();
-                    updateComparePrompt();
-                  });
+                locSel2.value=loc.name;
+                loc2Wrap.classList.remove('hidden');
+                performCalc();
+                updateComparePrompt();
+                highlightSelections();
+              });
+              document.getElementById('calcRepBtn').addEventListener('click',()=>{
+                map.removeLayer(choicePopup); choicePopup=null;
+                locSel.value=loc.name;
+                performCalc();
+                updateComparePrompt();
+                highlightSelections();
+              });
                 },0);
               }else if(locSel.value!==loc.name){
                 if(choicePopup) map.removeLayer(choicePopup);
@@ -748,16 +796,18 @@
                   .addTo(map);
                 setTimeout(()=>{
                   document.getElementById('calcRepBtn').addEventListener('click',()=>{
-                    map.removeLayer(choicePopup); choicePopup=null;
-                    locSel2.value=loc.name;
-                    performCalc();
-                    updateComparePrompt();
-                  });
+                map.removeLayer(choicePopup); choicePopup=null;
+                locSel2.value=loc.name;
+                performCalc();
+                updateComparePrompt();
+                highlightSelections();
+              });
                 },0);
-              }else{
-                locSel.value=loc.name;
-                if(!resWrap.classList.contains('hidden')) performCalc();
-              }
+            }else{
+              locSel.value=loc.name;
+              if(!resWrap.classList.contains('hidden')) performCalc();
+              highlightSelections();
+            }
             } else if(occTab.classList.contains('active')){
               const cost=COSTS[loc.name]||{};
               const newCost=cost.new||null;
@@ -816,6 +866,7 @@
         }
 
         showMarkers('All UK');
+        highlightSelections();
 
         // respond to location dropdown changes
         locSel.addEventListener('change',()=>{
@@ -830,14 +881,7 @@
             map.setView(region.center,region.zoom);
           }
           resetMarkers();
-          const marker=markers[selected.name];
-          if(marker){
-            marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
-            const tt=marker.getTooltip();
-            tt.options.direction=tooltipDir(marker.getLatLng());
-            tt.update();
-            marker.openTooltip();
-          }
+          highlightSelections();
           if(!resWrap.classList.contains('hidden')) performCalc();
           updateComparePrompt();
         });
@@ -855,14 +899,7 @@
             map.setView(region.center,region.zoom);
           }
           resetMarkers();
-          const marker=markers[selected.name];
-          if(marker){
-            marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
-            const tt=marker.getTooltip();
-            tt.options.direction=tooltipDir(marker.getLatLng());
-            tt.update();
-            marker.openTooltip();
-          }
+          highlightSelections();
           if(!resWrap.classList.contains('hidden')) performCalc();
           updateComparePrompt();
         });
