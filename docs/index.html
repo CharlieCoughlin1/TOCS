@@ -786,6 +786,9 @@
         let choicePopup=null;
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
        function highlightSelections(showTips=true){
+          const activeBtn = regionToggle.querySelector('button.active');
+          const region = activeBtn ? activeBtn.textContent : 'All UK';
+          showMarkers(region);
           // close any previously opened tooltips
           Object.values(markers).forEach(m=>m.closeTooltip());
           const coords=[];
