@@ -319,7 +319,11 @@
           .replace(/\uFB03/g,'ffi') // ﬃ
           .replace(/\uFB04/g,'ffl') // ﬄ
           .replace(/\uFB05/g,'ft')  // ﬅ
-          .replace(/\uFB06/g,'st'); // ﬆ
+          .replace(/\uFB06/g,'st')  // ﬆ
+          // fix any corrupted "Sheffield" strings seen as "Shef(eld"
+          .replace(/Shef\(?eld/i,'Sheffield')
+          // strip remaining non-printable characters
+          .replace(/[^\x20-\x7E]/g,'');
       });
 
 
@@ -404,8 +408,8 @@
         .sort((a,b)=>a.name.localeCompare(b.name));
       [...londonLocs,...mainLocs,...otherLocs].forEach(loc=>{
         const opt=document.createElement('option');
-        const displayName = loc.name.normalize('NFKD');
-        opt.value=loc.name;
+        const displayName=loc.name; // name already sanitised above
+        opt.value=displayName;
         opt.textContent=displayName;
         locSel.appendChild(opt);
         locSel2.appendChild(opt.cloneNode(true));
