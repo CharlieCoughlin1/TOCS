@@ -202,7 +202,7 @@
           </div>
         </div>
 
-        <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Calculations use LSH cost data and assume <strong>12&nbsp;m² per average workstation</strong>.</p>
+        <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Calculations use LSH cost data and assume <strong>12.5&nbsp;m² per average workstation</strong>.</p>
       </div>
 
       <div id="occPrompt" class="mb-4 text-gray-500">Please select a location on the map to get started</div>
@@ -311,20 +311,14 @@
         {name:'Warrington',coords:[53.3925,-2.5802],region:'North West'}
       ];
       // Ensure any ligature characters are converted to plain text for consistency
-      LOCS.forEach(loc=>{
-        loc.name = loc.name.normalize('NFKD')
-          .replace(/\uFB00/g,'ff')  // ﬀ
-          .replace(/\uFB01/g,'fi')  // ﬁ
-          .replace(/\uFB02/g,'fl')  // ﬂ
-          .replace(/\uFB03/g,'ffi') // ﬃ
-          .replace(/\uFB04/g,'ffl') // ﬄ
-          .replace(/\uFB05/g,'ft')  // ﬅ
-          .replace(/\uFB06/g,'st')  // ﬆ
-          // fix any corrupted "Sheffield" strings seen as "Shef(eld"
-          .replace(/Shef\(?eld/i,'Sheffield')
-          // strip remaining non-printable characters
+      const LIG_MAP={"\uFB00":"ff","\uFB01":"fi","\uFB02":"fl","\uFB03":"ffi","\uFB04":"ffl","\uFB05":"ft","\uFB06":"st"};
+      function cleanName(name){
+        return name.normalize('NFKD')
+          .replace(/[\uFB00-\uFB06]/g,ch=>LIG_MAP[ch]||'')
+          .replace(/Shef[^a-zA-Z]*eld/i,'Sheffield')
           .replace(/[^\x20-\x7E]/g,'');
-      });
+      }
+      LOCS.forEach(loc=>{ loc.name = cleanName(loc.name); });
 
 
 
@@ -348,6 +342,7 @@
       // ---------- helpers ----------
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
+      const BASE_SQM_PER_PERSON = 12.5;
       function renderResult(el,label,valueStr){
         el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
       }
@@ -408,7 +403,7 @@
         .sort((a,b)=>a.name.localeCompare(b.name));
       [...londonLocs,...mainLocs,...otherLocs].forEach(loc=>{
         const opt=document.createElement('option');
-        const displayName=loc.name; // name already sanitised above
+        const displayName=cleanName(loc.name); // extra sanitisation
         opt.value=displayName;
         opt.textContent=displayName;
         locSel.appendChild(opt);
@@ -630,7 +625,7 @@
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const typeLabel=typeSel.value || '';
         const lines=[header.join(',')];
-        const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
+        const sqmPerPerson=BASE_SQM_PER_PERSON*TYPE_SPACE[typeSel.value];
         const n=usePeople?parseInt(pplInp.value,10):0;
         const budget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
         function q(str){return `"${String(str).replace(/"/g,'""')}"`;}
@@ -701,6 +696,11 @@
       budInp.addEventListener('input',()=>{
         const raw=budInp.value.replace(/[^0-9]/g,'');
         budInp.value=raw?parseInt(raw,10).toLocaleString():'';
+        if(!budGrp.classList.contains('hidden') && !resWrap.classList.contains('hidden')) performCalc();
+      });
+
+      pplInp.addEventListener('input',()=>{
+        if(!pplGrp.classList.contains('hidden') && !resWrap.classList.contains('hidden')) performCalc();
       });
 
       function performCalc(){
@@ -711,7 +711,7 @@
         if(!typeSel.value){errs.type.style.display='block'; typeSel.classList.add('error'); bad=true; }
 
         const usePeople=modeValue==='people';
-        let n,budget; const sqmPerPerson=12*TYPE_SPACE[typeSel.value];
+        let n,budget; const sqmPerPerson=BASE_SQM_PER_PERSON*TYPE_SPACE[typeSel.value];
         if(usePeople){
           n=parseInt(pplInp.value,10);
           if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
