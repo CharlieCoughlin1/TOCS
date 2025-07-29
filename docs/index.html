@@ -61,6 +61,8 @@
     .compare-popup .btn{padding:0.25rem 0.5rem;font-size:0.75rem;border-radius:0.25rem;}
     .compare-popup .btn-red{background:var(--lsh-red);color:#fff;}
     .compare-popup .btn-gray{background:#e5e7eb;color:#111827;}
+    .remove-btn{position:absolute;top:0;right:0;padding:0 0.25rem;line-height:1;font-size:0.875rem;}
+    .remove-btn:hover{color:var(--lsh-red);}
     /* bar labels */
     .bar-label{line-height:1;text-align:center;}
     .bar-label small{font-size:0.65rem;}
@@ -133,13 +135,13 @@
             </select>
             <p id="locationError" class="err-msg mb-3">Please select a location</p>
           </div>
-          <div id="loc2Wrap" class="flex-1 hidden">
+        <div id="loc2Wrap" class="flex-1 hidden relative">
             <label for="locationSelect2" class="block text-lg font-din-bold text-gray-700 mb-1">Location 2</label>
-            <div class="relative">
+            <button id="removeLoc2" class="remove-btn" style="display:none" aria-label="Remove location 2">&times;</button>
+            <div>
               <select id="locationSelect2" class="w-full border rounded p-2 mb-1 bg-white pr-6">
                 <option value="" disabled selected>Please select</option>
               </select>
-              <button id="removeLoc2" class="absolute right-2 top-1/2" style="transform:translateY(-50%);display:none" aria-label="Remove location 2">&times;</button>
             </div>
           </div>
         </div>
@@ -501,9 +503,14 @@
           d.new?.totalSqft||0,
           d.old?.totalSqft||0
         ]));
-        occData.forEach(d=>{
+        occData.forEach((d,idx)=>{
           const col=document.createElement("div");
-          col.className="bar-col flex flex-col items-center justify-between p-2 border rounded h-56";
+          col.className="bar-col flex flex-col items-center justify-between p-2 border rounded h-56 relative";
+          const rem=document.createElement('button');
+          rem.className='remove-btn';
+          rem.innerHTML='&times;';
+          rem.addEventListener('click',()=>{occData.splice(idx,1);updateOccUI();});
+          col.appendChild(rem);
           const label=document.createElement("div");
           label.className="text-sm font-din-bold mb-1 text-center h-10 flex items-center justify-center";
           label.textContent=d.name;
@@ -530,8 +537,13 @@
           labs.appendChild(labOld);
           col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
           occBars.appendChild(col);
+          const wrap=document.createElement('div');
+          wrap.className='relative mb-4';
           const table=document.createElement("table");
-          table.className="w-full text-sm border-collapse mb-4";
+          table.className="w-full text-sm border-collapse";
+          const rem2=rem.cloneNode(true);
+          rem2.addEventListener('click',()=>{occData.splice(idx,1);updateOccUI();});
+          wrap.appendChild(rem2);
           const headers=['Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
           const keys=['totalSqft','netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalWorkstation'];
           const headRow='<tr class="bg-gray-50"><th class="border px-2 py-1 text-center">Building age</th>'+headers.map((h,i)=>`<th class="border px-2 py-1 text-center${i>=4?' extra-col':''}">${h}</th>`).join('')+'</tr>';
@@ -546,7 +558,8 @@
           if(showNew) rows+=buildRow('New build',d.new);
           if(showOld) rows+=buildRow('20‑yr old',d.old);
           table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1 text-center" colspan="${keys.length+1}">${d.name}</th></tr>${headRow}</thead><tbody>${rows}</tbody>`;
-          occTables.appendChild(table);
+          wrap.appendChild(table);
+          occTables.appendChild(wrap);
           function applyHeights(){
             nb.style.opacity=showNew?"1":"0";
             ob.style.opacity=showOld?"1":"0";
@@ -799,6 +812,17 @@
             return {dir:(size.y-p.y>80?'bottom':'top'),offset:[0,(size.y-p.y>80?8:-8)]};
           }
         }
+        function ensurePopupVisible(latlng){
+          const p=map.latLngToContainerPoint(latlng);
+          const size=map.getSize();
+          const padX=100, padY=60;
+          let dx=0, dy=0;
+          if(p.x<padX) dx=padX-p.x;
+          else if(size.x-p.x<padX) dx=-(padX-(size.x-p.x));
+          if(p.y<padY) dy=padY-p.y;
+          else if(size.y-p.y<padY) dy=-(padY-(size.y-p.y));
+          if(dx||dy) map.panBy([dx,dy],{animate:false});
+        }
         const regionToggle=$('regionToggle');
         REGIONS.forEach(({name,center,zoom},i)=>{
           const btn=document.createElement('button');
@@ -913,6 +937,7 @@
               }else if(locSel.value!==loc.name && !locSel2.value){
                 if(choicePopup) map.removeLayer(choicePopup);
                 const cfg=comparePopupConfig(marker.getLatLng());
+                ensurePopupVisible(marker.getLatLng());
                 choicePopup=L.tooltip({direction:cfg.dir,interactive:true,className:'compare-popup',opacity:1,offset:cfg.offset})
                   .setLatLng(loc.coords)
                   .setContent(`<div class="compare-popup flex gap-2"><button class="btn btn-red" id="calcCmpBtn">Compare</button><button class="btn btn-gray" id="calcRepBtn">Replace</button></div>`)
@@ -938,6 +963,7 @@
               }else if(locSel.value!==loc.name){
                 if(choicePopup) map.removeLayer(choicePopup);
                 const cfg=comparePopupConfig(marker.getLatLng());
+                ensurePopupVisible(marker.getLatLng());
                 const content = locSel2.value
                   ? `<div class="compare-popup flex gap-2"><button class="btn btn-gray" id="repLoc1Btn">Replace location 1</button><button class="btn btn-gray" id="repLoc2Btn">Replace location 2</button></div>`
                   : `<div class="compare-popup"><button class="btn btn-gray" id="calcRepBtn">Replace</button></div>`;
@@ -985,10 +1011,15 @@
               const oldCost=cost.old||null;
               if(choicePopup) map.removeLayer(choicePopup);
               if(occData.length>0){
-                const content = occData.length>=3
-                  ? `<div class="compare-popup"><button class="btn btn-gray" id="repBtn">Replace</button></div>`
-                  : `<div class="compare-popup flex gap-2"><button class="btn btn-red" id="cmpBtn">Compare</button><button class="btn btn-gray" id="repBtn">Replace</button></div>`;
+                let content;
+                if(occData.length>=3){
+                  const btns = occData.map((_,i)=>`<button class="btn btn-gray repOpt" data-idx="${i}">Replace location ${i+1}</button>`).join('');
+                  content = `<div class="compare-popup flex flex-col gap-1">${btns}</div>`;
+                }else{
+                  content = `<div class="compare-popup flex gap-2"><button class="btn btn-red" id="cmpBtn">Compare</button><button class="btn btn-gray" id="repBtn">Replace</button></div>`;
+                }
                 const cfg=comparePopupConfig(marker.getLatLng());
+                ensurePopupVisible(marker.getLatLng());
                 choicePopup=L.tooltip({direction:cfg.dir,interactive:true,className:'compare-popup',opacity:1,offset:cfg.offset})
                   .setLatLng(loc.coords)
                   .setContent(content)
@@ -1003,11 +1034,23 @@
                       updateOccUI();
                     });
                   }
-                  document.getElementById('repBtn').addEventListener('click',()=>{
-                    map.removeLayer(choicePopup); choicePopup=null;
-                    document.getElementById('occLimitMsg').classList.add('hidden');
-                    occData[occData.length-1]={name:loc.name,new:newCost,old:oldCost};
-                    updateOccUI();
+                  const rep=document.getElementById('repBtn');
+                  if(rep){
+                    rep.addEventListener('click',()=>{
+                      map.removeLayer(choicePopup); choicePopup=null;
+                      document.getElementById('occLimitMsg').classList.add('hidden');
+                      occData[occData.length-1]={name:loc.name,new:newCost,old:oldCost};
+                      updateOccUI();
+                    });
+                  }
+                  document.querySelectorAll('.repOpt').forEach(btn=>{
+                    btn.addEventListener('click',()=>{
+                      const idx=+btn.dataset.idx;
+                      map.removeLayer(choicePopup); choicePopup=null;
+                      document.getElementById('occLimitMsg').classList.add('hidden');
+                      occData[idx]={name:loc.name,new:newCost,old:oldCost};
+                      updateOccUI();
+                    });
                   });
                 },0);
               }else{
