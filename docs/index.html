@@ -130,11 +130,14 @@
         <p id="ageError" class="err-msg mb-3">Please select building age</p>
 
         <div class="md:flex gap-4">
-          <div class="flex-1">
+          <div id="loc1Wrap" class="flex-1 relative">
             <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
-            <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
-              <option value="" disabled selected>Please select</option>
-            </select>
+            <button id="removeLoc1" class="remove-btn hidden" aria-label="Remove location 1">&times;</button>
+            <div>
+              <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
+                <option value="" disabled selected>Please select</option>
+              </select>
+            </div>
             <p id="locationError" class="err-msg mb-3">Please select a location</p>
           </div>
         <div id="loc2Wrap" class="flex-1 hidden relative">
@@ -213,20 +216,8 @@
         <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Calculations use LSH cost data and assume <strong>12.5&nbsp;m² per average workstation</strong>.</p>
       </div>
 
-      <div id="occPrompt" class="mb-4 text-center text-gray-500">
-        <div class="flex justify-center gap-4 mb-4">
-          <div class="occ-placeholder">+</div>
-          <div class="occ-placeholder">+</div>
-          <div class="occ-placeholder">+</div>
-        </div>
-        <button id="occAddBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold mb-2">Add location</button>
-        <div id="occAddSelectWrap" class="mt-2 hidden">
-          <select id="occAddSelect" class="border rounded p-2 bg-white">
-            <option value="" disabled selected>Please select</option>
-          </select>
-        </div>
-      </div>
-      <div id="occWrapper" class="hidden">
+      <div id="occPrompt" class="mb-4 text-center text-gray-500 hidden"></div>
+      <div id="occWrapper">
         <div class="flex justify-between items-center mb-4 relative">
           <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
           <div class="relative">
@@ -377,6 +368,7 @@
       // -----------------------------
       const locSel=$('locationSelect');
       const locSel2=$('locationSelect2');
+      const removeLoc1=$('removeLoc1');
       const removeLoc2=$('removeLoc2');
       const loc2Wrap=$('loc2Wrap');
       const comparePrompt=$('comparePrompt');
@@ -399,7 +391,6 @@
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt"); const occExpand=$("occExpand");
-      const occAddBtn=$('occAddBtn'); const occAddSelect=$('occAddSelect'); const occAddSelectWrap=$('occAddSelectWrap');
       const occFilterBtn=$('occFilterBtn'); const occFilterMenu=$('occFilterMenu');
       const filterNew=$('filterNew'); const filterOld=$('filterOld');
       const occExpandWrap=$('occExpandWrap'); const occLimitMsg=$('occLimitMsg');
@@ -432,8 +423,8 @@
         opt.textContent=displayName;
         locSel.appendChild(opt);
         locSel2.appendChild(opt.cloneNode(true));
-        occAddSelect.appendChild(opt.cloneNode(true));
       });
+      const addOptionsHTML = locSel.innerHTML;
 
       modeButtons.forEach(btn=>{
         btn.addEventListener('click',()=>{
@@ -479,7 +470,9 @@
 
       function updateComparePrompt(){
         comparePrompt.classList.toggle('hidden',!(locSel.value && !locSel2.value));
-        removeLoc2.style.display = locSel2.value ? 'block' : 'none';
+        const showRemove = !!locSel2.value;
+        removeLoc2.style.display = showRemove ? 'block' : 'none';
+        removeLoc1.style.display = showRemove ? 'block' : 'none';
       }
 
       function switchTab(tab){
@@ -511,24 +504,22 @@
         occBars.innerHTML="";
         occTables.innerHTML="";
         occLimitMsg.classList.add('hidden');
-       if(occData.length===0){
-         occWrap.classList.add("hidden");
-         occPrompt.classList.remove("hidden");
-        occTables.classList.remove('expanded');
-        expanded=false;
-        occExpand.textContent='Expand';
-        occExpandWrap.classList.add('hidden');
-        occDownloadWrap.classList.add('hidden');
-         return;
-       }
-        occPrompt.classList.add("hidden");
-        occWrap.classList.remove("hidden");
-        occExpandWrap.classList.remove('hidden');
-        occDownloadWrap.classList.remove('hidden');
-        const max=Math.max(...occData.flatMap(d=>[
-          d.new?.totalSqft||0,
-          d.old?.totalSqft||0
-        ]));
+        occPrompt.classList.add('hidden');
+        occWrap.classList.remove('hidden');
+        const hasData = occData.length > 0;
+        if(!hasData){
+          occTables.classList.remove('expanded');
+          expanded=false;
+        }
+        occExpandWrap.classList.toggle('hidden', !hasData);
+        occDownloadWrap.classList.toggle('hidden', !hasData);
+        let max=0;
+        if(hasData){
+          max=Math.max(...occData.flatMap(d=>[
+            d.new?.totalSqft||0,
+            d.old?.totalSqft||0
+          ]));
+        }
         occData.forEach((d,idx)=>{
           const col=document.createElement("div");
           col.className="bar-col flex flex-col items-center justify-between p-2 border rounded h-56 relative";
@@ -597,8 +588,43 @@
           }
           setTimeout(applyHeights,20);
         });
-        occTables.classList.toggle('expanded', expanded);
-        occExpand.textContent = expanded ? 'Collapse' : 'Expand';
+        for(let i=occData.length;i<3;i++){
+          const col=document.createElement('div');
+          col.className='bar-col flex flex-col items-center justify-center p-2 border rounded h-56';
+          const plus=document.createElement('div');
+          plus.className='occ-placeholder mb-2';
+          plus.textContent='+';
+          const btn=document.createElement('button');
+          btn.className='bg-lsh-red hover:bg-lsh-red-dark text-white px-2 py-1 rounded font-din-bold mb-2';
+          btn.textContent='Add location';
+          const wrap=document.createElement('div');
+          wrap.className='mt-2 hidden';
+          const sel=document.createElement('select');
+          sel.className='border rounded p-2 bg-white';
+          sel.innerHTML=addOptionsHTML;
+          wrap.appendChild(sel);
+          btn.addEventListener('click',()=>{wrap.classList.toggle('hidden');});
+          sel.addEventListener('change',()=>{
+            const val=sel.value;
+            if(!val) return;
+            if(occData.length>=3){
+              occLimitMsg.classList.remove('hidden');
+              return;
+            }
+            occLimitMsg.classList.add('hidden');
+            const cost=COSTS[val]||{};
+            occData.push({name:val,new:cost.new||null,old:cost.old||null});
+            updateOccUI();
+          });
+          col.appendChild(plus);
+          col.appendChild(btn);
+          col.appendChild(wrap);
+          occBars.appendChild(col);
+        }
+        if(hasData){
+          occTables.classList.toggle('expanded', expanded);
+          occExpand.textContent = expanded ? 'Collapse' : 'Expand';
+        }
       }
 
       occFilterBtn.addEventListener('click',e=>{
@@ -610,21 +636,6 @@
       filterOld.addEventListener('change',()=>{showOld=filterOld.checked; updateOccUI();});
 
       occClear.addEventListener('click',()=>{occData=[]; document.getElementById('occLimitMsg').classList.add('hidden'); updateOccUI();});
-      occAddBtn.addEventListener('click',()=>{occAddSelectWrap.classList.toggle('hidden');});
-      occAddSelect.addEventListener('change',()=>{
-        const val=occAddSelect.value;
-        if(!val) return;
-        if(occData.length>=3){
-          occLimitMsg.classList.remove('hidden');
-          return;
-        }
-        occLimitMsg.classList.add('hidden');
-        const cost=COSTS[val]||{};
-        occData.push({name:val,new:cost.new||null,old:cost.old||null});
-        occAddSelect.value='';
-        occAddSelectWrap.classList.add('hidden');
-        updateOccUI();
-      });
       calcClear.addEventListener('click',()=>{
         modeValue=''; ageValue='';
         [locSel,locSel2,typeSel,pplInp,budInp].forEach(el=>{el.value='';});
@@ -641,6 +652,18 @@
       removeLoc2.addEventListener('click',()=>{
         locSel2.value='';
         loc2Wrap.classList.add('hidden');
+        highlightSelections();
+        updateComparePrompt();
+        if(!resWrap.classList.contains('hidden')) performCalc();
+      });
+      removeLoc1.addEventListener('click',()=>{
+        if(locSel2.value){
+          locSel.value=locSel2.value;
+          locSel2.value='';
+          loc2Wrap.classList.add('hidden');
+        }else{
+          locSel.value='';
+        }
         highlightSelections();
         updateComparePrompt();
         if(!resWrap.classList.contains('hidden')) performCalc();
