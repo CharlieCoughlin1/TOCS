@@ -64,7 +64,8 @@
     .remove-btn{position:absolute;top:0;right:0;padding:0 0.25rem;line-height:1;font-size:0.875rem;}
     .remove-btn:hover{color:var(--lsh-red);}
     .table-remove{position:sticky;right:0;top:0;z-index:10;}
-    .occ-placeholder{border:2px dashed #cbd5e0;border-radius:0.25rem;width:4rem;height:4rem;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#cbd5e0;}
+    .occ-placeholder{display:flex;align-items:center;justify-content:center;font-size:2rem;color:#cbd5e0;}
+    .placeholder-col{border:2px dashed #cbd5e0;}
     /* bar labels */
     .bar-label{line-height:1;text-align:center;}
     .bar-label small{font-size:0.65rem;}
@@ -79,7 +80,8 @@
     #occTables th{white-space:nowrap;}
     /* allow occupancy bars to scroll horizontally */
     #occBars{overflow-x:auto;}
-    #occBars .bar-col{flex:0 0 8rem;}
+    #occBars .bar-col{flex:1 0 8rem;}
+    #occBars.placeholder{justify-content:space-evenly;padding:0 0.5rem;}
     button{transition:transform .1s ease;}
     button:active{transform:scale(.95);}
     .fade-in{animation:fadeIn .3s ease;}
@@ -507,6 +509,7 @@
         occPrompt.classList.add('hidden');
         occWrap.classList.remove('hidden');
         const hasData = occData.length > 0;
+        occBars.classList.toggle('placeholder', !hasData);
         if(!hasData){
           occTables.classList.remove('expanded');
           expanded=false;
@@ -590,7 +593,7 @@
         });
         for(let i=occData.length;i<3;i++){
           const col=document.createElement('div');
-          col.className='bar-col flex flex-col items-center justify-center p-2 border rounded h-56';
+          col.className='bar-col placeholder-col flex flex-col items-center justify-center p-2 rounded h-56';
           const plus=document.createElement('div');
           plus.className='occ-placeholder mb-2';
           plus.textContent='+';
