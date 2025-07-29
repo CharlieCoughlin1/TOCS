@@ -252,7 +252,7 @@
             </div>
           </div>
         </div>
-        <p class="text-xs text-gray-500" id="occUnits">All costs are per sq ft.</p>
+        <p class="text-xs text-gray-500 hidden" id="occUnits">All costs are per sq ft excluding total per workstation.</p>
       </div>
     </section>
   </main>
@@ -397,6 +397,7 @@
       const filterNew=$('filterNew'); const filterOld=$('filterOld');
       const occExpandWrap=$('occExpandWrap'); const occLimitMsg=$('occLimitMsg');
       const occDownloadWrap=$('occDownloadWrap');
+      const occUnits=$('occUnits');
       const downloadBtn=$('downloadBtn');
       const downloadMenu=$('downloadMenu');
       const downloadCsv=$('downloadCsv');
@@ -524,6 +525,7 @@
         }
         occExpandWrap.classList.toggle('hidden', !hasData);
         occDownloadWrap.classList.toggle('hidden', !hasData);
+        occUnits.classList.toggle('hidden', !hasData);
         let max=0;
         if(hasData){
           max=Math.max(...occData.flatMap(d=>[
@@ -573,7 +575,7 @@
           rem2.classList.add('table-remove');
           rem2.addEventListener('click',()=>{occData.splice(idx,1);updateOccUI();});
           wrap.appendChild(rem2);
-          const headers=['Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
+          const headers=['Total','Net effective rent','Business rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
           const keys=['totalSqft','netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalWorkstation'];
           const headRow='<tr class="bg-gray-50"><th class="border px-2 py-1 text-center">Building age</th>'+headers.map((h,i)=>`<th class="border px-2 py-1 text-center${i>=4?' extra-col':''}">${h}</th>`).join('')+'</tr>';
           function buildRow(label,obj){
@@ -682,8 +684,8 @@
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
       function buildCSV(){
-        const headers=['Building age','Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
-        const lines=[];
+        const headers=['Building age','Total','Net effective rent','Business rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
+        const lines=['Lambert Smith Hampton'];
         function row(label,obj){
           return [
             label,
@@ -697,6 +699,7 @@
             `"£${Math.round(obj.totalWorkstation).toLocaleString()}"`
           ].join(',');
         }
+        lines.push('');
         occData.forEach(d=>{
           lines.push(d.name);
           lines.push(headers.join(','));
@@ -704,6 +707,7 @@
           if(showOld) lines.push(row('20-yr old',d.old));
           lines.push('');
         });
+        lines.push('Property of Lambert Smith Hampton');
         return lines.join('\r\n');
       }
 
@@ -726,7 +730,7 @@
         const header=['Location','Building age',usePeople?'People':'Budget (\u00A3)','Workstation type',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const typeLabel=typeSel.value || '';
-        const lines=[header.join(',')];
+        const lines=['Lambert Smith Hampton', '', header.join(',')];
         const sqmPerPerson=BASE_SQM_PER_PERSON*TYPE_SPACE[typeSel.value];
         const n=usePeople?parseInt(pplInp.value,10):0;
         const budget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
@@ -763,6 +767,7 @@
         }
         addRow(locSel.value);
         if(locSel2.value) addRow(locSel2.value);
+        lines.push('Property of Lambert Smith Hampton');
         return lines.join('\r\n');
       }
 
