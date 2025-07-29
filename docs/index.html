@@ -135,9 +135,12 @@
           </div>
           <div id="loc2Wrap" class="flex-1 hidden">
             <label for="locationSelect2" class="block text-lg font-din-bold text-gray-700 mb-1">Location 2</label>
-            <select id="locationSelect2" class="w-full border rounded p-2 mb-1 bg-white">
-              <option value="" disabled selected>Please select</option>
-            </select>
+            <div class="relative">
+              <select id="locationSelect2" class="w-full border rounded p-2 mb-1 bg-white pr-6">
+                <option value="" disabled selected>Please select</option>
+              </select>
+              <button id="removeLoc2" class="absolute right-2 top-1/2" style="transform:translateY(-50%);display:none" aria-label="Remove location 2">&times;</button>
+            </div>
           </div>
         </div>
         <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location on the map to compare results.</p>
@@ -356,6 +359,7 @@
       // -----------------------------
       const locSel=$('locationSelect');
       const locSel2=$('locationSelect2');
+      const removeLoc2=$('removeLoc2');
       const loc2Wrap=$('loc2Wrap');
       const comparePrompt=$('comparePrompt');
       const calcClear=$('calcClear');
@@ -455,6 +459,7 @@
 
       function updateComparePrompt(){
         comparePrompt.classList.toggle('hidden',!(locSel.value && !locSel2.value));
+        removeLoc2.style.display = locSel2.value ? 'block' : 'none';
       }
 
       function switchTab(tab){
@@ -577,6 +582,13 @@
         updateComparePrompt();
         toggleInputs();
         highlightSelections(false);
+      });
+      removeLoc2.addEventListener('click',()=>{
+        locSel2.value='';
+        loc2Wrap.classList.add('hidden');
+        highlightSelections();
+        updateComparePrompt();
+        if(!resWrap.classList.contains('hidden')) performCalc();
       });
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
@@ -926,19 +938,41 @@
               }else if(locSel.value!==loc.name){
                 if(choicePopup) map.removeLayer(choicePopup);
                 const cfg=comparePopupConfig(marker.getLatLng());
+                const content = locSel2.value
+                  ? `<div class="compare-popup flex gap-2"><button class="btn btn-gray" id="repLoc1Btn">Replace location 1</button><button class="btn btn-gray" id="repLoc2Btn">Replace location 2</button></div>`
+                  : `<div class="compare-popup"><button class="btn btn-gray" id="calcRepBtn">Replace</button></div>`;
                 choicePopup=L.tooltip({direction:cfg.dir,interactive:true,className:'compare-popup',opacity:1,offset:cfg.offset})
                   .setLatLng(loc.coords)
-                  .setContent(`<div class="compare-popup"><button class="btn btn-gray" id="calcRepBtn">Replace</button></div>`)
+                  .setContent(content)
                   .addTo(map);
                 setTimeout(()=>{
-                  document.getElementById('calcRepBtn').addEventListener('click',()=>{
-                map.removeLayer(choicePopup); choicePopup=null;
-                locSel2.value=loc.name;
-                loc2Wrap.classList.remove('hidden');
-                performCalc();
-                updateComparePrompt();
-                highlightSelections();
-              });
+                  if(locSel2.value){
+                    document.getElementById('repLoc1Btn').addEventListener('click',()=>{
+                      map.removeLayer(choicePopup); choicePopup=null;
+                      locSel.value=loc.name;
+                      loc2Wrap.classList.remove('hidden');
+                      performCalc();
+                      updateComparePrompt();
+                      highlightSelections();
+                    });
+                    document.getElementById('repLoc2Btn').addEventListener('click',()=>{
+                      map.removeLayer(choicePopup); choicePopup=null;
+                      locSel2.value=loc.name;
+                      loc2Wrap.classList.remove('hidden');
+                      performCalc();
+                      updateComparePrompt();
+                      highlightSelections();
+                    });
+                  }else{
+                    document.getElementById('calcRepBtn').addEventListener('click',()=>{
+                      map.removeLayer(choicePopup); choicePopup=null;
+                      locSel2.value=loc.name;
+                      loc2Wrap.classList.remove('hidden');
+                      performCalc();
+                      updateComparePrompt();
+                      highlightSelections();
+                    });
+                  }
                 },0);
             }else{
               locSel.value=loc.name;
