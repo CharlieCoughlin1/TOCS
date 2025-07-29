@@ -616,7 +616,7 @@ const COSTS =
       "totalWorkstation": 16310.0
     }
   },
-  "London - West End non-core": {
+  "London - West End Non Core": {
     "new": {
       "netEffectiveRent": 81.64,
       "rates": 45.29,
