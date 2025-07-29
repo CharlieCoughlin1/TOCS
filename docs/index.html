@@ -472,9 +472,17 @@
 
       function updateComparePrompt(){
         comparePrompt.classList.toggle('hidden',!(locSel.value && !locSel2.value));
-        const showRemove = !!locSel2.value;
-        removeLoc2.style.display = showRemove ? 'block' : 'none';
-        removeLoc1.style.display = showRemove ? 'block' : 'none';
+        removeLoc1.style.display = locSel.value ? 'block' : 'none';
+        removeLoc2.style.display = locSel2.value ? 'block' : 'none';
+      }
+
+      function autoCalcIfReady(){
+        const ready =
+          locSel.value && ageValue && modeValue && typeSel.value &&
+          ((modeValue==='people' && pplInp.value) ||
+           (modeValue==='budget' && budInp.value));
+        if(!resWrap.classList.contains('hidden')) performCalc();
+        else if(ready) performCalc();
       }
 
       function switchTab(tab){
@@ -657,7 +665,7 @@
         loc2Wrap.classList.add('hidden');
         highlightSelections();
         updateComparePrompt();
-        if(!resWrap.classList.contains('hidden')) performCalc();
+        autoCalcIfReady();
       });
       removeLoc1.addEventListener('click',()=>{
         if(locSel2.value){
@@ -669,7 +677,7 @@
         }
         highlightSelections();
         updateComparePrompt();
-        if(!resWrap.classList.contains('hidden')) performCalc();
+        autoCalcIfReady();
       });
       occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
@@ -856,7 +864,7 @@
 
       // Map ------------------------------------------------------------------
       if(typeof L!=='undefined'){
-        const map=L.map('map',{zoomControl:false,attributionControl:false}).setView(REGIONS[0].center,REGIONS[0].zoom);
+        map=L.map('map',{zoomControl:false,attributionControl:false}).setView(REGIONS[0].center,REGIONS[0].zoom);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',attribution:'&copy; OpenStreetMap & CartoDB'}).addTo(map);
 
         function tooltipDir(latlng){
@@ -1002,7 +1010,7 @@
                 locSel.value=loc.name;
                 loc2Wrap.classList.remove('hidden');
                 updateComparePrompt();
-                if(!resWrap.classList.contains('hidden')) performCalc();
+                autoCalcIfReady();
               }else if(locSel.value!==loc.name && !locSel2.value){
                 if(choicePopup) map.removeLayer(choicePopup);
                 const cfg=comparePopupConfig(marker.getLatLng());
@@ -1016,7 +1024,7 @@
                     map.removeLayer(choicePopup); choicePopup=null;
                 locSel2.value=loc.name;
                 loc2Wrap.classList.remove('hidden');
-                performCalc();
+                autoCalcIfReady();
                 updateComparePrompt();
                 highlightSelections();
               });
@@ -1024,7 +1032,7 @@
                 map.removeLayer(choicePopup); choicePopup=null;
                 locSel.value=loc.name;
                 loc2Wrap.classList.remove('hidden');
-                performCalc();
+                autoCalcIfReady();
                 updateComparePrompt();
                 highlightSelections();
               });
@@ -1046,7 +1054,7 @@
                       map.removeLayer(choicePopup); choicePopup=null;
                       locSel.value=loc.name;
                       loc2Wrap.classList.remove('hidden');
-                      performCalc();
+                      autoCalcIfReady();
                       updateComparePrompt();
                       highlightSelections();
                     });
@@ -1054,7 +1062,7 @@
                       map.removeLayer(choicePopup); choicePopup=null;
                       locSel2.value=loc.name;
                       loc2Wrap.classList.remove('hidden');
-                      performCalc();
+                      autoCalcIfReady();
                       updateComparePrompt();
                       highlightSelections();
                     });
@@ -1063,7 +1071,7 @@
                       map.removeLayer(choicePopup); choicePopup=null;
                       locSel2.value=loc.name;
                       loc2Wrap.classList.remove('hidden');
-                      performCalc();
+                      autoCalcIfReady();
                       updateComparePrompt();
                       highlightSelections();
                     });
@@ -1071,7 +1079,7 @@
                 },0);
             }else{
               locSel.value=loc.name;
-              if(!resWrap.classList.contains('hidden')) performCalc();
+              autoCalcIfReady();
               highlightSelections();
             }
             } else if(occTab.classList.contains('active')){
@@ -1167,7 +1175,7 @@
           }
           resetMarkers();
           highlightSelections();
-          if(!resWrap.classList.contains('hidden')) performCalc();
+          autoCalcIfReady();
           updateComparePrompt();
         });
 
@@ -1179,7 +1187,7 @@
           showMarkers('All UK');
           resetMarkers();
           highlightSelections();
-          if(!resWrap.classList.contains('hidden')) performCalc();
+          autoCalcIfReady();
           updateComparePrompt();
         });
 
