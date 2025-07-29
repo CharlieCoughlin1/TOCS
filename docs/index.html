@@ -345,6 +345,8 @@
       ];
 
       const $=id=>document.getElementById(id);
+      // variables used across functions and map setup
+      let map, regionToggle, showMarkers, highlightSelections, choicePopup;
       // ---------- helpers ----------
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
@@ -793,7 +795,6 @@
 
       toggleInputs(); // initialise visibility
       updateComparePrompt();
-      switchTab('calc');
 
       // Map ------------------------------------------------------------------
       if(typeof L!=='undefined'){
@@ -831,7 +832,7 @@
           else if(size.y-p.y<padY) dy=-(padY-(size.y-p.y));
           if(dx||dy) map.panBy([dx,dy],{animate:false});
         }
-        const regionToggle=$('regionToggle');
+        regionToggle=$('regionToggle');
         REGIONS.forEach(({name,center,zoom},i)=>{
           const btn=document.createElement('button');
           btn.textContent=name;
@@ -848,9 +849,9 @@
         });
 
         const markers={};
-        let choicePopup=null;
+        choicePopup=null;
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
-       function highlightSelections(showTips=true){
+       highlightSelections=function(showTips=true){
           const activeBtn = regionToggle.querySelector('button.active');
           const region = activeBtn ? activeBtn.textContent : 'All UK';
           showMarkers(region);
@@ -1073,7 +1074,7 @@
           markers[loc.name]=marker;
         });
 
-        function showMarkers(region,all=false){
+        showMarkers=function(region,all=false){
           Object.values(markers).forEach(m=>{ if(map.hasLayer(m)) m.remove(); });
           const coords=[];
           LOCS.forEach(loc=>{
@@ -1091,6 +1092,7 @@
 
         showMarkers('All UK');
         highlightSelections(false);
+        switchTab('calc');
 
         // respond to location dropdown changes
         locSel.addEventListener('change',()=>{
