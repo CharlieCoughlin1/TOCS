@@ -63,6 +63,8 @@
     .compare-popup .btn-gray{background:#e5e7eb;color:#111827;}
     .remove-btn{position:absolute;top:0;right:0;padding:0 0.25rem;line-height:1;font-size:0.875rem;}
     .remove-btn:hover{color:var(--lsh-red);}
+    .table-remove{position:sticky;right:0;top:0;z-index:10;}
+    .occ-placeholder{border:2px dashed #cbd5e0;border-radius:0.25rem;width:4rem;height:4rem;display:flex;align-items:center;justify-content:center;font-size:1.5rem;color:#cbd5e0;}
     /* bar labels */
     .bar-label{line-height:1;text-align:center;}
     .bar-label small{font-size:0.65rem;}
@@ -211,7 +213,19 @@
         <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Calculations use LSH cost data and assume <strong>12.5&nbsp;m² per average workstation</strong>.</p>
       </div>
 
-      <div id="occPrompt" class="mb-4 text-gray-500">Please select a location on the map to get started</div>
+      <div id="occPrompt" class="mb-4 text-center text-gray-500">
+        <div class="flex justify-center gap-4 mb-4">
+          <div class="occ-placeholder">+</div>
+          <div class="occ-placeholder">+</div>
+          <div class="occ-placeholder">+</div>
+        </div>
+        <button id="occAddBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold mb-2">Add location</button>
+        <div id="occAddSelectWrap" class="mt-2 hidden">
+          <select id="occAddSelect" class="border rounded p-2 bg-white">
+            <option value="" disabled selected>Please select</option>
+          </select>
+        </div>
+      </div>
       <div id="occWrapper" class="hidden">
         <div class="flex justify-between items-center mb-4 relative">
           <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
@@ -385,6 +399,7 @@
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt"); const occExpand=$("occExpand");
+      const occAddBtn=$('occAddBtn'); const occAddSelect=$('occAddSelect'); const occAddSelectWrap=$('occAddSelectWrap');
       const occFilterBtn=$('occFilterBtn'); const occFilterMenu=$('occFilterMenu');
       const filterNew=$('filterNew'); const filterOld=$('filterOld');
       const occExpandWrap=$('occExpandWrap'); const occLimitMsg=$('occLimitMsg');
@@ -417,6 +432,7 @@
         opt.textContent=displayName;
         locSel.appendChild(opt);
         locSel2.appendChild(opt.cloneNode(true));
+        occAddSelect.appendChild(opt.cloneNode(true));
       });
 
       modeButtons.forEach(btn=>{
@@ -552,6 +568,7 @@
           const table=document.createElement("table");
           table.className="w-full text-sm border-collapse";
           const rem2=rem.cloneNode(true);
+          rem2.classList.add('table-remove');
           rem2.addEventListener('click',()=>{occData.splice(idx,1);updateOccUI();});
           wrap.appendChild(rem2);
           const headers=['Total','Net effective rent','Rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
@@ -593,6 +610,21 @@
       filterOld.addEventListener('change',()=>{showOld=filterOld.checked; updateOccUI();});
 
       occClear.addEventListener('click',()=>{occData=[]; document.getElementById('occLimitMsg').classList.add('hidden'); updateOccUI();});
+      occAddBtn.addEventListener('click',()=>{occAddSelectWrap.classList.toggle('hidden');});
+      occAddSelect.addEventListener('change',()=>{
+        const val=occAddSelect.value;
+        if(!val) return;
+        if(occData.length>=3){
+          occLimitMsg.classList.remove('hidden');
+          return;
+        }
+        occLimitMsg.classList.add('hidden');
+        const cost=COSTS[val]||{};
+        occData.push({name:val,new:cost.new||null,old:cost.old||null});
+        occAddSelect.value='';
+        occAddSelectWrap.classList.add('hidden');
+        updateOccUI();
+      });
       calcClear.addEventListener('click',()=>{
         modeValue=''; ageValue='';
         [locSel,locSel2,typeSel,pplInp,budInp].forEach(el=>{el.value='';});
