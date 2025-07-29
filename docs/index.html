@@ -477,6 +477,14 @@
           occTab.classList.add('active');
           updateOccUI();
         }
+        // reset map to default view when switching tools
+        regionToggle.querySelectorAll('button').forEach((b,i)=>{
+          b.classList.toggle('active',i===0);
+        });
+        showMarkers('All UK');
+        map.setView(REGIONS[0].center, REGIONS[0].zoom);
+        if(choicePopup) { map.removeLayer(choicePopup); choicePopup=null; }
+        highlightSelections(false);
       }
       calcTab.addEventListener('click',()=>switchTab('calc'));
       occTab.addEventListener('click',()=>switchTab('occ'));
@@ -875,6 +883,7 @@
             if(coords.length===1){
               map.once('moveend',openTips);
               map.setView(coords[0], map.getZoom());
+              setTimeout(openTips,0);
             }else if(coords.length===2){
               map.once('moveend',openTips);
               const bounds=L.latLngBounds(coords);
@@ -884,6 +893,7 @@
               else if(dist<1000) zoom=Math.max(zoom,15);
               else if(dist<2000) zoom=Math.max(zoom,14);
               map.setView(bounds.getCenter(),zoom);
+              setTimeout(openTips,0);
             }else{
               openTips();
             }
@@ -965,7 +975,7 @@
                 const cfg=comparePopupConfig(marker.getLatLng());
                 ensurePopupVisible(marker.getLatLng());
                 const content = locSel2.value
-                  ? `<div class="compare-popup flex gap-2"><button class="btn btn-gray" id="repLoc1Btn">Replace location 1</button><button class="btn btn-gray" id="repLoc2Btn">Replace location 2</button></div>`
+                  ? `<div class="compare-popup flex flex-col gap-1"><button class="btn btn-gray" id="repLoc1Btn">Replace location 1</button><button class="btn btn-gray" id="repLoc2Btn">Replace location 2</button></div>`
                   : `<div class="compare-popup"><button class="btn btn-gray" id="calcRepBtn">Replace</button></div>`;
                 choicePopup=L.tooltip({direction:cfg.dir,interactive:true,className:'compare-popup',opacity:1,offset:cfg.offset})
                   .setLatLng(loc.coords)
