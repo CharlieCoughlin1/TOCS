@@ -212,7 +212,7 @@
               </svg>
             </button>
             <div id="calcDownloadMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
-              <button id="calcDownloadCsv" class="block w-full text-left">CSV</button>
+              <a id="calcDownloadCsv" href="download.html?type=calc" target="_blank" class="block w-full text-left">CSV</a>
             </div>
           </div>
         </div>
@@ -230,7 +230,7 @@
                 <path stroke-linecap="round" stroke-linejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2a1 1 0 01-.293.707L15 12.414V19a1 1 0 01-.553.894l-4 2A1 1 0 019 21v-8.586L3.293 6.707A1 1 0 013 6V4z" />
               </svg>
             </button>
-            <div id="occFilterMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
+            <div id="occFilterMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden z-50">
               <label class="flex items-center gap-1 whitespace-nowrap"><input type="checkbox" id="filterNew" checked> New build</label>
               <label class="flex items-center gap-1 whitespace-nowrap"><input type="checkbox" id="filterOld" checked> 20‑yr old</label>
             </div>
@@ -250,7 +250,7 @@
               </svg>
             </button>
             <div id="downloadMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
-              <button id="downloadCsv" class="block w-full text-left">CSV</button>
+              <a id="downloadCsv" href="download.html?type=occ" target="_blank" class="block w-full text-left">CSV</a>
             </div>
           </div>
         </div>
@@ -715,13 +715,7 @@
 
       function downloadFile(){
         const csv='\uFEFF'+buildCSV();
-        const blob=new Blob([csv],{type:'text/csv'});
-        const link=document.createElement('a');
-        link.href=URL.createObjectURL(blob);
-        link.download='occupancy-costs.csv';
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
+        localStorage.setItem('occCsv',csv);
       }
 
       function buildCalcCSV(){
@@ -775,13 +769,7 @@
 
       function downloadCalcFile(){
         const csv='\uFEFF'+buildCalcCSV();
-        const blob=new Blob([csv],{type:'text/csv'});
-        const link=document.createElement('a');
-        link.href=URL.createObjectURL(blob);
-        link.download='space-calculator.csv';
-        document.body.appendChild(link);
-        link.click();
-        setTimeout(()=>{document.body.removeChild(link); URL.revokeObjectURL(link.href);},0);
+        localStorage.setItem('calcCsv',csv);
       }
 
       downloadBtn.addEventListener('click',e=>{
