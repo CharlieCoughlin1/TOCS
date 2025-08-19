@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <title>TOCS Data Download</title>
+</head>
+<body>
+  <p><a id="dataLink" href="#" download>Download TOCS 2024 data (CSV)</a></p>
+  <script>
+    const user = window.location.hostname.split('.')[0];
+    const file = encodeURIComponent('TOCS 2024 Konstructive.csv');
+    document.getElementById('dataLink').href = `https://raw.githubusercontent.com/${user}/TOCS/main/${file}`;
+  </script>
+</body>
+</html>
