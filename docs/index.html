@@ -212,7 +212,7 @@
               </svg>
             </button>
             <div id="calcDownloadMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
-              <a id="calcDownloadCsv" href="data.html" target="_blank" class="block w-full text-left">CSV</a>
+              <a id="calcDownloadCsv" href="#" class="block w-full text-left">CSV</a>
             </div>
           </div>
         </div>
@@ -250,7 +250,7 @@
               </svg>
             </button>
             <div id="downloadMenu" class="absolute right-0 mt-2 bg-white border rounded shadow text-sm p-2 space-y-1 hidden">
-              <a id="downloadCsv" href="data.html" target="_blank" class="block w-full text-left">CSV</a>
+              <a id="downloadCsv" href="#" class="block w-full text-left">CSV</a>
             </div>
           </div>
         </div>
@@ -268,6 +268,7 @@
     (function(){
       const AGE_MAP={ '20':'old', New:'new' };
       const TYPE_SPACE={ Average:1, Corporate:1.2, Finance:0.74, Professional:1.27, Public:0.98, Tech:0.87 };
+      const ENABLE_DOWNLOADS=false; // toggle to enable CSV downloads
       const LOCS=[
         {name:'Edinburgh',coords:[55.9533,-3.1883],region:'Scotland',main:true},
         {name:'Birmingham',coords:[52.4862,-1.8904],region:'West Midlands'},
@@ -713,9 +714,19 @@
         return lines.join('\r\n');
       }
 
+      function triggerDownload(csv,filename){
+        const blob=new Blob([csv],{type:'text/csv'});
+        const link=document.createElement('a');
+        link.href=URL.createObjectURL(blob);
+        link.download=filename;
+        document.body.appendChild(link);
+        link.click();
+        setTimeout(()=>{URL.revokeObjectURL(link.href); document.body.removeChild(link);},0);
+      }
+
       function downloadFile(){
         const csv='\uFEFF'+buildCSV();
-        localStorage.setItem('occCsv',csv);
+        triggerDownload(csv,'occupancy-costs.csv');
       }
 
       function buildCalcCSV(){
@@ -769,24 +780,31 @@
 
       function downloadCalcFile(){
         const csv='\uFEFF'+buildCalcCSV();
-        localStorage.setItem('calcCsv',csv);
+        triggerDownload(csv,'space-calculator.csv');
       }
 
-      downloadBtn.addEventListener('click',e=>{
-        e.stopPropagation();
-        downloadMenu.classList.toggle('hidden');
-      });
-      downloadMenu.addEventListener('click',e=>e.stopPropagation());
-      downloadCsv.addEventListener('click',()=>{downloadFile(); downloadMenu.classList.add('hidden');});
+      if(ENABLE_DOWNLOADS){
+        downloadBtn.addEventListener('click',e=>{
+          e.stopPropagation();
+          downloadMenu.classList.toggle('hidden');
+        });
+        downloadMenu.addEventListener('click',e=>e.stopPropagation());
+        downloadCsv.addEventListener('click',e=>{e.preventDefault(); downloadFile(); downloadMenu.classList.add('hidden');});
 
-      calcDownloadBtn.addEventListener('click',e=>{e.stopPropagation(); calcDownloadMenu.classList.toggle('hidden');});
-      calcDownloadMenu.addEventListener('click',e=>e.stopPropagation());
-      calcDownloadCsv.addEventListener('click',()=>{downloadCalcFile(); calcDownloadMenu.classList.add('hidden');});
+        calcDownloadBtn.addEventListener('click',e=>{e.stopPropagation(); calcDownloadMenu.classList.toggle('hidden');});
+        calcDownloadMenu.addEventListener('click',e=>e.stopPropagation());
+        calcDownloadCsv.addEventListener('click',e=>{e.preventDefault(); downloadCalcFile(); calcDownloadMenu.classList.add('hidden');});
+      } else {
+        occDownloadWrap.style.display='none';
+        calcDownloadWrap.style.display='none';
+      }
 
       document.addEventListener('click',()=>{
         occFilterMenu.classList.add('hidden');
-        downloadMenu.classList.add('hidden');
-        calcDownloadMenu.classList.add('hidden');
+        if(ENABLE_DOWNLOADS){
+          downloadMenu.classList.add('hidden');
+          calcDownloadMenu.classList.add('hidden');
+        }
       });
 
       // auto‑comma budget
