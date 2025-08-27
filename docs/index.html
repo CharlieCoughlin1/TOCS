@@ -46,6 +46,12 @@
       line-height:1.2;
       white-space:nowrap;
     }
+    .result-item{
+      background:#f9fafb;          /* gray-50 */
+      padding:0.75rem 1rem;        /* px-4 py-3 */
+      border-radius:0.375rem;      /* rounded */
+    }
+    .result-item + .result-item{margin-top:0.5rem;}
     .result-scroll{overflow-x:hidden;overflow-y:hidden;}
     .result-scroll.need-scroll{overflow-x:auto;}
     .result-title{white-space:nowrap;}
@@ -362,7 +368,7 @@
       const SQM_TO_SQFT = 10.76391041671;
       const DEFAULT_SQM_PER_PERSON = 10;
       function renderResult(el,label,valueStr,append=false){
-        const html=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
+        const html=`<div class="result-item"><span class="result-label">${label}</span><span class="result-value">${valueStr}</span></div>`;
         if(append) el.innerHTML+=html; else el.innerHTML=html;
       }
       function updateScrollbars(){
