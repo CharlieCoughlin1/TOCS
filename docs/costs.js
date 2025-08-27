@@ -8,7 +8,7 @@ const COSTS =
       "hardFM": 21.58,
       "softFM": 10.39,
       "managementFees": 2.03,
-      "totalSqft": 83.93,
+      "totalSqft": 83.92,
       "totalWorkstation": 8392.0
     },
     "old": {
@@ -52,7 +52,7 @@ const COSTS =
       "hardFM": 19.27,
       "softFM": 10.17,
       "managementFees": 1.75,
-      "totalSqft": 70.55,
+      "totalSqft": 70.54,
       "totalWorkstation": 7054.0
     },
     "old": {
@@ -184,7 +184,7 @@ const COSTS =
       "hardFM": 20.24,
       "softFM": 10.35,
       "managementFees": 2.72,
-      "totalSqft": 114.79,
+      "totalSqft": 114.78,
       "totalWorkstation": 11478.0
     },
     "old": {
@@ -558,8 +558,8 @@ const COSTS =
       "hardFM": 22.11,
       "softFM": 11.27,
       "managementFees": 3.33,
-      "totalSqft": 136.51,
-      "totalWorkstation": 13651.0
+      "totalSqft": 136.52,
+      "totalWorkstation": 13652.0
     },
     "old": {
       "netEffectiveRent": 45.38,
@@ -756,7 +756,7 @@ const COSTS =
       "hardFM": 20.14,
       "softFM": 10.14,
       "managementFees": 1.92,
-      "totalSqft": 77.31,
+      "totalSqft": 77.30,
       "totalWorkstation": 7730.0
     },
     "old": {
@@ -976,7 +976,7 @@ const COSTS =
       "hardFM": 20.66,
       "softFM": 10.51,
       "managementFees": 2.13,
-      "totalSqft": 87.29,
+      "totalSqft": 87.28,
       "totalWorkstation": 8728.0
     },
     "old": {
@@ -1130,7 +1130,7 @@ const COSTS =
       "hardFM": 20.24,
       "softFM": 10.29,
       "managementFees": 1.6,
-      "totalSqft": 69.98,
+      "totalSqft": 69.97,
       "totalWorkstation": 6997.0
     },
     "old": {
