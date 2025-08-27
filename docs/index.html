@@ -156,17 +156,12 @@
         </div>
         <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location on the map to compare results.</p>
 
-        <label for="typeSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation type</label>
-        <select id="typeSelect" class="w-full border rounded p-2 mb-1 bg-white">
-          <option value="" disabled selected>Please select</option>
-          <option value="Average">Average workstation (no change)</option>
-          <option value="Corporate">Corporate (+20% space per person)</option>
-          <option value="Finance">Finance, insurance (-26% space per person)</option>
-          <option value="Professional">Professional (+27% space per person)</option>
-          <option value="Public">Public (-2% space per person)</option>
-          <option value="Tech">Tech, media, telecomms (-13% space per person)</option>
+        <label for="densitySelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation density</label>
+        <select id="densitySelect" class="w-full border rounded p-2 mb-1 bg-white">
+          <option value="12.5">Spacious (12.5 m² per person)</option>
+          <option value="10" selected>Average (10 m² per person)</option>
+          <option value="8">Dense (8 m² per person)</option>
         </select>
-        <p id="typeError" class="err-msg mb-3">Please select workstation type</p>
 
         <!-- People input -->
         <div id="peopleGroup" class="mb-3 hidden">
@@ -217,7 +212,6 @@
           </div>
         </div>
 
-        <p class="mt-6 text-xs text-gray-500 leading-snug font-din-light">*Calculations use LSH cost data and assume <strong>12.5&nbsp;m² per average workstation</strong>.</p>
       </div>
 
       <div id="occPrompt" class="mb-4 text-center text-gray-500 hidden"></div>
@@ -267,7 +261,6 @@
     if(typeof L==='undefined'){console.error('Leaflet failed to load.');}
     (function(){
       const AGE_MAP={ '20':'old', New:'new' };
-      const TYPE_SPACE={ Average:1, Corporate:1.2, Finance:0.74, Professional:1.27, Public:0.98, Tech:0.87 };
       const ENABLE_DOWNLOADS=false; // toggle to enable CSV downloads
       const LOCS=[
         {name:'Edinburgh',coords:[55.9533,-3.1883],region:'Scotland',main:true},
@@ -360,7 +353,7 @@
       // ---------- helpers ----------
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
-      const BASE_SQM_PER_PERSON = 12.5;
+      const DEFAULT_SQM_PER_PERSON = 10;
       function renderResult(el,label,valueStr){
         el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
       }
@@ -378,7 +371,7 @@
       const loc2Wrap=$('loc2Wrap');
       const comparePrompt=$('comparePrompt');
       const calcClear=$('calcClear');
-      const typeSel=$('typeSelect');
+      const densitySel=$('densitySelect');
       const modeGroup=$('modeBtns'); const ageGroup=$('ageBtns');
       const modeButtons=modeGroup.querySelectorAll('button');
       const ageButtons=ageGroup.querySelectorAll('button');
@@ -392,7 +385,7 @@
       const areaR2=$('areaResult2'); const costR2=$('costResult2'); const pplR2=$('peopleResult2');
       const resultContainer=$('resultContainer');
       const title1=$('resultTitle1'); const title2=$('resultTitle2'); const box2=$('resultBox2'); const resWrap=$('resultWrapper');
-      const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),type:$('typeError'),people:$('peopleError'),budget:$('budgetError')};
+      const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),people:$('peopleError'),budget:$('budgetError')};
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt"); const occExpand=$("occExpand");
@@ -451,7 +444,7 @@
 
       function clearErr(){
         Object.values(errs).forEach(e=>e.style.display='none');
-        [locSel,typeSel,pplInp,budInp].forEach(el=>el.classList.remove('error'));
+        [locSel,densitySel,pplInp,budInp].forEach(el=>el.classList.remove('error'));
         modeGroup.classList.remove('error');
         ageGroup.classList.remove('error');
       }
@@ -482,7 +475,7 @@
 
       function autoCalcIfReady(){
         const ready =
-          locSel.value && ageValue && modeValue && typeSel.value &&
+          locSel.value && ageValue && modeValue &&
           ((modeValue==='people' && pplInp.value) ||
            (modeValue==='budget' && budInp.value));
         if(!resWrap.classList.contains('hidden')) performCalc();
@@ -654,7 +647,8 @@
       occClear.addEventListener('click',()=>{occData=[]; document.getElementById('occLimitMsg').classList.add('hidden'); updateOccUI();});
       calcClear.addEventListener('click',()=>{
         modeValue=''; ageValue='';
-        [locSel,locSel2,typeSel,pplInp,budInp].forEach(el=>{el.value='';});
+        [locSel,locSel2,pplInp,budInp].forEach(el=>{el.value='';});
+        densitySel.value='10';
         modeButtons.forEach(b=>b.classList.remove('active'));
         ageButtons.forEach(b=>b.classList.remove('active'));
         loc2Wrap.classList.add('hidden');
@@ -734,11 +728,11 @@
         const metricHeaders=usePeople?
           ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)']:
           ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','People accommodated'];
-        const header=['Location','Building age',usePeople?'People':'Budget (\u00A3)','Workstation type',...metricHeaders];
+        const header=['Location','Building age',usePeople?'People':'Budget (\u00A3)','Workstation density (m\u00B2 per person)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
-        const typeLabel=typeSel.value || '';
+        const densityLabel=densitySel.value;
         const lines=['Lambert Smith Hampton', '', header.join(',')];
-        const sqmPerPerson=BASE_SQM_PER_PERSON*TYPE_SPACE[typeSel.value];
+        const sqmPerPerson=parseFloat(densityLabel || DEFAULT_SQM_PER_PERSON);
         const n=usePeople?parseInt(pplInp.value,10):0;
         const budget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
         function q(str){return `"${String(str).replace(/"/g,'""')}"`;}
@@ -752,7 +746,7 @@
               q(loc),
               ageLabel,
               n,
-              q(typeLabel),
+              densityLabel,
               sqm.toFixed(2),
               sqft.toFixed(0),
               cost
@@ -765,7 +759,7 @@
               q(loc),
               ageLabel,
               q(budInp.value),
-              q(typeLabel),
+              densityLabel,
               Math.round(sqm),
               Math.round(sqft),
               ppl
@@ -823,10 +817,9 @@
         if(!modeValue){errs.mode.style.display='block'; modeGroup.classList.add('error'); bad=true; }
         if(!locSel.value){errs.location.style.display='block'; locSel.classList.add('error'); bad=true; }
         if(!ageValue){errs.age.style.display='block'; ageGroup.classList.add('error'); bad=true; }
-        if(!typeSel.value){errs.type.style.display='block'; typeSel.classList.add('error'); bad=true; }
 
         const usePeople=modeValue==='people';
-        let n,budget; const sqmPerPerson=BASE_SQM_PER_PERSON*TYPE_SPACE[typeSel.value];
+        let n,budget; const sqmPerPerson=parseFloat(densitySel.value || DEFAULT_SQM_PER_PERSON);
         if(usePeople){
           n=parseInt(pplInp.value,10);
           if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
@@ -870,7 +863,7 @@
       }
 
       calcBtn.addEventListener('click',performCalc);
-      typeSel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc();});
+      densitySel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
 
       toggleInputs(); // initialise visibility
       updateComparePrompt();
