@@ -87,8 +87,13 @@
     button:active{transform:scale(.95);}
     .fade-in{animation:fadeIn .3s ease;}
     @keyframes fadeIn{from{opacity:0;transform:translateY(.5rem);}to{opacity:1;transform:translateY(0);}}
-    /* Use a DIN-like system font for dropdowns to avoid Sheffield ligature issues */
-    select,option{font-family:'Helvetica Neue',Arial,sans-serif;font-feature-settings:'liga' 0;-webkit-font-feature-settings:'liga' 0;}
+    /* Use DINPro in dropdowns with ligatures disabled to avoid Sheffield rendering issues */
+    select,option{
+      font-family:'DINPro','DIN Pro',Arial,sans-serif;
+      font-feature-settings:'liga' 0;
+      -webkit-font-feature-settings:'liga' 0;
+      font-variant-ligatures:none;
+    }
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
