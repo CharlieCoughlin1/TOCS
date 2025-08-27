@@ -126,7 +126,7 @@
 
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Calculate based on</label>
         <div id="modeBtns" class="flex gap-2 mb-1">
-          <button class="select-btn" data-value="people">Number of people → cost</button>
+          <button class="select-btn" data-value="people">Number of workstations → cost</button>
           <button class="select-btn" data-value="budget">Budget → capacity</button>
         </div>
         <p id="modeError" class="err-msg mb-3">Please select an option</p>
@@ -170,7 +170,7 @@
 
         <!-- People input -->
         <div id="peopleGroup" class="mb-3 hidden">
-          <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many people?</label>
+          <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many workstations?</label>
           <input type="number" id="peopleInput" class="w-full border rounded p-2" placeholder="e.g. 25" />
           <p id="peopleError" class="err-msg mt-1">Enter a number &gt; 0</p>
         </div>
@@ -326,8 +326,13 @@
       function cleanName(name){
         return name.normalize('NFKD')
           .replace(/[\uFB00-\uFB06]/g,ch=>LIG_MAP[ch]||'')
-          .replace(/Shef[^a-zA-Z]*eld/i,'Sheffield')
           .replace(/[^\x20-\x7E]/g,'');
+      }
+      function breakLigatures(str){
+        return str
+          .replace(/ff/g,'f\u200Cf')
+          .replace(/fi/g,'f\u200Ci')
+          .replace(/fl/g,'f\u200Cl');
       }
       LOCS.forEach(loc=>{ loc.name = cleanName(loc.name); });
 
@@ -356,8 +361,9 @@
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
       const DEFAULT_SQM_PER_PERSON = 10;
-      function renderResult(el,label,valueStr){
-        el.innerHTML=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
+      function renderResult(el,label,valueStr,append=false){
+        const html=`<span class="result-label">${label}</span><span class="result-value">${valueStr}</span>`;
+        if(append) el.innerHTML+=html; else el.innerHTML=html;
       }
       function updateScrollbars(){
         document.querySelectorAll('.result-scroll').forEach(el=>{
@@ -418,8 +424,9 @@
         .sort((a,b)=>a.name.localeCompare(b.name));
       [...londonLocs,...mainLocs,...otherLocs].forEach(loc=>{
         const opt=document.createElement('option');
-        const displayName=cleanName(loc.name); // extra sanitisation
-        opt.value=displayName;
+        const clean=cleanName(loc.name);
+        const displayName=breakLigatures(clean);
+        opt.value=clean;
         opt.textContent=displayName;
         locSel.appendChild(opt);
         locSel2.appendChild(opt.cloneNode(true));
@@ -719,9 +726,9 @@
       function buildCalcCSV(){
         const usePeople=modeValue==='people';
         const metricHeaders=usePeople?
-          ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)']:
-          ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','People accommodated'];
-        const header=['Location','Building age',usePeople?'People':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)',...metricHeaders];
+          ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)','Total per workstation (\u00A3)']:
+          ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','Workstations accommodated'];
+        const header=['Location','Building age',usePeople?'Workstations':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const densityLabel=densitySel.value;
         const lines=['Lambert Smith Hampton', '', header.join(',')];
@@ -735,6 +742,7 @@
             const sqm=n*sqmPerPerson;
             const sqft=sqm*SQM_TO_SQFT;
             const cost=Math.round(sqm*cpsqm);
+            const perWS=Math.round(cpsqm*sqmPerPerson);
             lines.push([
               q(loc),
               ageLabel,
@@ -742,7 +750,8 @@
               densityLabel,
               sqm.toFixed(2),
               sqft.toFixed(0),
-              cost
+              cost,
+              perWS
             ].join(','));
           }else{
             const sqm=budget/cpsqm;
@@ -827,12 +836,15 @@
           if(usePeople){
             const sqm=n*sqmPerPerson;
             renderResult(areaEl,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
-            renderResult(costEl,'Annual cost',`£${Math.round(sqm*cpsqm).toLocaleString()}`);
+            const totalCost=Math.round(sqm*cpsqm);
+            const perWS=Math.round(cpsqm*sqmPerPerson);
+            renderResult(costEl,'Annual cost',`£${totalCost.toLocaleString()}`);
+            renderResult(costEl,'Total per workstation',`£${perWS.toLocaleString()}`,true);
             pplEl.innerHTML='';
           }else{
             const sqm=budget/cpsqm;
             renderResult(areaEl,'Area achievable',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
-            renderResult(pplEl,'People accommodated',`${Math.round(sqm/sqmPerPerson).toLocaleString()}`);
+            renderResult(pplEl,'Workstations accommodated',`${Math.round(sqm/sqmPerPerson).toLocaleString()}`);
             costEl.innerHTML='';
           }
         }
