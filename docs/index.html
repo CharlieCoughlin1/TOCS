@@ -157,9 +157,9 @@
 
         <label for="densitySelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation density</label>
         <select id="densitySelect" class="w-full border rounded p-2 mb-1 bg-white">
-          <option value="12.5">Spacious (12.5 m² per person)</option>
-          <option value="10" selected>Average (10 m² per person)</option>
-          <option value="8">Dense (8 m² per person)</option>
+          <option value="12.5">Spacious (12.5 m² per person NIA)</option>
+          <option value="10" selected>Standard (10 m² per person NIA)</option>
+          <option value="8">Dense (8 m² per person NIA)</option>
         </select>
 
         <!-- People input -->
@@ -280,7 +280,7 @@
         {name:'Bournemouth',coords:[50.7209,-1.9048],region:'South West'},
         {name:'Bracknell',coords:[51.416,-0.753],region:'South East'},
         {name:'Brighton',coords:[50.8225,-0.1372],region:'South East'},
-        {name:'Cambridge',coords:[52.2053,0.1218],region:'East of England'},
+        {name:'Cambridge',coords:[52.2053,0.1218],region:'East of England',main:true},
         {name:'Cardiff',coords:[51.4816,-3.1791],region:'Wales',main:true},
         {name:'Crawley',coords:[51.1091,-0.1872],region:'South East'},
         {name:'Croydon',coords:[51.3762,-0.0982],region:'South East'},
@@ -715,7 +715,7 @@
         const metricHeaders=usePeople?
           ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)']:
           ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','People accommodated'];
-        const header=['Location','Building age',usePeople?'People':'Budget (\u00A3)','Workstation density (m\u00B2 per person)',...metricHeaders];
+        const header=['Location','Building age',usePeople?'People':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const densityLabel=densitySel.value;
         const lines=['Lambert Smith Hampton', '', header.join(',')];
