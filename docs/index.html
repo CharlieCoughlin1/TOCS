@@ -73,12 +73,11 @@
     .bar-label small{font-size:0.65rem;}
     /* category labels under bars */
     .bar-cat{font-size:0.65rem;line-height:1;text-align:center;}
-    /* table extra columns hidden until expanded */
-    .extra-col{display:none;}
-    #occTables.expanded .extra-col{display:table-cell;}
-    /* tables scroll horizontally when expanded */
+    /* table extra columns visible by default */
+    .extra-col{display:table-cell;}
+    /* tables scroll horizontally */
     #occTables{overflow-x:auto;}
-    #occTables.expanded table{min-width:52rem;}
+    #occTables table{min-width:52rem;}
     #occTables th{white-space:nowrap;}
     /* allow occupancy bars to scroll horizontally */
     #occBars{overflow-x:auto;}
@@ -114,8 +113,8 @@
     <section class="bg-white p-6 rounded-lg shadow-md order-1 md:order-2" id="calcSection">
         <h2 class="text-2xl md:text-3xl font-din-bold mb-4 text-lsh-red">UK office cost calculator</h2>
       <div class="mb-4 flex gap-2">
-        <button id="calcTab" class="tab-btn active">Space calculator</button>
-        <button id="occTab" class="tab-btn">Occupancy costs</button>
+        <button id="occTab" class="tab-btn active">Per sq ft costs</button>
+        <button id="calcTab" class="tab-btn">Space calculator</button>
       </div>
       <div id="calcWrapper">
 
@@ -231,9 +230,6 @@
           </div>
         </div>
         <div id="occBars" class="flex gap-4 items-end mb-4 w-full"></div>
-        <div id="occExpandWrap" class="flex justify-end mb-2">
-          <button id="occExpand" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Expand</button>
-        </div>
         <p id="occLimitMsg" class="hidden text-xs text-lsh-red mb-2">You can compare up to 3 locations.</p>
         <div id="occTables"></div>
         <div id="occDownloadWrap" class="flex justify-end mt-2 hidden">
@@ -264,7 +260,7 @@
       const ENABLE_DOWNLOADS=false; // toggle to enable CSV downloads
       const LOCS=[
         {name:'Edinburgh',coords:[55.9533,-3.1883],region:'Scotland',main:true},
-        {name:'Birmingham',coords:[52.4862,-1.8904],region:'West Midlands'},
+        {name:'Birmingham',coords:[52.4862,-1.8904],region:'West Midlands',main:true},
         {name:'Bristol',coords:[51.4545,-2.5879],region:'South West',main:true},
         {name:'Liverpool',coords:[53.4084,-2.9916],region:'North West',main:true},
         {name:'Manchester',coords:[53.4808,-2.2426],region:'North West',main:true},
@@ -388,10 +384,10 @@
       const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),people:$('peopleError'),budget:$('budgetError')};
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
-      const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt"); const occExpand=$("occExpand");
+      const occBars=$("occBars"); const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt");
       const occFilterBtn=$('occFilterBtn'); const occFilterMenu=$('occFilterMenu');
       const filterNew=$('filterNew'); const filterOld=$('filterOld');
-      const occExpandWrap=$('occExpandWrap'); const occLimitMsg=$('occLimitMsg');
+      const occLimitMsg=$('occLimitMsg');
       const occDownloadWrap=$('occDownloadWrap');
       const occUnits=$('occUnits');
       const downloadBtn=$('downloadBtn');
@@ -402,7 +398,6 @@
       const calcDownloadMenu=$('calcDownloadMenu');
       const calcDownloadCsv=$('calcDownloadCsv');
       const calcSection=$("calcSection");
-      let expanded=false;
       let occData=[];
       let showNew=true, showOld=true;
       // populate locations dropdown with London first then major cities
@@ -515,11 +510,6 @@
         occWrap.classList.remove('hidden');
         const hasData = occData.length > 0;
         occBars.classList.toggle('placeholder', !hasData);
-        if(!hasData){
-          occTables.classList.remove('expanded');
-          expanded=false;
-        }
-        occExpandWrap.classList.toggle('hidden', !hasData);
         occDownloadWrap.classList.toggle('hidden', !hasData);
         occUnits.classList.toggle('hidden', !hasData);
         let max=0;
@@ -631,8 +621,6 @@
           occBars.appendChild(col);
         }
         if(hasData){
-          occTables.classList.toggle('expanded', expanded);
-          occExpand.textContent = expanded ? 'Collapse' : 'Expand';
         }
       }
 
@@ -678,7 +666,6 @@
         updateComparePrompt();
         autoCalcIfReady();
       });
-      occExpand.addEventListener('click',()=>{expanded=!expanded; updateOccUI();});
 
       function buildCSV(){
         const headers=['Building age','Total','Net effective rent','Business rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
@@ -1164,7 +1151,7 @@
 
         showMarkers('All UK');
         highlightSelections(false);
-        switchTab('calc');
+        switchTab('occ');
 
         // respond to location dropdown changes
         locSel.addEventListener('change',()=>{
