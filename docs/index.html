@@ -196,6 +196,23 @@
         </div>
         <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location on the map to compare results.</p>
 
+        <!-- Staff input -->
+        <div id="peopleGroup" class="mb-3 hidden">
+          <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many staff?</label>
+          <input type="number" id="peopleInput" class="w-full border rounded p-2" placeholder="e.g. 25" min="1" max="2000" />
+          <p id="peopleError" class="err-msg mt-1">Enter a number from 1 to 2,000</p>
+        </div>
+
+        <!-- Budget input -->
+        <div id="budgetGroup" class="mb-3 hidden">
+          <label id="budgetLabel" for="budgetInput" class="block text-lg font-din-bold text-gray-700 mb-1">Annual budget (£)</label>
+          <div class="flex items-center gap-2">
+            <input type="text" id="budgetInput" inputmode="numeric" class="flex-1 border rounded p-2" placeholder="e.g. 750,000" />
+            <button id="budgetToggle" type="button" class="select-btn text-sm whitespace-nowrap">Monthly budget (£)</button>
+          </div>
+          <p id="budgetError" class="err-msg mt-1">Enter a budget within the allowed maximum</p>
+        </div>
+
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Workstation density</label>
         <div id="densitySliderWrap" class="relative mt-6 mb-8 step-slider">
           <div class="step-line"></div>
@@ -215,23 +232,6 @@
             <output id="hybridDetail" class="slider-pop slider-pop-below hidden"></output>
           </div>
           <input type="hidden" id="hybridSelect" value="1" />
-        </div>
-
-        <!-- Staff input -->
-        <div id="peopleGroup" class="mb-3 hidden">
-          <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many staff?</label>
-          <input type="number" id="peopleInput" class="w-full border rounded p-2" placeholder="e.g. 25" />
-          <p id="peopleError" class="err-msg mt-1">Enter a number &gt; 0</p>
-        </div>
-
-        <!-- Budget input -->
-        <div id="budgetGroup" class="mb-3 hidden">
-          <label id="budgetLabel" for="budgetInput" class="block text-lg font-din-bold text-gray-700 mb-1">Annual budget (£)</label>
-          <div class="flex items-center gap-2">
-            <input type="text" id="budgetInput" inputmode="numeric" class="flex-1 border rounded p-2" placeholder="e.g. 750,000" />
-            <button id="budgetToggle" type="button" class="select-btn text-sm whitespace-nowrap">Monthly budget (£)</button>
-          </div>
-          <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
         </div>
 
         <div id="extrasSection" class="mb-3 hidden">
@@ -440,13 +440,16 @@
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
       const DEFAULT_SQM_PER_PERSON = 10;
-      function renderResult(el,label,valueStr,append=false,highlight=false){
-        const itemCls=highlight? 'result-item hybrid-highlight':'result-item';
-        const valCls=highlight? 'result-value text-lsh-red':'result-value';
-        const html=`<div class="${itemCls}"><span class="result-label">${label}</span><span class="${valCls}">${valueStr}</span></div>`;
-        if(append) el.innerHTML+=html; else el.innerHTML=html;
-        el.scrollLeft=0; // ensure leftmost part visible
-      }
+        function renderResult(el,label,valueStr,append=false,highlight=false,labelBelow=false){
+          const itemCls=highlight? 'result-item hybrid-highlight':'result-item';
+          const valCls=highlight? 'result-value text-lsh-red':'result-value';
+          const content=labelBelow
+            ? `<span class="${valCls}">${valueStr}</span><span class="result-label">${label}</span>`
+            : `<span class="result-label">${label}</span><span class="${valCls}">${valueStr}</span>`;
+          const html=`<div class="${itemCls}">${content}</div>`;
+          if(append) el.innerHTML+=html; else el.innerHTML=html;
+          el.scrollLeft=0; // ensure leftmost part visible
+        }
       function updateScrollbars(){
         document.querySelectorAll('.result-scroll').forEach(el=>{
           if(el.scrollWidth - el.clientWidth > 1) el.classList.add('need-scroll');
@@ -1136,11 +1139,31 @@
         const staffPerWS=parseFloat(hybridSel.value || 1);
         if(usePeople){
           n=parseInt(pplInp.value,10);
-          if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
+          if(!n||n<=0||n>2000){
+            errs.people.textContent='Enter a number from 1 to 2,000';
+            errs.people.style.display='block';
+            pplInp.classList.add('error');
+            bad=true;
+          }
         }else if(modeValue==='budget'){
           budget=parseInt(budInp.value.replace(/,/g,''),10);
-          if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
-          if(budgetPeriod==='monthly') budget*=12;
+          if(!budget||budget<=0){
+            errs.budget.textContent='Enter a budget > 0';
+            errs.budget.style.display='block';
+            budInp.classList.add('error');
+            bad=true;
+          }else if(budgetPeriod==='annual' && budget>50000000){
+            errs.budget.textContent='Maximum annual budget is 50,000,000';
+            errs.budget.style.display='block';
+            budInp.classList.add('error');
+            bad=true;
+          }else if(budgetPeriod==='monthly' && budget>8000000){
+            errs.budget.textContent='Maximum monthly budget is 8,000,000';
+            errs.budget.style.display='block';
+            budInp.classList.add('error');
+            bad=true;
+          }
+          if(!bad && budgetPeriod==='monthly') budget*=12;
         }
         if(bad) return;
        function calcLoc(loc,areaEl,costEl,pplEl,titleEl){
@@ -1150,9 +1173,12 @@
             const staff=n;
             const workstations=Math.ceil(staff/staffPerWS);
             const sqm=workstations*sqmPerPerson;
-            renderResult(areaEl,'Space required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
-            renderResult(pplEl,'Workstations required',`${workstations.toLocaleString()}`);
-            pplEl.classList.remove('hidden');
+            const sqft=Math.round(sqm*SQM_TO_SQFT);
+            areaEl.innerHTML='';
+            renderResult(areaEl,'Of space required',`${sqft.toLocaleString()} sq ft`,false,false,true);
+            renderResult(areaEl,'Workstations required',`${workstations.toLocaleString()}`,true,false,true);
+            pplEl.innerHTML='';
+            pplEl.classList.add('hidden');
             const totalCost=Math.round(sqm*cpsqm);
             const perWS=Math.round(cpsqm*sqmPerPerson);
             costEl.dataset.annualCost=totalCost;
@@ -1160,11 +1186,14 @@
             costEl.innerHTML='';
           }else{
             const sqm=budget/cpsqm;
-            renderResult(areaEl,'Area required',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
+            const sqft=Math.round(sqm*SQM_TO_SQFT);
             const workstations=Math.floor(sqm/sqmPerPerson);
             const staff=Math.floor(workstations*staffPerWS);
-            renderResult(pplEl,'Workstations accommodated',`${workstations.toLocaleString()}`);
-            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`,true);
+            areaEl.innerHTML='';
+            renderResult(areaEl,'Of space required',`${sqft.toLocaleString()} sq ft`,false,false,true);
+            renderResult(areaEl,'Workstations required',`${workstations.toLocaleString()}`,true,false,true);
+            pplEl.innerHTML='';
+            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`);
             const perWSAnnual=Math.round(budget/workstations);
             const perWS=budgetPeriod==='monthly'?Math.round(perWSAnnual/12):perWSAnnual;
             const wsLabel=budgetPeriod==='monthly'?'Total per workstation (monthly)':'Total per workstation (annual)';
