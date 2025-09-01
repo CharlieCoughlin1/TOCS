@@ -455,8 +455,9 @@
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
       const DEFAULT_SQM_PER_PERSON = 10;
-      function renderResult(el,label,valueStr,append=false){
-        const html=`<div class="result-item"><span class="result-label">${label}</span><span class="result-value">${valueStr}</span></div>`;
+      function renderResult(el,label,valueStr,append=false,highlight=false){
+        const valCls=highlight? 'result-value text-lsh-red':'result-value';
+        const html=`<div class="result-item"><span class="result-label">${label}</span><span class="${valCls}">${valueStr}</span></div>`;
         if(append) el.innerHTML+=html; else el.innerHTML=html;
         el.scrollLeft=0; // ensure leftmost part visible
       }
@@ -518,8 +519,6 @@
       const anchorGroup=$('anchorGroup');
       const recResults=$('recResults');
       const applyHybrid=$('applyHybrid');
-      const hybridTitle=$('hybridTitle');
-      const hybridMetrics=$('hybridMetrics');
       const hybridResult=$('hybridResult');
       const daysSliderEl=$('daysSlider');
       const dayOptions=[];
@@ -568,9 +567,9 @@
         const cpsqm=costPerSqm(sd.location);
         const r=calcBusiestDay(sd.headcount,sd.densityPerPerson,sd.originalAnnualCost,d,anchor,cpsqm);
         renderResult(recResults,'Original space',`${sd.originalTotalArea.toLocaleString()} m² / ${(sd.originalTotalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
-        renderResult(recResults,'Hybrid space',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true);
+        renderResult(recResults,'Hybrid space',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true,true);
         renderResult(recResults,'Original estimated annual cost',`£${sd.originalAnnualCost.toLocaleString()}`,true);
-        renderResult(recResults,'Hybrid estimated annual cost',`£${r.newAnnualCost.toLocaleString()}`,true);
+        renderResult(recResults,'Hybrid estimated annual cost',`£${r.newAnnualCost.toLocaleString()}`,true,true);
         updateScrollbars();
       }
       daysRange.addEventListener('change',updateHybridResults);
@@ -579,25 +578,27 @@
         if(!standardData || !standardData.length) return;
         const d=parseFloat(daysRange.value);
         const anchor=parseFloat(anchorGroup.querySelector('input:checked').value);
-        hybridTitle.textContent='Hybrid right-sizing';
-        hybridMetrics.innerHTML='';
-        standardData.forEach(sd=>{
+        standardData.forEach((sd,idx)=>{
           const cpsqm=costPerSqm(sd.location);
           const r=calcBusiestDay(sd.headcount,sd.densityPerPerson,sd.originalAnnualCost,d,anchor,cpsqm);
-          const section=document.createElement('div');
-          const heading=document.createElement('h4');
-          heading.textContent=sd.location;
-          heading.className='font-din-bold';
-          section.appendChild(heading);
-          const metrics=document.createElement('div');
-          renderResult(metrics,'Original space',`${sd.originalTotalArea.toLocaleString()} m² / ${(sd.originalTotalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
-          renderResult(metrics,'Hybrid space',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true);
-          renderResult(metrics,'Original estimated annual cost',`£${sd.originalAnnualCost.toLocaleString()}`,true);
-          renderResult(metrics,'Hybrid estimated annual cost',`£${r.newAnnualCost.toLocaleString()}`,true);
-          section.appendChild(metrics);
-          hybridMetrics.appendChild(section);
+          const areaEl=idx===0?areaR1:areaR2;
+          const costEl=idx===0?costR1:costR2;
+          const pplEl=idx===0?pplR1:pplR2;
+          if(modeValue==='people'){
+            renderResult(areaEl,'Original area required',`${sd.originalTotalArea.toLocaleString()} m² / ${(sd.originalTotalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
+            renderResult(areaEl,'Hybrid area required',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true,true);
+            renderResult(costEl,'Original annual cost',`£${sd.originalAnnualCost.toLocaleString()}`);
+            renderResult(costEl,'Hybrid annual cost',`£${r.newAnnualCost.toLocaleString()}`,true,true);
+            pplEl.innerHTML='';
+          }else{
+            renderResult(areaEl,'Original area required',`${sd.originalTotalArea.toLocaleString()} m² / ${(sd.originalTotalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
+            renderResult(areaEl,'Hybrid area required',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true,true);
+            renderResult(pplEl,'Original staff accommodated',`${sd.headcount.toLocaleString()}`);
+            const staffHybrid=Math.round(sd.headcount*(sd.originalTotalArea/r.totalArea));
+            renderResult(pplEl,'Hybrid staff accommodated',`${staffHybrid.toLocaleString()}`,true,true);
+            costEl.innerHTML='';
+          }
         });
-        hybridResult.classList.remove('hidden');
         updateScrollbars();
         hybridModal.classList.add('hidden');
       }
@@ -1116,14 +1117,16 @@
             const totalCost=Math.round(sqm*cpsqm);
             const perWS=Math.round(cpsqm*sqmPerPerson);
             renderResult(costEl,'Annual cost',`£${totalCost.toLocaleString()}`);
-            renderResult(costEl,'Total per workstation',`£${perWS.toLocaleString()}`,true);
-            renderResult(pplEl,'Staff accommodated',`${Math.round(n*staffPerWS).toLocaleString()}`);
+            renderResult(costEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
+            pplEl.innerHTML='';
           }else{
             const sqm=budget/cpsqm;
-            renderResult(areaEl,'Area achievable',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
+            renderResult(areaEl,'Area required',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
             const workstations=Math.round(sqm/sqmPerPerson);
-            renderResult(pplEl,'Workstations accommodated',`${workstations.toLocaleString()}`);
-            renderResult(pplEl,'Staff accommodated',`${Math.round(workstations*staffPerWS).toLocaleString()}`,true);
+            const staff=Math.round(workstations*staffPerWS);
+            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`);
+            const perWS=Math.round(budget/workstations);
+            renderResult(pplEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
             costEl.innerHTML='';
           }
         }
@@ -1141,8 +1144,19 @@
          }
          hybridFab.classList.remove('hidden');
        }else{
-         standardData=null;
-         hybridFab.classList.add('hidden');
+         const cpsqm1=costPerSqm(locSel.value);
+         const sqm1=budget/cpsqm1;
+         const workstations1=Math.round(sqm1/sqmPerPerson);
+         const staff1=Math.round(workstations1*staffPerWS);
+         standardData=[{headcount:staff1,densityPerPerson:sqmPerPerson,originalAnnualCost:budget,originalTotalArea:sqm1,location:locSel.value}];
+         if(locSel2.value){
+           const cpsqm2=costPerSqm(locSel2.value);
+           const sqm2=budget/cpsqm2;
+           const workstations2=Math.round(sqm2/sqmPerPerson);
+           const staff2=Math.round(workstations2*staffPerWS);
+           standardData.push({headcount:staff2,densityPerPerson:sqmPerPerson,originalAnnualCost:budget,originalTotalArea:sqm2,location:locSel2.value});
+         }
+         hybridFab.classList.remove('hidden');
        }
        if(locSel2.value){
          calcLoc(locSel2.value,areaR2,costR2,pplR2,title2);
