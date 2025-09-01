@@ -51,11 +51,21 @@
       background:#f9fafb;          /* gray-50 */
       padding:0.75rem 1rem;        /* px-4 py-3 */
       border-radius:0.375rem;      /* rounded */
+      display:inline-block;        /* allow dynamic width */
+      width:fit-content;           /* expand with content */
     }
     .result-item + .result-item{margin-top:0.5rem;}
-    .result-scroll{overflow-x:hidden;overflow-y:hidden;scrollbar-gutter:stable both-edges;}
+    .result-scroll{
+      overflow-x:hidden;overflow-y:hidden;scrollbar-gutter:stable both-edges;
+      text-align:center;           /* center when smaller than box */
+    }
     .result-scroll.need-scroll{overflow-x:auto;}
-    .result-title{white-space:nowrap;min-height:2.5rem;}
+    .result-title{
+      white-space:nowrap;min-height:2.5rem;
+      display:inline-block;        /* dynamic width for titles */
+      width:fit-content;
+      text-align:center;
+    }
     #resultContainer.compare .result-value{font-size:1.5rem;}
     #resultContainer.compare #areaResult1 .result-value,
     #resultContainer.compare #areaResult2 .result-value{font-size:1.35rem;}
@@ -183,6 +193,11 @@
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Workstation density</label>
         <div id="densitySlider" class="density-slider mb-1"></div>
         <input type="hidden" id="densitySelect" value="10" />
+
+        <label class="block text-lg font-din-bold text-gray-700 mb-1 mt-4">Hybrid extent</label>
+        <p class="text-sm text-gray-600 font-din-light mb-1">How many workstations per member of staff?</p>
+        <div id="hybridSlider" class="density-slider mb-1"></div>
+        <input type="hidden" id="hybridSelect" value="1" />
 
         <!-- People input -->
         <div id="peopleGroup" class="mb-3 hidden">
@@ -399,6 +414,7 @@
       function renderResult(el,label,valueStr,append=false){
         const html=`<div class="result-item"><span class="result-label">${label}</span><span class="result-value">${valueStr}</span></div>`;
         if(append) el.innerHTML+=html; else el.innerHTML=html;
+        el.scrollLeft=0; // ensure leftmost part visible
       }
       function updateScrollbars(){
         document.querySelectorAll('.result-scroll').forEach(el=>{
@@ -459,6 +475,48 @@
         wrap.appendChild(opt);
       });
       setDensity('10');
+
+      const hybridSel=$('hybridSelect');
+      const hybridSlider=$('hybridSlider');
+      const hybridOptions=[];
+      const HYBRID_RATIOS=[1,1.25,1.5,1.75,2,2.25,2.5,2.75,3];
+      const hLine=document.createElement('div');
+      hLine.className='density-line';
+      hybridSlider.appendChild(hLine);
+      const hWrap=document.createElement('div');
+      hWrap.className='flex justify-between relative z-10';
+      hybridSlider.appendChild(hWrap);
+      function setHybrid(val){
+        hybridSel.value=val;
+        hybridOptions.forEach(o=>{
+          if(o.dataset.value===val) o.classList.add('selected');
+          else o.classList.remove('selected');
+        });
+      }
+      HYBRID_RATIOS.forEach(r=>{
+        const opt=document.createElement('button');
+        opt.type='button';
+        opt.className='density-option flex flex-col items-center';
+        opt.dataset.value=String(r);
+        const point=document.createElement('div');
+        point.className='density-point';
+        const label=document.createElement('span');
+        label.className='density-label';
+        label.textContent=`1:${r}`;
+        const tip=document.createElement('div');
+        tip.className='density-tooltip';
+        tip.textContent=`1 workstation per ${r} staff`;
+        opt.appendChild(point);
+        opt.appendChild(label);
+        opt.appendChild(tip);
+        opt.addEventListener('click',()=>{
+          setHybrid(String(r));
+          hybridSel.dispatchEvent(new Event('change'));
+        });
+        hybridOptions.push(opt);
+        hWrap.appendChild(opt);
+      });
+      setHybrid('1');
       const modeGroup=$('modeBtns'); const ageGroup=$('ageBtns');
       const modeButtons=modeGroup.querySelectorAll('button');
       const ageButtons=ageGroup.querySelectorAll('button');
@@ -851,11 +909,12 @@
       function buildCalcCSV(){
         const usePeople=modeValue==='people';
         const metricHeaders=usePeople?
-          ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)','Total per workstation (\u00A3)']:
-          ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','Workstations accommodated'];
-        const header=['Location','Building age',usePeople?'Workstations':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)',...metricHeaders];
+          ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)','Total per workstation (\u00A3)','Staff accommodated']:
+          ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','Workstations accommodated','Staff accommodated'];
+        const header=['Location','Building age',usePeople?'Workstations':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)','Hybrid extent (workstations per staff)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const densityLabel=densitySel.value;
+        const hybridLabel='1:'+hybridSel.value;
         const lines=['Lambert Smith Hampton', '', header.join(',')];
         const sqmPerPerson=parseFloat(densityLabel || DEFAULT_SQM_PER_PERSON);
         const n=usePeople?parseInt(pplInp.value,10):0;
@@ -868,28 +927,34 @@
             const sqft=sqm*SQM_TO_SQFT;
             const cost=Math.round(sqm*cpsqm);
             const perWS=Math.round(cpsqm*sqmPerPerson);
+            const staff=Math.round(n*parseFloat(hybridSel.value || '1'));
             lines.push([
               q(loc),
               ageLabel,
               n,
               densityLabel,
+              hybridLabel,
               sqm.toFixed(2),
               sqft.toFixed(0),
               cost,
-              perWS
+              perWS,
+              staff
             ].join(','));
           }else{
             const sqm=budget/cpsqm;
             const sqft=sqm*SQM_TO_SQFT;
             const ppl=Math.round(sqm/sqmPerPerson);
+            const staff=Math.round(ppl*parseFloat(hybridSel.value || '1'));
             lines.push([
               q(loc),
               ageLabel,
               q(budInp.value),
               densityLabel,
+              hybridLabel,
               Math.round(sqm),
               Math.round(sqft),
-              ppl
+              ppl,
+              staff
             ].join(','));
           }
         }
@@ -947,6 +1012,7 @@
 
         const usePeople=modeValue==='people';
         let n,budget; const sqmPerPerson=parseFloat(densitySel.value || DEFAULT_SQM_PER_PERSON);
+        const staffPerWS=parseFloat(hybridSel.value || 1);
         if(usePeople){
           n=parseInt(pplInp.value,10);
           if(!n||n<=0){errs.people.style.display='block'; pplInp.classList.add('error'); bad=true; }
@@ -965,11 +1031,13 @@
             const perWS=Math.round(cpsqm*sqmPerPerson);
             renderResult(costEl,'Annual cost',`£${totalCost.toLocaleString()}`);
             renderResult(costEl,'Total per workstation',`£${perWS.toLocaleString()}`,true);
-            pplEl.innerHTML='';
+            renderResult(pplEl,'Staff accommodated',`${Math.round(n*staffPerWS).toLocaleString()}`);
           }else{
             const sqm=budget/cpsqm;
             renderResult(areaEl,'Area achievable',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
-            renderResult(pplEl,'Workstations accommodated',`${Math.round(sqm/sqmPerPerson).toLocaleString()}`);
+            const workstations=Math.round(sqm/sqmPerPerson);
+            renderResult(pplEl,'Workstations accommodated',`${workstations.toLocaleString()}`);
+            renderResult(pplEl,'Staff accommodated',`${Math.round(workstations*staffPerWS).toLocaleString()}`,true);
             costEl.innerHTML='';
           }
         }
@@ -994,6 +1062,7 @@
 
       calcBtn.addEventListener('click',performCalc);
       densitySel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
+      hybridSel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
 
       toggleInputs(); // initialise visibility
       updateComparePrompt();
