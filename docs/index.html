@@ -221,15 +221,9 @@
 
         <!-- People input -->
         <div id="peopleGroup" class="mb-3 hidden">
-          <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many workstations?</label>
+          <label for="peopleInput" class="block text-lg font-din-bold text-gray-700 mb-1">How many staff?</label>
           <input type="number" id="peopleInput" class="w-full border rounded p-2" placeholder="e.g. 25" />
           <p id="peopleError" class="err-msg mt-1">Enter a number &gt; 0</p>
-          <button id="customiseToggle" type="button" class="select-btn mt-2 flex items-center">Customise discretionary costs
-            <svg class="w-4 h-4 ml-1 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M6 8l4 4 4-4" />
-            </svg>
-          </button>
-          <div id="extrasWrap" class="mt-2 p-2 border rounded hidden"></div>
         </div>
 
         <!-- Budget input -->
@@ -237,6 +231,15 @@
           <label for="budgetInput" class="block text-lg font-din-bold text-gray-700 mb-1">Annual budget (£)</label>
           <input type="text" id="budgetInput" inputmode="numeric" class="w-full border rounded p-2" placeholder="e.g. 750,000" />
           <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
+        </div>
+
+        <div id="extrasSection" class="mb-3 hidden">
+          <button id="customiseToggle" type="button" class="select-btn mt-2 flex items-center">Customise discretionary costs
+            <svg class="w-4 h-4 ml-1 transition-transform" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 20" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M6 8l4 4 4-4" />
+            </svg>
+          </button>
+          <div id="extrasWrap" class="mt-2 p-2 border rounded hidden"></div>
         </div>
 
         <div id="calcBtnWrap" class="flex items-center gap-2 mt-2">
@@ -492,14 +495,20 @@
           if(Math.abs(x-stepX)<stepWidth/4){
             densityDetail.textContent=DENSITIES[idx].detail;
             const pct=idx/(DENSITIES.length-1);
-            densityDetail.style.left=`${pct*100}%`;
+            const left=pct*rect.width;
+            densityDetail.style.left=`${left}px`;
+            if(idx===0) densityDetail.style.transform='translateX(0)';
+            else if(idx===DENSITIES.length-1) densityDetail.style.transform='translateX(-100%)';
+            else densityDetail.style.transform='translateX(-50%)';
             densityDetail.classList.remove('hidden');
+            densityOutput.textContent=DENSITIES[idx].label;
+            densityOutput.style.left=`${pct*100}%`;
           }else{
             densityDetail.classList.add('hidden');
           }
         }
         densitySliderWrap.addEventListener('mousemove',handleDensityHover);
-        densitySliderWrap.addEventListener('mouseleave',()=>densityDetail.classList.add('hidden'));
+        densitySliderWrap.addEventListener('mouseleave',()=>{densityDetail.classList.add('hidden'); updateDensity();});
         densitySlider.addEventListener('input',updateDensity);
       updateDensity();
 
@@ -520,10 +529,12 @@
       function updateHybrid(){
         const idx=parseInt(hybridSlider.value,10);
         const r=HYBRID_RATIOS[idx];
+        hybridSel.value=r;
         hybridOutput.textContent=`1:${r}`;
         const pct=idx/(HYBRID_RATIOS.length-1);
         hybridOutput.style.left=`${pct*100}%`;
         hybridDots.forEach((dot,i)=>{dot.classList.toggle('active',i===idx);});
+        hybridSel.dispatchEvent(new Event('change'));
       }
         HYBRID_RATIOS.forEach((r,i)=>{
           const dot=document.createElement('div');
@@ -547,12 +558,14 @@
             else if(idx===HYBRID_RATIOS.length-1) hybridDetail.style.transform='translateX(-100%)';
             else hybridDetail.style.transform='translateX(-50%)';
             hybridDetail.classList.remove('hidden');
+            hybridOutput.textContent=`1:${HYBRID_RATIOS[idx]}`;
+            hybridOutput.style.left=`${pct*100}%`;
           }else{
             hybridDetail.classList.add('hidden');
           }
         }
         hybridSliderWrap.addEventListener('mousemove',handleHybridHover);
-        hybridSliderWrap.addEventListener('mouseleave',()=>hybridDetail.classList.add('hidden'));
+        hybridSliderWrap.addEventListener('mouseleave',()=>{hybridDetail.classList.add('hidden'); updateHybrid();});
         hybridSlider.addEventListener('input',updateHybrid);
       updateHybrid();
 
@@ -563,6 +576,7 @@
       let ageValue='';
       const pplInp=$('peopleInput'); const budInp=$('budgetInput');
       const pplGrp=$('peopleGroup'); const budGrp=$('budgetGroup');
+      const extrasSection=$('extrasSection');
       const customiseToggle=$('customiseToggle');
       const custArrow=customiseToggle.querySelector('svg');
       const extrasWrap=$('extrasWrap');
@@ -680,10 +694,11 @@
         const showBudget=modeValue==='budget';
         pplGrp.classList.toggle('hidden',!showPeople);
         budGrp.classList.toggle('hidden',!showBudget);
+        extrasSection.classList.toggle('hidden',!(showPeople||showBudget));
         calcBtnWrap.classList.toggle('mt-3',!showPeople&&!showBudget);
         resWrap.classList.add('hidden');
         calcDownloadWrap.classList.add('hidden');
-        if(!showPeople){
+        if(!(showPeople||showBudget)){
           extrasWrap.classList.add('hidden');
           customiseToggle.classList.remove('active');
           custArrow.classList.remove('rotate-180');
@@ -878,6 +893,8 @@
         toggleInputs();
         highlightSelections(false);
         extrasWrap.classList.add('hidden');
+        customiseToggle.classList.remove('active');
+        custArrow.classList.remove('rotate-180');
         activeExtras.clear();
         EXTRA_NAMES.forEach(x=>activeExtras.add(x));
         extrasWrap.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=true);
@@ -948,9 +965,9 @@
       function buildCalcCSV(){
         const usePeople=modeValue==='people';
         const metricHeaders=usePeople?
-          ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)','Total per workstation (\u00A3)','Staff accommodated']:
+          ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)','Total per workstation (\u00A3)','Workstations required','Staff accommodated']:
           ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','Workstations accommodated','Staff accommodated'];
-        const header=['Location','Building age',usePeople?'Workstations':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)','Hybrid extent (workstations per staff)',...metricHeaders];
+        const header=['Location','Building age',usePeople?'Staff':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)','Hybrid extent (workstations per staff)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const densityLabel=densitySel.value;
         const hybridLabel='1:'+hybridSel.value;
@@ -962,28 +979,31 @@
         function addRow(loc){
           const cpsqm=costPerSqm(loc);
           if(usePeople){
-            const sqm=n*sqmPerPerson;
+            const staff=n;
+            const staffRatio=parseFloat(hybridSel.value || '1');
+            const workstations=Math.ceil(staff/staffRatio);
+            const sqm=workstations*sqmPerPerson;
             const sqft=sqm*SQM_TO_SQFT;
             const cost=Math.round(sqm*cpsqm);
             const perWS=Math.round(cpsqm*sqmPerPerson);
-            const staff=Math.round(n*parseFloat(hybridSel.value || '1'));
             lines.push([
               q(loc),
               ageLabel,
-              n,
+              staff,
               densityLabel,
               hybridLabel,
               sqm.toFixed(2),
               sqft.toFixed(0),
               cost,
               perWS,
+              workstations,
               staff
             ].join(','));
           }else{
             const sqm=budget/cpsqm;
             const sqft=sqm*SQM_TO_SQFT;
-            const ppl=Math.round(sqm/sqmPerPerson);
-            const staff=Math.round(ppl*parseFloat(hybridSel.value || '1'));
+            const workstations=Math.round(sqm/sqmPerPerson);
+            const staff=Math.round(workstations*parseFloat(hybridSel.value || '1'));
             lines.push([
               q(loc),
               ageLabel,
@@ -992,7 +1012,7 @@
               hybridLabel,
               Math.round(sqm),
               Math.round(sqft),
-              ppl,
+              workstations,
               staff
             ].join(','));
           }
@@ -1064,20 +1084,23 @@
          const cpsqm=costPerSqm(loc);
          titleEl.textContent=loc;
           if(usePeople){
-            const sqm=n*sqmPerPerson;
+            const staff=n;
+            const workstations=Math.ceil(staff/staffPerWS);
+            const sqm=workstations*sqmPerPerson;
             renderResult(areaEl,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
             const totalCost=Math.round(sqm*cpsqm);
             const perWS=Math.round(cpsqm*sqmPerPerson);
             renderResult(costEl,'Annual cost',`£${totalCost.toLocaleString()}`);
             renderResult(costEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
-            const staff=Math.round(n*staffPerWS);
-            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`);
+            renderResult(pplEl,'Workstations required',`${workstations.toLocaleString()}`);
+            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}` ,true);
           }else{
             const sqm=budget/cpsqm;
             renderResult(areaEl,'Area required',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
             const workstations=Math.round(sqm/sqmPerPerson);
             const staff=Math.round(workstations*staffPerWS);
-            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`);
+            renderResult(pplEl,'Workstations accommodated',`${workstations.toLocaleString()}`);
+            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`,true);
             const perWS=Math.round(budget/workstations);
             renderResult(pplEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
             costEl.innerHTML='';
