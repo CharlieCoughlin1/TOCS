@@ -102,6 +102,18 @@
       -moz-font-feature-settings:'liga' 0;
       font-variant-ligatures:none;
     }
+    /* custom density slider */
+    .density-slider{position:relative;padding:1rem 0;}
+    .density-line{position:absolute;top:50%;left:0;width:100%;height:2px;background:#d1d5db;transition:background-color .2s;}
+    .density-slider:hover .density-line{background:var(--lsh-red);}
+    .density-option{position:relative;background:none;border:none;padding:0;margin:0;flex:1;text-align:center;cursor:pointer;}
+    .density-option:focus{outline:none;}
+    .density-point{width:14px;height:14px;border-radius:50%;background:#d1d5db;margin:0 auto;transition:background-color .2s;}
+    .density-option.selected .density-point,.density-option:hover .density-point{background:var(--lsh-red);}
+    .density-label{margin-top:0.25rem;font-size:0.875rem;display:block;}
+    .density-option:hover .density-label{visibility:hidden;}
+    .density-tooltip{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:1.75rem;background:#fff;border:1px solid #d1d5db;padding:0.25rem 0.5rem;box-shadow:0 2px 4px rgba(0,0,0,0.1);font-size:0.75rem;white-space:nowrap;z-index:10;}
+    .density-option:hover .density-tooltip{display:block;}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -168,12 +180,9 @@
         </div>
         <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location on the map to compare results.</p>
 
-        <label for="densitySelect" class="block text-lg font-din-bold text-gray-700 mb-1">Workstation density</label>
-        <select id="densitySelect" class="w-full border rounded p-2 mb-1 bg-white">
-          <option value="12.5">Spacious (12.5 m² per person NIA)</option>
-          <option value="10" selected>Standard (10 m² per person NIA)</option>
-          <option value="8">Dense (8 m² per person NIA)</option>
-        </select>
+        <label class="block text-lg font-din-bold text-gray-700 mb-1">Workstation density</label>
+        <div id="densitySlider" class="density-slider mb-1"></div>
+        <input type="hidden" id="densitySelect" value="10" />
 
         <!-- People input -->
         <div id="peopleGroup" class="mb-3 hidden">
@@ -406,6 +415,50 @@
       const comparePrompt=$('comparePrompt');
       const calcClear=$('calcClear');
       const densitySel=$('densitySelect');
+      const densitySlider=$('densitySlider');
+      const densityOptions=[];
+      const DENSITIES=[
+        {label:'Dense',value:'8',detail:'8 m² per person NIA'},
+        {label:'Standard',value:'10',detail:'10 m² per person NIA'},
+        {label:'Spacious',value:'12.5',detail:'12.5 m² per person NIA'}
+      ];
+      const line=document.createElement('div');
+      line.className='density-line';
+      densitySlider.appendChild(line);
+      const wrap=document.createElement('div');
+      wrap.className='flex justify-between relative z-10';
+      densitySlider.appendChild(wrap);
+      function setDensity(val){
+        densitySel.value=val;
+        densityOptions.forEach(o=>{
+          if(o.dataset.value===val) o.classList.add('selected');
+          else o.classList.remove('selected');
+        });
+      }
+      DENSITIES.forEach(d=>{
+        const opt=document.createElement('button');
+        opt.type='button';
+        opt.className='density-option flex flex-col items-center';
+        opt.dataset.value=d.value;
+        const point=document.createElement('div');
+        point.className='density-point';
+        const label=document.createElement('span');
+        label.className='density-label';
+        label.textContent=d.label;
+        const tip=document.createElement('div');
+        tip.className='density-tooltip';
+        tip.innerHTML=`<strong>${d.label}</strong><br>${d.detail}`;
+        opt.appendChild(point);
+        opt.appendChild(label);
+        opt.appendChild(tip);
+        opt.addEventListener('click',()=>{
+          setDensity(d.value);
+          densitySel.dispatchEvent(new Event('change'));
+        });
+        densityOptions.push(opt);
+        wrap.appendChild(opt);
+      });
+      setDensity('10');
       const modeGroup=$('modeBtns'); const ageGroup=$('ageBtns');
       const modeButtons=modeGroup.querySelectorAll('button');
       const ageButtons=ageGroup.querySelectorAll('button');
@@ -717,7 +770,7 @@
       calcClear.addEventListener('click',()=>{
         modeValue=''; ageValue='';
         [locSel,locSel2,pplInp,budInp].forEach(el=>{el.value='';});
-        densitySel.value='10';
+        setDensity('10');
         modeButtons.forEach(b=>b.classList.remove('active'));
         ageButtons.forEach(b=>b.classList.remove('active'));
         loc2Wrap.classList.add('hidden');
