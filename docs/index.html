@@ -208,7 +208,7 @@
         <input type="hidden" id="densitySelect" value="10" />
 
         <div id="hybridLegacy" class="mt-4">
-          <label class="block text-lg font-din-bold text-gray-700 mb-1">Hybrid extent</label>
+          <label class="block text-lg font-din-bold text-gray-700 mb-1">Extent of hybrid working</label>
           <p class="text-sm text-gray-600 font-din-light mb-1">How many workstations per member of staff?</p>
           <div id="hybridSliderWrap" class="relative mt-6 mb-8 step-slider">
             <div class="step-line"></div>
@@ -476,6 +476,9 @@
         densityOutput.textContent=d.label;
         const pct=idx/(DENSITIES.length-1);
         densityOutput.style.left=`${pct*100}%`;
+        if(idx===0) densityOutput.style.transform='translateX(0)';
+        else if(idx===DENSITIES.length-1) densityOutput.style.transform='translateX(-100%)';
+        else densityOutput.style.transform='translateX(-50%)';
         densityDots.forEach((dot,i)=>{dot.classList.toggle('active',i===idx);});
         densitySel.dispatchEvent(new Event('change'));
       }
@@ -503,6 +506,9 @@
             densityDetail.classList.remove('hidden');
             densityOutput.textContent=DENSITIES[idx].label;
             densityOutput.style.left=`${pct*100}%`;
+            if(idx===0) densityOutput.style.transform='translateX(0)';
+            else if(idx===DENSITIES.length-1) densityOutput.style.transform='translateX(-100%)';
+            else densityOutput.style.transform='translateX(-50%)';
           }else{
             densityDetail.classList.add('hidden');
           }
@@ -533,6 +539,9 @@
         hybridOutput.textContent=`1:${r}`;
         const pct=idx/(HYBRID_RATIOS.length-1);
         hybridOutput.style.left=`${pct*100}%`;
+        if(idx===0) hybridOutput.style.transform='translateX(0)';
+        else if(idx===HYBRID_RATIOS.length-1) hybridOutput.style.transform='translateX(-100%)';
+        else hybridOutput.style.transform='translateX(-50%)';
         hybridDots.forEach((dot,i)=>{dot.classList.toggle('active',i===idx);});
         hybridSel.dispatchEvent(new Event('change'));
       }
@@ -554,12 +563,15 @@
             const pct=idx/(HYBRID_RATIOS.length-1);
             const left=pct*rect.width;
             hybridDetail.style.left=`${left}px`;
-            if(idx===0) hybridDetail.style.transform='translateX(0)';
-            else if(idx===HYBRID_RATIOS.length-1) hybridDetail.style.transform='translateX(-100%)';
+            if(idx<=1) hybridDetail.style.transform='translateX(0)';
+            else if(idx>=HYBRID_RATIOS.length-2) hybridDetail.style.transform='translateX(-100%)';
             else hybridDetail.style.transform='translateX(-50%)';
             hybridDetail.classList.remove('hidden');
             hybridOutput.textContent=`1:${HYBRID_RATIOS[idx]}`;
             hybridOutput.style.left=`${pct*100}%`;
+            if(idx===0) hybridOutput.style.transform='translateX(0)';
+            else if(idx===HYBRID_RATIOS.length-1) hybridOutput.style.transform='translateX(-100%)';
+            else hybridOutput.style.transform='translateX(-50%)';
           }else{
             hybridDetail.classList.add('hidden');
           }
@@ -965,9 +977,9 @@
       function buildCalcCSV(){
         const usePeople=modeValue==='people';
         const metricHeaders=usePeople?
-          ['Area required (m\u00B2)','Area required (ft\u00B2)','Annual cost (\u00A3)','Total per workstation (\u00A3)','Workstations required','Staff accommodated']:
+          ['Space required (m\u00B2)','Space required (ft\u00B2)','Annual cost (\u00A3)','Total per workstation (\u00A3)']:
           ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','Workstations accommodated','Staff accommodated'];
-        const header=['Location','Building age',usePeople?'Staff':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)','Hybrid extent (workstations per staff)',...metricHeaders];
+        const header=['Location','Building age',usePeople?'Staff':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)','Extent of hybrid working (workstations per staff)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const densityLabel=densitySel.value;
         const hybridLabel='1:'+hybridSel.value;
@@ -981,7 +993,7 @@
           if(usePeople){
             const staff=n;
             const staffRatio=parseFloat(hybridSel.value || '1');
-            const workstations=Math.ceil(staff/staffRatio);
+            const workstations=Math.round(staff/staffRatio);
             const sqm=workstations*sqmPerPerson;
             const sqft=sqm*SQM_TO_SQFT;
             const cost=Math.round(sqm*cpsqm);
@@ -995,9 +1007,7 @@
               sqm.toFixed(2),
               sqft.toFixed(0),
               cost,
-              perWS,
-              workstations,
-              staff
+              perWS
             ].join(','));
           }else{
             const sqm=budget/cpsqm;
@@ -1085,15 +1095,15 @@
          titleEl.textContent=loc;
           if(usePeople){
             const staff=n;
-            const workstations=Math.ceil(staff/staffPerWS);
+            const workstations=Math.round(staff/staffPerWS);
             const sqm=workstations*sqmPerPerson;
-            renderResult(areaEl,'Area required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
+            renderResult(areaEl,'Space required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
             const totalCost=Math.round(sqm*cpsqm);
             const perWS=Math.round(cpsqm*sqmPerPerson);
             renderResult(costEl,'Annual cost',`£${totalCost.toLocaleString()}`);
             renderResult(costEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
-            renderResult(pplEl,'Workstations required',`${workstations.toLocaleString()}`);
-            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}` ,true);
+            pplEl.innerHTML='';
+            pplEl.classList.add('hidden');
           }else{
             const sqm=budget/cpsqm;
             renderResult(areaEl,'Area required',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
@@ -1104,6 +1114,7 @@
             const perWS=Math.round(budget/workstations);
             renderResult(pplEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
             costEl.innerHTML='';
+            pplEl.classList.remove('hidden');
           }
         }
        calcLoc(locSel.value,areaR1,costR1,pplR1,title1);
