@@ -499,40 +499,50 @@
 
       function displayAgents(locations){
         contactContainer.innerHTML='';
-        const list=[];
-        locations.forEach(loc=>{
+        const locs=locations.map(loc=>{
           for(const key in agentsByLocation){
-            if(loc.includes(key)) list.push(...agentsByLocation[key]);
+            if(loc.toLowerCase().includes(key.toLowerCase())) return key;
           }
-        });
-        if(list.length===0){ contactContainer.classList.add('hidden'); return; }
+          return null;
+        }).filter(Boolean);
+        if(locs.length===0){ contactContainer.classList.add('hidden'); return; }
+
         const header=document.createElement('h3');
-        header.textContent='Contact us';
+        header.textContent=`Contact our ${locs.join(' and ')} agents`;
         header.className='text-2xl font-din-bold mb-4';
         contactContainer.appendChild(header);
-        const wrap=document.createElement('div');
-        wrap.className='grid grid-cols-1 sm:grid-cols-2 gap-4';
-        list.forEach(a=>{
-          const card=document.createElement('div');
-          card.className='text-center';
-          const nameEl=document.createElement('p');
-          nameEl.textContent=a.name;
-          nameEl.className='font-din-bold';
-          const img=document.createElement('img');
-          img.src=a.photo;
-          img.alt=a.name;
-          img.className='mx-auto my-2 w-32 h-32 object-cover';
-          const statusEl=document.createElement('p');
-          statusEl.textContent=a.status;
-          statusEl.className='text-sm';
-          const mobEl=document.createElement('p');
-          mobEl.textContent=a.mobile;
-          const emailEl=document.createElement('p');
-          emailEl.innerHTML=`<a href="mailto:${a.email}" class="text-lsh-red">${a.email}</a>`;
-          card.append(nameEl,img,statusEl,mobEl,emailEl);
-          wrap.appendChild(card);
+
+        locs.forEach(loc=>{
+          const agents=agentsByLocation[loc] || [];
+          if(agents.length===0) return;
+          const locHeader=document.createElement('h4');
+          locHeader.textContent=loc;
+          locHeader.className='text-xl font-din-bold mb-2';
+          contactContainer.appendChild(locHeader);
+          const wrap=document.createElement('div');
+          wrap.className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4';
+          agents.forEach(a=>{
+            const card=document.createElement('div');
+            card.className='text-center';
+            const nameEl=document.createElement('p');
+            nameEl.textContent=a.name;
+            nameEl.className='font-din-bold';
+            const img=document.createElement('img');
+            img.src=a.photo;
+            img.alt=a.name;
+            img.className='mx-auto my-2 w-24 h-24 object-cover';
+            const statusEl=document.createElement('p');
+            statusEl.textContent=a.status;
+            statusEl.className='text-sm';
+            const mobEl=document.createElement('p');
+            mobEl.textContent=a.mobile;
+            const emailEl=document.createElement('p');
+            emailEl.innerHTML=`<a href="mailto:${a.email}" class="text-lsh-red">${a.email}</a>`;
+            card.append(nameEl,img,statusEl,mobEl,emailEl);
+            wrap.appendChild(card);
+          });
+          contactContainer.appendChild(wrap);
         });
-        contactContainer.appendChild(wrap);
         contactContainer.classList.remove('hidden');
       }
       function updateDensity(){
