@@ -124,7 +124,7 @@
     .density-label{margin-top:0;font-size:0.875rem;display:block;}
     .density-tooltip{display:none;}
     .slider-pop{position:absolute;top:-1.5rem;left:50%;transform:translateX(-50%);background:#e5e7eb;padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.875rem;pointer-events:none;}
-    .slider-pop-below{top:auto;bottom:-1.5rem;}
+    .slider-pop-below{top:auto;bottom:-2rem;font-size:0.75rem;white-space:nowrap;}
     /* step sliders */
     .step-slider{position:relative;height:1.5rem;}
     .step-line{position:absolute;top:50%;left:0;right:0;height:2px;background:#d1d5db;transform:translateY(-50%);transition:background-color .2s;pointer-events:none;}
@@ -259,13 +259,6 @@
               <div id="peopleResult2" class="result-scroll"></div>
             </div>
           </div>
-          <div id="hybridResult" class="space-y-3 mt-4 hidden">
-            <h3 id="hybridTitle" class="font-din-bold text-xl result-scroll result-title"></h3>
-            <div id="hybridMetrics" class="result-scroll"></div>
-          </div>
-          <div class="text-right mt-3">
-            <button id="hybridFab" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold hidden">Right-size for Hybrid?</button>
-          </div>
         </div>
 
         <div id="calcDownloadWrap" class="flex justify-end mt-2 hidden">
@@ -318,35 +311,6 @@
       </div>
     </section>
   </main>
-
-
-  <div id="hybridModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center hidden" style="z-index:1000" role="dialog" aria-modal="true">
-    <div class="bg-white rounded-lg w-full max-w-md p-4">
-      <div class="flex justify-between items-center mb-2">
-        <h3 class="text-xl font-din-bold">Right-size for Hybrid?</h3>
-        <button id="hybridClose" aria-label="Close" class="p-1">
-          <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-            <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
-          </svg>
-        </button>
-      </div>
-      <p class="text-sm text-gray-600 mb-2">If your team isn’t in every day, we’ll size for your busiest day and show a lower cost. We include a small safety buffer for peaks.</p>
-      <div class="space-y-3">
-        <label class="block text-lg font-din-bold text-gray-700 mb-1">Average days per week in the office per person</label>
-        <div id="daysSlider" class="density-slider mb-1"></div>
-        <input type="hidden" id="daysRange" value="3" />
-        <label class="block text-lg font-din-bold text-gray-700 mb-1">Do you have any anchor days during the week?</label>
-        <div id="anchorDays" class="density-slider mb-1"></div>
-        <label id="anchorBusyLabel" class="block text-lg font-din-bold text-gray-700 mb-1 hidden">How busy is your anchor day(s)?</label>
-        <div id="anchorBusy" class="density-slider mb-1 hidden"></div>
-        <div id="recResults" class="space-y-1"></div>
-      </div>
-      <div class="mt-4 text-right">
-        <button id="applyHybrid" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold">Apply</button>
-      </div>
-    </div>
-  </div>
-
   <footer class="text-center text-sm text-gray-400 py-6 font-din-light">© Lambert Smith Hampton — Prototype tool for illustration only.</footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
@@ -547,11 +511,11 @@
         const hybridDots=[];
         const HYBRID_RATIOS=[1,1.5,2,2.5,3];
         const HYBRID_DETAILS=[
-          'Ideal for an average of 5 days in office per week',
-          'Ideal for an average of about 3 days in office per week',
-          'Ideal for an average of 2–3 days in office per week',
-          'Ideal for an average of 2 days in office per week',
-          'Ideal for an average of around 1–2 days in office per week'
+          'Suitable for an average of 5 days in office per week',
+          'Suitable for an average of 4 days in office per week',
+          'Suitable for an average of 3 days in office per week',
+          'Suitable for an average of 2 days in office per week',
+          'Suitable for an average of 1 day in office per week'
         ];
       function updateHybrid(){
         const idx=parseInt(hybridSlider.value,10);
@@ -577,7 +541,11 @@
           if(Math.abs(x-stepX)<stepWidth/4){
             hybridDetail.textContent=HYBRID_DETAILS[idx];
             const pct=idx/(HYBRID_RATIOS.length-1);
-            hybridDetail.style.left=`${pct*100}%`;
+            const left=pct*rect.width;
+            hybridDetail.style.left=`${left}px`;
+            if(idx===0) hybridDetail.style.transform='translateX(0)';
+            else if(idx===HYBRID_RATIOS.length-1) hybridDetail.style.transform='translateX(-100%)';
+            else hybridDetail.style.transform='translateX(-50%)';
             hybridDetail.classList.remove('hidden');
           }else{
             hybridDetail.classList.add('hidden');
@@ -588,160 +556,6 @@
         hybridSlider.addEventListener('input',updateHybrid);
       updateHybrid();
 
-      let standardData=null;
-      let hybridApplied=false;
-      const hybridFab=$('hybridFab');
-        const hybridModal=$('hybridModal');
-        const hybridClose=$('hybridClose');
-        const daysRange=$('daysRange');
-        const anchorDaysEl=$('anchorDays');
-        const anchorBusyEl=$('anchorBusy');
-        const anchorBusyLabel=$('anchorBusyLabel');
-        const recResults=$('recResults');
-        const applyHybrid=$('applyHybrid');
-        const hybridResult=$('hybridResult');
-        const daysSliderEl=$('daysSlider');
-        const dayOptions=[];
-        const anchorDayOptions=[];
-        const anchorBusyOptions=[];
-        const DAY_VALUES=[1,2,3,4,5];
-        let anchorDay='no';
-        let anchorBusy='0.8';
-        function setDays(val){
-        daysRange.value=val;
-        dayOptions.forEach(o=>{if(o.dataset.value===val)o.classList.add('selected'); else o.classList.remove('selected');});
-        updateHybridResults();
-      }
-DAY_VALUES.forEach(v=>{
-  const opt=document.createElement('button');
-  opt.type='button';
-  opt.className='density-option';
-  opt.dataset.value=String(v);
-  opt.textContent=String(v);
-  opt.addEventListener('click',()=>setDays(String(v)));
-  dayOptions.push(opt);
-  daysSliderEl.appendChild(opt);
-});
-setDays('3');
-
-        const ANCHOR_DAY_OPTS=[
-          {label:'No',value:'no'},
-          {label:'Yes',value:'yes'}
-        ];
-        function setAnchorDay(val){
-          anchorDay=val;
-          anchorDayOptions.forEach(o=>{o.classList.toggle('selected',o.dataset.value===val);});
-          const show=val==='yes';
-          anchorBusyEl.classList.toggle('hidden',!show);
-          anchorBusyLabel.classList.toggle('hidden',!show);
-          updateHybridResults();
-        }
-        ANCHOR_DAY_OPTS.forEach(opt=>{
-          const btn=document.createElement('button');
-          btn.type='button';
-          btn.className='density-option';
-          btn.dataset.value=opt.value;
-          btn.textContent=opt.label;
-          btn.addEventListener('click',()=>setAnchorDay(opt.value));
-          anchorDayOptions.push(btn);
-          anchorDaysEl.appendChild(btn);
-        });
-        setAnchorDay('no');
-
-        const ANCHOR_BUSY_OPTS=[
-          {label:'40% capacity',value:'0.4'},
-          {label:'60% capacity',value:'0.6'},
-          {label:'80% capacity',value:'0.8'},
-          {label:'Full capacity',value:'1'}
-        ];
-        function setAnchorBusy(val){
-          anchorBusy=val;
-          anchorBusyOptions.forEach(o=>{o.classList.toggle('selected',o.dataset.value===val);});
-          updateHybridResults();
-        }
-        ANCHOR_BUSY_OPTS.forEach(opt=>{
-          const btn=document.createElement('button');
-          btn.type='button';
-          btn.className='density-option';
-          btn.dataset.value=opt.value;
-          btn.textContent=opt.label;
-          btn.addEventListener('click',()=>setAnchorBusy(opt.value));
-          anchorBusyOptions.push(btn);
-          anchorBusyEl.appendChild(btn);
-        });
-        setAnchorBusy('0.8');
-
-        function calcBusiestDay(headcount,densityPerPerson,originalAnnualCost,d,anchorCapacity,cpsqm){
-          const p=Math.min(Math.max(d/5,0),1);
-          const mu=headcount*p;
-          const sigma=Math.sqrt(headcount*p*(1-p));
-          const z95=1.645;
-          const basePeak=mu+z95*sigma;
-          let peak=basePeak;
-          if(anchorCapacity!==null && !isNaN(anchorCapacity)){
-            peak=Math.max(basePeak,headcount*anchorCapacity);
-          }
-          const smallTeamFactor=headcount<30?1.05:1.00;
-          const D_peak=Math.min(headcount,Math.ceil(peak*smallTeamFactor));
-          const workpointArea=D_peak*densityPerPerson;
-          const totalArea=workpointArea;
-          const newAnnualCost=Math.round(totalArea*cpsqm);
-          const savings=Math.max(originalAnnualCost-newAnnualCost,0);
-          const savingsPct=originalAnnualCost>0?(savings/originalAnnualCost)*100:0;
-          return{desks:D_peak,totalArea,newAnnualCost,savings,savingsPct};
-        }
-      hybridFab.addEventListener('click',()=>{
-        setAnchorDay('no');
-        hybridModal.classList.remove('hidden');
-        updateHybridResults();
-      });
-      hybridClose.addEventListener('click',()=>hybridModal.classList.add('hidden'));
-      document.addEventListener('keydown',e=>{if(e.key==='Escape')hybridModal.classList.add('hidden');});
-      function updateHybridResults(){
-        if(!standardData || !standardData.length) return;
-        const sd=standardData[0];
-          const d=parseFloat(daysRange.value);
-          const anchorCap=anchorDay==='yes'?parseFloat(anchorBusy):null;
-          const cpsqm=costPerSqm(sd.location);
-          const r=calcBusiestDay(sd.headcount,sd.densityPerPerson,sd.originalAnnualCost,d,anchorCap,cpsqm);
-        renderResult(recResults,'Original space',`${sd.originalTotalArea.toLocaleString()} m² / ${(sd.originalTotalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
-        renderResult(recResults,'Hybrid space',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true,true);
-        renderResult(recResults,'Original estimated annual cost',`£${sd.originalAnnualCost.toLocaleString()}`,true);
-        renderResult(recResults,'Hybrid estimated annual cost',`£${r.newAnnualCost.toLocaleString()}`,true,true);
-        updateScrollbars();
-      }
-        daysRange.addEventListener('change',updateHybridResults);
-      function applyHybridResult(){
-        if(!standardData || !standardData.length) return;
-          const d=parseFloat(daysRange.value);
-          const anchorCap=anchorDay==='yes'?parseFloat(anchorBusy):null;
-          standardData.forEach((sd,idx)=>{
-            const cpsqm=costPerSqm(sd.location);
-            const r=calcBusiestDay(sd.headcount,sd.densityPerPerson,sd.originalAnnualCost,d,anchorCap,cpsqm);
-          const areaEl=idx===0?areaR1:areaR2;
-          const costEl=idx===0?costR1:costR2;
-          const pplEl=idx===0?pplR1:pplR2;
-          if(modeValue==='people'){
-            renderResult(areaEl,'Original area required',`${sd.originalTotalArea.toLocaleString()} m² / ${(sd.originalTotalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
-            renderResult(areaEl,'Hybrid area required',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true,true);
-            renderResult(costEl,'Original annual cost',`£${sd.originalAnnualCost.toLocaleString()}`);
-            renderResult(costEl,'Hybrid annual cost',`£${r.newAnnualCost.toLocaleString()}`,true,true);
-            pplEl.innerHTML='';
-          }else{
-            renderResult(areaEl,'Original area required',`${sd.originalTotalArea.toLocaleString()} m² / ${(sd.originalTotalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
-            renderResult(areaEl,'Hybrid area required',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true,true);
-            renderResult(pplEl,'Original staff accommodated',`${sd.headcount.toLocaleString()}`);
-            const staffHybrid=Math.round(sd.headcount*(sd.originalTotalArea/r.totalArea));
-            renderResult(pplEl,'Hybrid staff accommodated',`${staffHybrid.toLocaleString()}`,true,true);
-            costEl.innerHTML='';
-          }
-        });
-        updateScrollbars();
-        hybridModal.classList.add('hidden');
-        hybridApplied=true;
-        hybridFab.textContent='Edit hybrid options';
-      }
-      applyHybrid.addEventListener('click',applyHybridResult);
       const modeGroup=$('modeBtns'); const ageGroup=$('ageBtns');
       const modeButtons=modeGroup.querySelectorAll('button');
       const ageButtons=ageGroup.querySelectorAll('button');
@@ -1067,9 +881,6 @@ setDays('3');
         activeExtras.clear();
         EXTRA_NAMES.forEach(x=>activeExtras.add(x));
         extrasWrap.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=true);
-        hybridApplied=false;
-        hybridFab.textContent='Right-size for Hybrid?';
-        hybridFab.classList.add('hidden');
       });
       removeLoc2.addEventListener('click',()=>{
         locSel2.value='';
@@ -1249,7 +1060,6 @@ setDays('3');
           if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
         }
         if(bad) return;
-       hybridResult.classList.add('hidden');
        function calcLoc(loc,areaEl,costEl,pplEl,titleEl){
          const cpsqm=costPerSqm(loc);
          titleEl.textContent=loc;
@@ -1260,7 +1070,8 @@ setDays('3');
             const perWS=Math.round(cpsqm*sqmPerPerson);
             renderResult(costEl,'Annual cost',`£${totalCost.toLocaleString()}`);
             renderResult(costEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
-            pplEl.innerHTML='';
+            const staff=Math.round(n*staffPerWS);
+            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`);
           }else{
             const sqm=budget/cpsqm;
             renderResult(areaEl,'Area required',`${Math.round(sqm).toLocaleString()} m² / ${Math.round(sqm*SQM_TO_SQFT).toLocaleString()} ft²`);
@@ -1273,52 +1084,22 @@ setDays('3');
           }
         }
        calcLoc(locSel.value,areaR1,costR1,pplR1,title1);
-       if(usePeople){
-         const sqm=n*sqmPerPerson;
-         standardData=[];
-         const cpsqm1=costPerSqm(locSel.value);
-         const totalCost1=Math.round(sqm*cpsqm1);
-         standardData.push({headcount:n,densityPerPerson:sqmPerPerson,originalAnnualCost:totalCost1,originalTotalArea:sqm,location:locSel.value});
          if(locSel2.value){
-           const cpsqm2=costPerSqm(locSel2.value);
-           const totalCost2=Math.round(sqm*cpsqm2);
-           standardData.push({headcount:n,densityPerPerson:sqmPerPerson,originalAnnualCost:totalCost2,originalTotalArea:sqm,location:locSel2.value});
+           calcLoc(locSel2.value,areaR2,costR2,pplR2,title2);
+           box2.classList.remove('hidden');
+           resultContainer.classList.add('compare');
+           resultContainer.classList.remove('single');
+         }else{
+           box2.classList.add('hidden');
+           resultContainer.classList.add('single');
+           resultContainer.classList.remove('compare');
          }
-         hybridFab.classList.remove('hidden');
-         hybridFab.textContent=hybridApplied?'Edit hybrid options':'Right-size for Hybrid?';
-       }else{
-         const cpsqm1=costPerSqm(locSel.value);
-         const sqm1=budget/cpsqm1;
-         const workstations1=Math.round(sqm1/sqmPerPerson);
-         const staff1=Math.round(workstations1*staffPerWS);
-         standardData=[{headcount:staff1,densityPerPerson:sqmPerPerson,originalAnnualCost:budget,originalTotalArea:sqm1,location:locSel.value}];
-         if(locSel2.value){
-           const cpsqm2=costPerSqm(locSel2.value);
-           const sqm2=budget/cpsqm2;
-           const workstations2=Math.round(sqm2/sqmPerPerson);
-           const staff2=Math.round(workstations2*staffPerWS);
-           standardData.push({headcount:staff2,densityPerPerson:sqmPerPerson,originalAnnualCost:budget,originalTotalArea:sqm2,location:locSel2.value});
-         }
-         hybridFab.classList.remove('hidden');
-         hybridFab.textContent=hybridApplied?'Edit hybrid options':'Right-size for Hybrid?';
-       }
-       if(locSel2.value){
-         calcLoc(locSel2.value,areaR2,costR2,pplR2,title2);
-         box2.classList.remove('hidden');
-        resultContainer.classList.add('compare');
-        resultContainer.classList.remove('single');
-       }else{
-         box2.classList.add('hidden');
-        resultContainer.classList.add('single');
-       resultContainer.classList.remove('compare');
-       }
-       resWrap.classList.remove('hidden');
-       resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
-       calcDownloadWrap.classList.remove('hidden');
-       updateComparePrompt();
-       if(hybridApplied) applyHybridResult();
-       updateScrollbars();
-       setTimeout(updateScrollbars,50);
+         resWrap.classList.remove('hidden');
+         resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
+         calcDownloadWrap.classList.remove('hidden');
+         updateComparePrompt();
+         updateScrollbars();
+         setTimeout(updateScrollbars,50);
       }
 
       calcBtn.addEventListener('click',performCalc);
