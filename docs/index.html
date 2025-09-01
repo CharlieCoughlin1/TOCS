@@ -94,11 +94,9 @@
     /* table extra columns visible by default */
     .extra-col{display:table-cell;}
     /* tables scroll horizontally */
-    #occTables{overflow-x:auto;}
     #occTables table{min-width:52rem;}
     #occTables th{white-space:nowrap;}
     /* allow occupancy bars to scroll horizontally */
-    #occBars{overflow-x:auto;}
     #occBars .bar-col{flex:1 0 8rem;}
     #occBars.placeholder{justify-content:space-evenly;padding:0 0.5rem;}
     button{transition:transform .1s ease;}
@@ -149,7 +147,7 @@
       <h2 class="text-2xl md:text-3xl font-din-bold mb-4 text-lsh-red">UK office locations</h2>
       <div id="regionToggle" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="map" class="rounded"></div>
-      <p class="mt-4 text-sm text-gray-500 font-din-light">Hover a marker to view rental rates; click to select. Use the buttons above to zoom to a region.</p>
+      <p class="mt-4 text-xs text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
     </section>
 
     <!-- Calculator / Occupancy -->
@@ -228,12 +226,10 @@
 
         <!-- Budget input -->
         <div id="budgetGroup" class="mb-3 hidden">
-          <div class="flex items-center justify-between mb-1">
-            <label id="budgetLabel" for="budgetInput" class="block text-lg font-din-bold text-gray-700">Annual budget (£)</label>
-            <button id="budgetToggle" type="button" class="select-btn text-sm whitespace-nowrap">Monthly budget (£)</button>
-          </div>
+          <label id="budgetLabel" for="budgetInput" class="block text-lg font-din-bold text-gray-700 mb-1">Annual budget (£)</label>
           <div class="flex items-center gap-2">
-            <input type="text" id="budgetInput" inputmode="numeric" class="w-full border rounded p-2" placeholder="e.g. 750,000" />
+            <input type="text" id="budgetInput" inputmode="numeric" class="flex-1 border rounded p-2" placeholder="e.g. 750,000" />
+            <button id="budgetToggle" type="button" class="select-btn text-sm whitespace-nowrap">Monthly budget (£)</button>
           </div>
           <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
         </div>
@@ -306,9 +302,9 @@
             </div>
           </div>
         </div>
-        <div id="occBars" class="flex gap-4 items-end mb-4 w-full"></div>
+        <div id="occBars" class="flex gap-4 items-end mb-4 w-full result-scroll"></div>
         <p id="occLimitMsg" class="hidden text-xs text-lsh-red mb-2">You can compare up to 3 locations.</p>
-        <div id="occTables"></div>
+        <div id="occTables" class="result-scroll"></div>
         <div id="occDownloadWrap" class="flex justify-end mt-2 hidden">
           <div class="relative">
             <button id="downloadBtn" class="p-1" aria-label="Download">
