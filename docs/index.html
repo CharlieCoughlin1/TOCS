@@ -124,6 +124,7 @@
     .density-label{margin-top:0;font-size:0.875rem;display:block;}
     .density-tooltip{display:none;}
     .slider-pop{position:absolute;top:-1.5rem;left:50%;transform:translateX(-50%);background:#e5e7eb;padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.875rem;pointer-events:none;}
+    .slider-pop-below{top:auto;bottom:-1.5rem;}
     /* step sliders */
     .step-slider{position:relative;height:1.5rem;}
     .step-line{position:absolute;top:50%;left:0;right:0;height:2px;background:#d1d5db;transform:translateY(-50%);transition:background-color .2s;pointer-events:none;}
@@ -198,23 +199,23 @@
         <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location on the map to compare results.</p>
 
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Workstation density</label>
-        <div id="densitySliderWrap" class="relative mb-1 step-slider">
+        <div id="densitySliderWrap" class="relative mt-6 mb-8 step-slider">
           <div class="step-line"></div>
           <input type="range" id="densitySlider" min="0" max="2" step="1" value="1" class="absolute inset-0 w-full opacity-0 cursor-pointer" />
           <output id="densityOutput" class="slider-pop"></output>
+          <output id="densityDetail" class="slider-pop slider-pop-below hidden"></output>
         </div>
-        <div id="densityDetail" class="text-sm text-gray-600 font-din-light mt-1 hidden"></div>
         <input type="hidden" id="densitySelect" value="10" />
 
         <div id="hybridLegacy" class="mt-4">
           <label class="block text-lg font-din-bold text-gray-700 mb-1">Hybrid extent</label>
           <p class="text-sm text-gray-600 font-din-light mb-1">How many workstations per member of staff?</p>
-          <div id="hybridSliderWrap" class="relative mb-1 step-slider">
+          <div id="hybridSliderWrap" class="relative mt-6 mb-8 step-slider">
             <div class="step-line"></div>
             <input type="range" id="hybridSlider" min="0" max="4" step="1" value="0" class="absolute inset-0 w-full opacity-0 cursor-pointer" />
             <output id="hybridOutput" class="slider-pop"></output>
+            <output id="hybridDetail" class="slider-pop slider-pop-below hidden"></output>
           </div>
-          <div id="hybridDetail" class="text-sm text-gray-600 font-din-light mt-1 hidden"></div>
           <input type="hidden" id="hybridSelect" value="1" />
         </div>
 
@@ -525,7 +526,9 @@
           const idx=Math.round(x/stepWidth);
           const stepX=idx*stepWidth;
           if(Math.abs(x-stepX)<stepWidth/4){
-            densityDetail.textContent=`(${DENSITIES[idx].detail})`;
+            densityDetail.textContent=DENSITIES[idx].detail;
+            const pct=idx/(DENSITIES.length-1);
+            densityDetail.style.left=`${pct*100}%`;
             densityDetail.classList.remove('hidden');
           }else{
             densityDetail.classList.add('hidden');
@@ -544,11 +547,11 @@
         const hybridDots=[];
         const HYBRID_RATIOS=[1,1.5,2,2.5,3];
         const HYBRID_DETAILS=[
-          'Dedicated desk for each staff member',
-          'Desks for around two-thirds of staff',
-          'One desk for every two staff',
-          'Desks for 40% of staff',
-          'One desk for every three staff'
+          'Ideal for an average of 5 days in office per week',
+          'Ideal for an average of about 3 days in office per week',
+          'Ideal for an average of 2–3 days in office per week',
+          'Ideal for an average of 2 days in office per week',
+          'Ideal for an average of around 1–2 days in office per week'
         ];
       function updateHybrid(){
         const idx=parseInt(hybridSlider.value,10);
@@ -573,6 +576,8 @@
           const stepX=idx*stepWidth;
           if(Math.abs(x-stepX)<stepWidth/4){
             hybridDetail.textContent=HYBRID_DETAILS[idx];
+            const pct=idx/(HYBRID_RATIOS.length-1);
+            hybridDetail.style.left=`${pct*100}%`;
             hybridDetail.classList.remove('hidden');
           }else{
             hybridDetail.classList.add('hidden');
@@ -685,7 +690,11 @@ setDays('3');
           const savingsPct=originalAnnualCost>0?(savings/originalAnnualCost)*100:0;
           return{desks:D_peak,totalArea,newAnnualCost,savings,savingsPct};
         }
-      hybridFab.addEventListener('click',()=>{hybridModal.classList.remove('hidden');updateHybridResults();});
+      hybridFab.addEventListener('click',()=>{
+        setAnchorDay('no');
+        hybridModal.classList.remove('hidden');
+        updateHybridResults();
+      });
       hybridClose.addEventListener('click',()=>hybridModal.classList.add('hidden'));
       document.addEventListener('keydown',e=>{if(e.key==='Escape')hybridModal.classList.add('hidden');});
       function updateHybridResults(){
