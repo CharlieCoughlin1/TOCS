@@ -103,16 +103,16 @@
       font-variant-ligatures:none;
     }
     /* custom density slider */
-    .density-slider{position:relative;padding:1rem 0;}
-    .density-line{position:absolute;top:50%;left:0;width:100%;height:2px;background:#d1d5db;transition:background-color .2s;}
+    .density-slider{position:relative;padding:1.5rem 0;}
+    .density-line{position:absolute;top:50%;left:10px;width:calc(100% - 20px);height:8px;background:#d1d5db;border-radius:4px;transform:translateY(-50%);transition:background-color .2s;z-index:0;}
     .density-slider:hover .density-line{background:var(--lsh-red);}
-    .density-option{position:relative;background:none;border:none;padding:0;margin:0;flex:1;text-align:center;cursor:pointer;}
+    .density-option{position:relative;background:none;border:none;padding:0;margin:0;flex:1;text-align:center;cursor:pointer;padding-top:1.5rem;}
     .density-option:focus{outline:none;}
-    .density-point{width:14px;height:14px;border-radius:50%;background:#d1d5db;margin:0 auto;transition:background-color .2s;}
-    .density-option.selected .density-point,.density-option:hover .density-point{background:var(--lsh-red);}
-    .density-label{margin-top:0.25rem;font-size:0.875rem;display:block;}
-    .density-option:hover .density-label{visibility:hidden;}
-    .density-tooltip{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:1.75rem;background:#fff;border:1px solid #d1d5db;padding:0.25rem 0.5rem;box-shadow:0 2px 4px rgba(0,0,0,0.1);font-size:0.75rem;white-space:nowrap;z-index:10;}
+    .density-point{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#fff;border:4px solid #d1d5db;transition:border-color .2s;}
+    .density-option.selected .density-point,.density-option:hover .density-point{border-color:var(--lsh-red);}
+    .density-label{margin-top:0.5rem;font-size:0.875rem;display:block;transition:opacity .2s;}
+    .density-option:hover .density-label{opacity:0.4;}
+    .density-tooltip{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:0.75rem;background:#fff;border:1px solid #d1d5db;padding:0.25rem 0.5rem;box-shadow:0 2px 4px rgba(0,0,0,0.1);font-size:0.75rem;white-space:nowrap;z-index:20;}
     .density-option:hover .density-tooltip{display:block;}
   </style>
 </head>
