@@ -51,27 +51,27 @@
       background:#f9fafb;          /* gray-50 */
       padding:0.75rem 1rem;        /* px-4 py-3 */
       border-radius:0.375rem;      /* rounded */
-      display:inline-block;        /* allow dynamic width */
-      width:fit-content;           /* expand with content */
+      display:inline-block;
+      min-width:12rem;             /* standard box width */
+      text-align:left;
     }
     .result-item + .result-item{margin-top:0.5rem;}
     .result-scroll{
       overflow-x:hidden;overflow-y:hidden;scrollbar-gutter:stable both-edges;
-      text-align:center;           /* center when smaller than box */
+      text-align:left;
     }
     .result-scroll.need-scroll{overflow-x:auto;}
     .result-title{
       white-space:nowrap;min-height:2.5rem;
-      display:inline-block;        /* dynamic width for titles */
-      width:fit-content;
-      text-align:center;
+      display:block;
+      text-align:left;
     }
     #resultContainer.compare .result-value{font-size:1.5rem;}
     #resultContainer.compare #areaResult1 .result-value,
     #resultContainer.compare #areaResult2 .result-value{font-size:1.35rem;}
     #resultContainer.single{text-align:left;grid-template-columns:1fr;}
     @media (min-width:768px){#resultContainer.single{grid-template-columns:1fr;}}
-    #resultContainer.compare{text-align:center;}
+    #resultContainer.compare{text-align:left;}
     .tab-btn{padding:0.5rem 1rem;border-bottom:2px solid transparent;}
     .tab-btn.active{border-color:var(--lsh-red);color:var(--lsh-red);font-weight:700;}
     .occ-bar-new{background:var(--lsh-red);transition:height .3s ease,opacity .3s ease;}
@@ -112,18 +112,16 @@
       -moz-font-feature-settings:'liga' 0;
       font-variant-ligatures:none;
     }
-    /* custom density slider */
-    .density-slider{position:relative;padding:1rem 0 1.5rem;}
-    .density-line{position:absolute;top:50%;left:10px;width:calc(100% - 20px);height:8px;background:#d1d5db;border-radius:4px;transform:translateY(-50%);transition:background-color .2s;z-index:0;}
-    .density-slider:hover .density-line{background:var(--lsh-red);}
-    .density-option{position:relative;background:none;border:none;padding:0;margin:0;flex:1;text-align:center;cursor:pointer;padding-top:1.5rem;}
+    /* option sliders rendered as small grey boxes */
+    .density-slider{display:flex;gap:0.5rem;padding:0;}
+    .density-line{display:none;}
+    .density-option{background:#e5e7eb;border:1px solid #d1d5db;border-radius:0.25rem;flex:1;text-align:center;cursor:pointer;padding:0.25rem 0.5rem;}
+    .density-option:hover{background:#d1d5db;}
+    .density-option.selected{background:var(--lsh-red);color:#fff;}
     .density-option:focus{outline:none;}
-    .density-point{position:absolute;top:calc(50% + 2px);left:50%;transform:translate(-50%,-50%);width:20px;height:20px;border-radius:50%;background:#fff;border:4px solid #d1d5db;box-sizing:border-box;transition:border-color .2s,background-color .2s;}
-    .density-option.selected .density-point,.density-option:hover .density-point{border-color:var(--lsh-red);background:#fff;}
-    .density-label{margin-top:0.5rem;font-size:0.875rem;display:block;transition:font-weight .2s;}
-    .density-option:hover .density-label{font-weight:700;}
-    .density-tooltip{display:none;position:absolute;left:50%;transform:translateX(-50%);bottom:calc(50% + 0.75rem);background:#fff;border:1px solid #d1d5db;padding:0.25rem 0.5rem;box-shadow:0 2px 4px rgba(0,0,0,0.1);font-size:0.75rem;white-space:nowrap;z-index:20;}
-    .density-option:hover .density-tooltip{display:block;}
+    .density-point{display:none;}
+    .density-label{margin-top:0;font-size:0.875rem;display:block;}
+    .density-tooltip{display:none;}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -194,8 +192,8 @@
         <div id="densitySlider" class="density-slider mb-1"></div>
         <input type="hidden" id="densitySelect" value="10" />
 
-        <div id="hybridLegacy" class="hidden">
-          <label class="block text-lg font-din-bold text-gray-700 mb-1 mt-4">Hybrid extent</label>
+        <div id="hybridLegacy" class="mt-4">
+          <label class="block text-lg font-din-bold text-gray-700 mb-1">Hybrid extent</label>
           <p class="text-sm text-gray-600 font-din-light mb-1">How many workstations per member of staff?</p>
           <div id="hybridSlider" class="density-slider mb-1"></div>
           <input type="hidden" id="hybridSelect" value="1" />
@@ -244,6 +242,9 @@
           <div id="hybridResult" class="space-y-3 mt-4 hidden">
             <h3 id="hybridTitle" class="font-din-bold text-xl result-scroll result-title"></h3>
             <div id="hybridMetrics" class="result-scroll"></div>
+          </div>
+          <div class="text-right mt-3">
+            <button id="hybridFab" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold hidden">Right-size for Hybrid?</button>
           </div>
         </div>
 
@@ -298,12 +299,11 @@
     </section>
   </main>
 
-  <button id="hybridFab" class="fixed bottom-4 right-4 bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold hidden z-50">Right-size for Hybrid</button>
 
   <div id="hybridModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-end justify-center hidden z-50" role="dialog" aria-modal="true">
     <div class="bg-white rounded-t-lg w-full max-w-md p-4">
       <div class="flex justify-between items-center mb-2">
-        <h3 class="text-xl font-din-bold">Right-size for Hybrid</h3>
+        <h3 class="text-xl font-din-bold">Right-size for Hybrid?</h3>
         <button id="hybridClose" aria-label="Close" class="p-1">
           <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
             <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd" />
@@ -311,13 +311,10 @@
         </button>
       </div>
       <p class="text-sm text-gray-600 mb-2">If your team isn’t in every day, we’ll size for your busiest day and show a lower cost. We include a small safety buffer for peaks.</p>
-      <div class="mb-4 flex gap-2">
-        <button id="tabRec" class="tab-btn active">Recommended: Busiest Day</button>
-        <button id="tabRatio" class="tab-btn">Comparison: Ratio Slider</button>
-      </div>
-      <div id="recPane" class="space-y-3">
-        <label for="daysRange" class="block text-lg font-din-bold text-gray-700 mb-1">Average days per week in the office per person</label>
-        <input type="range" id="daysRange" min="0" max="5" step="0.5" value="2.5" class="w-full" />
+      <div class="space-y-3">
+        <label class="block text-lg font-din-bold text-gray-700 mb-1">Average days per week in the office per person</label>
+        <div id="daysSlider" class="density-slider mb-1"></div>
+        <input type="hidden" id="daysRange" value="3" />
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Do you have busy ‘anchor’ day(s)?</label>
         <div class="flex gap-4 mb-1" id="anchorGroup">
           <label class="flex items-center gap-1"><input type="radio" name="anchor" value="1" />No</label>
@@ -325,11 +322,6 @@
           <label class="flex items-center gap-1"><input type="radio" name="anchor" value="1.4" />Yes, very busy</label>
         </div>
         <div id="recResults" class="space-y-1"></div>
-      </div>
-      <div id="ratioPane" class="space-y-3 hidden">
-        <div id="ratioSlider" class="density-slider mb-1"></div>
-        <input type="hidden" id="ratioSelect" value="1" />
-        <div id="ratioResults" class="space-y-1"></div>
       </div>
       <div class="mt-4 text-right">
         <button id="applyHybrid" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold">Apply</button>
@@ -483,12 +475,6 @@
         {label:'Standard',value:'10',detail:'10 m² per person NIA'},
         {label:'Spacious',value:'12.5',detail:'12.5 m² per person NIA'}
       ];
-      const line=document.createElement('div');
-      line.className='density-line';
-      densitySlider.appendChild(line);
-      const wrap=document.createElement('div');
-      wrap.className='flex justify-between relative z-10';
-      densitySlider.appendChild(wrap);
       function setDensity(val){
         densitySel.value=val;
         densityOptions.forEach(o=>{
@@ -499,38 +485,23 @@
       DENSITIES.forEach(d=>{
         const opt=document.createElement('button');
         opt.type='button';
-        opt.className='density-option flex flex-col items-center';
+        opt.className='density-option';
         opt.dataset.value=d.value;
-        const point=document.createElement('div');
-        point.className='density-point';
-        const label=document.createElement('span');
-        label.className='density-label';
-        label.textContent=d.label;
-        const tip=document.createElement('div');
-        tip.className='density-tooltip';
-        tip.textContent=d.detail;
-        opt.appendChild(point);
-        opt.appendChild(label);
-        opt.appendChild(tip);
+        opt.textContent=d.label;
+        opt.title=d.detail;
         opt.addEventListener('click',()=>{
           setDensity(d.value);
           densitySel.dispatchEvent(new Event('change'));
         });
         densityOptions.push(opt);
-        wrap.appendChild(opt);
+        densitySlider.appendChild(opt);
       });
       setDensity('10');
 
       const hybridSel=$('hybridSelect');
       const hybridSlider=$('hybridSlider');
       const hybridOptions=[];
-      const HYBRID_RATIOS=[1,1.25,1.5,1.75,2,2.25,2.5,2.75,3];
-      const hLine=document.createElement('div');
-      hLine.className='density-line';
-      hybridSlider.appendChild(hLine);
-      const hWrap=document.createElement('div');
-      hWrap.className='flex justify-between relative z-10';
-      hybridSlider.appendChild(hWrap);
+      const HYBRID_RATIOS=[1,1.5,2,2.5,3];
       function setHybrid(val){
         hybridSel.value=val;
         hybridOptions.forEach(o=>{
@@ -541,25 +512,16 @@
       HYBRID_RATIOS.forEach(r=>{
         const opt=document.createElement('button');
         opt.type='button';
-        opt.className='density-option flex flex-col items-center';
+        opt.className='density-option';
         opt.dataset.value=String(r);
-        const point=document.createElement('div');
-        point.className='density-point';
-        const label=document.createElement('span');
-        label.className='density-label';
-        label.textContent=`1:${r}`;
-        const tip=document.createElement('div');
-        tip.className='density-tooltip';
-        tip.textContent=`1 workstation per ${r} staff`;
-        opt.appendChild(point);
-        opt.appendChild(label);
-        opt.appendChild(tip);
+        opt.textContent=`1:${r}`;
+        opt.title=`1 workstation per ${r} staff`;
         opt.addEventListener('click',()=>{
           setHybrid(String(r));
           hybridSel.dispatchEvent(new Event('change'));
         });
         hybridOptions.push(opt);
-        hWrap.appendChild(opt);
+        hybridSlider.appendChild(opt);
       });
       setHybrid('1');
 
@@ -567,20 +529,32 @@
       const hybridFab=$('hybridFab');
       const hybridModal=$('hybridModal');
       const hybridClose=$('hybridClose');
-      const tabRec=$('tabRec');
-      const tabRatio=$('tabRatio');
-      const recPane=$('recPane');
-      const ratioPane=$('ratioPane');
       const daysRange=$('daysRange');
       const anchorGroup=$('anchorGroup');
       const recResults=$('recResults');
-      const ratioSliderEl=$('ratioSlider');
-      const ratioSelect=$('ratioSelect');
-      const ratioResults=$('ratioResults');
       const applyHybrid=$('applyHybrid');
       const hybridTitle=$('hybridTitle');
       const hybridMetrics=$('hybridMetrics');
       const hybridResult=$('hybridResult');
+      const daysSliderEl=$('daysSlider');
+      const dayOptions=[];
+      const DAY_VALUES=[1,2,3,4,5];
+      function setDays(val){
+        daysRange.value=val;
+        dayOptions.forEach(o=>{if(o.dataset.value===val)o.classList.add('selected'); else o.classList.remove('selected');});
+        updateHybridResults();
+      }
+      DAY_VALUES.forEach(v=>{
+        const opt=document.createElement('button');
+        opt.type='button';
+        opt.className='density-option';
+        opt.dataset.value=String(v);
+        opt.textContent=String(v);
+        opt.addEventListener('click',()=>setDays(String(v)));
+        dayOptions.push(opt);
+        daysSliderEl.appendChild(opt);
+      });
+      setDays('3');
 
       function calcBusiestDay(headcount,densityPerPerson,originalMonthlyCost,d,anchorFactor,cpsqm){
         const p=Math.min(Math.max(d/5,0),1);
@@ -598,25 +572,10 @@
         const savingsPct=originalMonthlyCost>0?(savings/originalMonthlyCost)*100:0;
         return{desks:D_peak,totalArea,newMonthlyCost,savings,savingsPct};
       }
-      function calcRatio(headcount,densityPerPerson,originalMonthlyCost,X,cpsqm){
-        const D_ratio=Math.min(headcount,Math.ceil(headcount/X));
-        const workpointArea=D_ratio*densityPerPerson;
-        const totalArea=workpointArea;
-        const newMonthlyCost=Math.round(totalArea*cpsqm/12);
-        const savings=Math.max(originalMonthlyCost-newMonthlyCost,0);
-        const savingsPct=originalMonthlyCost>0?(savings/originalMonthlyCost)*100:0;
-        return{desks:D_ratio,totalArea,newMonthlyCost,savings,savingsPct};
-      }
-      function showTab(which){
-        if(which==='rec'){tabRec.classList.add('active');tabRatio.classList.remove('active');recPane.classList.remove('hidden');ratioPane.classList.add('hidden');}
-        else{tabRec.classList.remove('active');tabRatio.classList.add('active');recPane.classList.add('hidden');ratioPane.classList.remove('hidden');}
-      }
-      tabRec.addEventListener('click',()=>showTab('rec'));
-      tabRatio.addEventListener('click',()=>showTab('ratio'));
-      hybridFab.addEventListener('click',()=>{hybridModal.classList.remove('hidden');updateRecResults();updateRatioResults();});
+      hybridFab.addEventListener('click',()=>{hybridModal.classList.remove('hidden');updateHybridResults();});
       hybridClose.addEventListener('click',()=>hybridModal.classList.add('hidden'));
       document.addEventListener('keydown',e=>{if(e.key==='Escape')hybridModal.classList.add('hidden');});
-      function updateRecResults(){
+      function updateHybridResults(){
         if(!standardData) return;
         const d=parseFloat(daysRange.value);
         const anchor=parseFloat(anchorGroup.querySelector('input:checked').value);
@@ -624,44 +583,23 @@
         const r=calcBusiestDay(standardData.headcount,standardData.densityPerPerson,standardData.originalMonthlyCost,d,anchor,cpsqm);
         renderResult(recResults,'Desks',r.desks.toLocaleString());
         renderResult(recResults,'Total area',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true);
-        renderResult(recResults,'New estimated monthly cost',`£${r.newMonthlyCost.toLocaleString()}`,true);
-        renderResult(recResults,'You save',`£${r.savings.toLocaleString()} (${r.savingsPct.toFixed(1)}%)`,true);
+        renderResult(recResults,'Original estimated monthly cost',`£${standardData.originalMonthlyCost.toLocaleString()}`,true);
+        renderResult(recResults,'Hybrid estimated monthly cost',`£${r.newMonthlyCost.toLocaleString()}`,true);
+        updateScrollbars();
       }
-      daysRange.addEventListener('input',updateRecResults);
-      anchorGroup.addEventListener('change',updateRecResults);
-      function updateRatioResults(){
-        if(!standardData) return;
-        const X=parseFloat(ratioSelect.value);
-        const cpsqm=costPerSqm(standardData.location);
-        const r=calcRatio(standardData.headcount,standardData.densityPerPerson,standardData.originalMonthlyCost,X,cpsqm);
-        renderResult(ratioResults,'Desks',r.desks.toLocaleString());
-        renderResult(ratioResults,'Total area',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true);
-        renderResult(ratioResults,'New estimated monthly cost',`£${r.newMonthlyCost.toLocaleString()}`,true);
-        renderResult(ratioResults,'You save',`£${r.savings.toLocaleString()} (${r.savingsPct.toFixed(1)}%)`,true);
-      }
-      const ratioOptions=[]; const rLine=document.createElement('div'); rLine.className='density-line'; ratioSliderEl.appendChild(rLine); const rWrap=document.createElement('div'); rWrap.className='flex justify-between relative z-10'; ratioSliderEl.appendChild(rWrap);
-      function setRatio(val){ratioSelect.value=val;ratioOptions.forEach(o=>{if(o.dataset.value===val)o.classList.add('selected');else o.classList.remove('selected');});updateRatioResults();}
-      HYBRID_RATIOS.forEach(r=>{const opt=document.createElement('button');opt.type='button';opt.className='density-option flex flex-col items-center';opt.dataset.value=String(r);const point=document.createElement('div');point.className='density-point';const label=document.createElement('span');label.className='density-label';label.textContent=`1:${r}`;const tip=document.createElement('div');tip.className='density-tooltip';tip.textContent=`1 workstation per ${r} staff`;opt.appendChild(point);opt.appendChild(label);opt.appendChild(tip);opt.addEventListener('click',()=>setRatio(String(r)));ratioOptions.push(opt);rWrap.appendChild(opt);});
-      setRatio('1');
+      daysRange.addEventListener('change',updateHybridResults);
+      anchorGroup.addEventListener('change',updateHybridResults);
       function applyHybridResult(){
         if(!standardData) return;
         const cpsqm=costPerSqm(standardData.location);
-        let r,label;
-        if(!recPane.classList.contains('hidden')){
-          const d=parseFloat(daysRange.value);
-          const anchor=parseFloat(anchorGroup.querySelector('input:checked').value);
-          r=calcBusiestDay(standardData.headcount,standardData.densityPerPerson,standardData.originalMonthlyCost,d,anchor,cpsqm);
-          label='Hybrid (Busiest Day) – Recommended';
-        }else{
-          const X=parseFloat(ratioSelect.value);
-          r=calcRatio(standardData.headcount,standardData.densityPerPerson,standardData.originalMonthlyCost,X,cpsqm);
-          label='Hybrid (Desk-sharing Ratio) – Comparison';
-        }
-        hybridTitle.textContent=label;
+        const d=parseFloat(daysRange.value);
+        const anchor=parseFloat(anchorGroup.querySelector('input:checked').value);
+        const r=calcBusiestDay(standardData.headcount,standardData.densityPerPerson,standardData.originalMonthlyCost,d,anchor,cpsqm);
+        hybridTitle.textContent='Hybrid right-sizing';
         renderResult(hybridMetrics,'Desks',r.desks.toLocaleString());
         renderResult(hybridMetrics,'Total area',`${r.totalArea.toLocaleString()} m² / ${(r.totalArea*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`,true);
-        renderResult(hybridMetrics,'New estimated monthly cost',`£${r.newMonthlyCost.toLocaleString()}`,true);
-        renderResult(hybridMetrics,'You save',`£${r.savings.toLocaleString()} (${r.savingsPct.toFixed(1)}%)`,true);
+        renderResult(hybridMetrics,'Original estimated monthly cost',`£${standardData.originalMonthlyCost.toLocaleString()}`,true);
+        renderResult(hybridMetrics,'Hybrid estimated monthly cost',`£${r.newMonthlyCost.toLocaleString()}`,true);
         hybridResult.classList.remove('hidden');
         updateScrollbars();
         hybridModal.classList.add('hidden');
