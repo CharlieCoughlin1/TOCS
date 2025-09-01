@@ -148,7 +148,6 @@
       <div id="regionToggle" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="map" class="rounded"></div>
       <p class="mt-4 text-xs text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
-      <div id="contactContainer" class="mt-6 hidden"></div>
     </section>
 
     <!-- Calculator / Occupancy -->
@@ -461,7 +460,6 @@
       const removeLoc2=$('removeLoc2');
       const loc2Wrap=$('loc2Wrap');
       const comparePrompt=$('comparePrompt');
-      const contactContainer=$('contactContainer');
       const calcClear=$('calcClear');
         const densitySel=$('densitySelect');
         const densitySlider=$('densitySlider');
@@ -479,72 +477,6 @@
         if(idx>=0){densitySlider.value=idx; updateDensity();}
       }
 
-      let agentsByLocation={};
-      fetch('../Office_staff_info.csv')
-        .then(r=>r.text())
-        .then(text=>{
-          const rows=text.trim().split(/\r?\n/).slice(1);
-          rows.forEach(line=>{
-            const [name,location,mobile,email,status]=line.split(',');
-            if(!agentsByLocation[location]) agentsByLocation[location]=[];
-            agentsByLocation[location].push({
-              name,
-              mobile,
-              email,
-              status,
-              photo:`../Agent photos/${encodeURIComponent(name)}.jpg`
-            });
-          });
-        });
-
-      function displayAgents(locations){
-        contactContainer.innerHTML='';
-        const locs=locations.map(loc=>{
-          for(const key in agentsByLocation){
-            if(loc.toLowerCase().includes(key.toLowerCase())) return key;
-          }
-          return null;
-        }).filter(Boolean);
-        if(locs.length===0){ contactContainer.classList.add('hidden'); return; }
-
-        const header=document.createElement('h3');
-        header.textContent=`Contact our ${locs.join(' and ')} agents`;
-        header.className='text-2xl font-din-bold mb-4';
-        contactContainer.appendChild(header);
-
-        locs.forEach(loc=>{
-          const agents=agentsByLocation[loc] || [];
-          if(agents.length===0) return;
-          const locHeader=document.createElement('h4');
-          locHeader.textContent=loc;
-          locHeader.className='text-xl font-din-bold mb-2';
-          contactContainer.appendChild(locHeader);
-          const wrap=document.createElement('div');
-          wrap.className='grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4';
-          agents.forEach(a=>{
-            const card=document.createElement('div');
-            card.className='text-center';
-            const nameEl=document.createElement('p');
-            nameEl.textContent=a.name;
-            nameEl.className='font-din-bold';
-            const img=document.createElement('img');
-            img.src=a.photo;
-            img.alt=a.name;
-            img.className='mx-auto my-2 w-24 h-24 object-cover';
-            const statusEl=document.createElement('p');
-            statusEl.textContent=a.status;
-            statusEl.className='text-sm';
-            const mobEl=document.createElement('p');
-            mobEl.textContent=a.mobile;
-            const emailEl=document.createElement('p');
-            emailEl.innerHTML=`<a href="mailto:${a.email}" class="text-lsh-red">${a.email}</a>`;
-            card.append(nameEl,img,statusEl,mobEl,emailEl);
-            wrap.appendChild(card);
-          });
-          contactContainer.appendChild(wrap);
-        });
-        contactContainer.classList.remove('hidden');
-      }
       function updateDensity(){
         const idx=parseInt(densitySlider.value,10);
         const d=DENSITIES[idx];
@@ -1262,7 +1194,6 @@
         updateComparePrompt();
         updateScrollbars();
         setTimeout(updateScrollbars,50);
-        displayAgents([locSel.value,locSel2.value].filter(Boolean));
       }
 
       calcBtn.addEventListener('click',performCalc);
