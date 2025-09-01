@@ -228,8 +228,13 @@
 
         <!-- Budget input -->
         <div id="budgetGroup" class="mb-3 hidden">
-          <label for="budgetInput" class="block text-lg font-din-bold text-gray-700 mb-1">Annual budget (£)</label>
-          <input type="text" id="budgetInput" inputmode="numeric" class="w-full border rounded p-2" placeholder="e.g. 750,000" />
+          <div class="flex items-center justify-between mb-1">
+            <label id="budgetLabel" for="budgetInput" class="block text-lg font-din-bold text-gray-700">Annual budget (£)</label>
+            <button id="budgetToggle" type="button" class="select-btn text-sm whitespace-nowrap">Monthly budget (£)</button>
+          </div>
+          <div class="flex items-center gap-2">
+            <input type="text" id="budgetInput" inputmode="numeric" class="w-full border rounded p-2" placeholder="e.g. 750,000" />
+          </div>
           <p id="budgetError" class="err-msg mt-1">Enter a budget &gt; 0</p>
         </div>
 
@@ -242,8 +247,14 @@
           <div id="extrasWrap" class="mt-2 p-2 border rounded hidden"></div>
         </div>
 
-        <div id="calcBtnWrap" class="flex items-center gap-2 mt-2">
-          <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold flex-1">Calculate</button>
+        <div id="calcBtnWrap" class="flex items-start gap-2 mt-2">
+          <div class="flex flex-col flex-1">
+            <button id="calcBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold">Calculate</button>
+            <select id="costPeriod" class="border rounded p-1 text-sm mt-1 w-32 hidden">
+              <option value="annual" selected>Annual</option>
+              <option value="monthly">Monthly</option>
+            </select>
+          </div>
           <button id="calcClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-2 rounded font-din-bold">Clear</button>
         </div>
 
@@ -594,6 +605,9 @@
       const extrasWrap=$('extrasWrap');
       const calcBtn=$('calcBtn');
       const calcBtnWrap=$('calcBtnWrap');
+      const costPeriodSel=$('costPeriod');
+      const budgetToggle=$('budgetToggle');
+      const budgetLabel=$('budgetLabel');
       const areaR1=$('areaResult1'); const costR1=$('costResult1'); const pplR1=$('peopleResult1');
       const areaR2=$('areaResult2'); const costR2=$('costResult2'); const pplR2=$('peopleResult2');
       const resultContainer=$('resultContainer');
@@ -617,6 +631,7 @@
       const calcSection=$("calcSection");
       let occData=[];
       let showNew=true, showOld=true;
+      let budgetPeriod='annual';
 
       EXTRA_NAMES.forEach(name=>{
         const row=document.createElement('div');
@@ -710,6 +725,8 @@
         calcBtnWrap.classList.toggle('mt-3',!showPeople&&!showBudget);
         resWrap.classList.add('hidden');
         calcDownloadWrap.classList.add('hidden');
+        costPeriodSel.classList.add('hidden');
+        costPeriodSel.value='annual';
         if(!(showPeople||showBudget)){
           extrasWrap.classList.add('hidden');
           customiseToggle.classList.remove('active');
@@ -718,6 +735,12 @@
         if(showPeople) calcBtn.textContent='Calculate cost';
         else if(showBudget) calcBtn.textContent='Calculate capacity';
         else calcBtn.textContent='Calculate';
+        if(!showBudget){
+          budgetPeriod='annual';
+          budgetLabel.textContent='Annual budget (£)';
+          budgetToggle.textContent='Monthly budget (£)';
+          budInp.value='';
+        }
       }
 
       function updateComparePrompt(){
@@ -733,6 +756,23 @@
            (modeValue==='budget' && budInp.value));
         if(!resWrap.classList.contains('hidden')) performCalc();
         else if(ready) performCalc();
+      }
+
+      function updateCostPeriod(){
+        const period=costPeriodSel.value;
+        [costR1,costR2].forEach(el=>{
+          const ac=el.dataset.annualCost?parseInt(el.dataset.annualCost,10):null;
+          const pw=el.dataset.annualPerWs?parseInt(el.dataset.annualPerWs,10):null;
+          if(ac===null||pw===null) return;
+          const isAnnual=period==='annual';
+          const cost=isAnnual?ac:Math.round(ac/12);
+          const perWs=isAnnual?pw:Math.round(pw/12);
+          const costLabel=isAnnual?'Annual cost':'Monthly cost';
+          const wsLabel=isAnnual?'Total per workstation (annual)':'Total per workstation (monthly)';
+          renderResult(el,costLabel,`£${cost.toLocaleString()}`);
+          renderResult(el,wsLabel,`£${perWs.toLocaleString()}`,true);
+        });
+        updateScrollbars();
       }
 
       function switchTab(tab){
@@ -976,17 +1016,21 @@
 
       function buildCalcCSV(){
         const usePeople=modeValue==='people';
+        const costPeriod=costPeriodSel.value||'annual';
+        const costHeaders=costPeriod==='annual'?['Annual cost (\u00A3)','Total per workstation (annual \u00A3)']:["Monthly cost (\u00A3)","Total per workstation (monthly \u00A3)"];
         const metricHeaders=usePeople?
-          ['Space required (m\u00B2)','Space required (ft\u00B2)','Annual cost (\u00A3)','Total per workstation (\u00A3)']:
+          ['Space required (m\u00B2)','Space required (ft\u00B2)',...costHeaders]:
           ['Area achievable (m\u00B2)','Area achievable (ft\u00B2)','Workstations accommodated','Staff accommodated'];
-        const header=['Location','Building age',usePeople?'Staff':'Budget (\u00A3)','Workstation density (m\u00B2 per person NIA)','Extent of hybrid working (workstations per staff)',...metricHeaders];
+        const budgetLabel=budgetPeriod==='monthly'?'Monthly budget (\u00A3)':'Annual budget (\u00A3)';
+        const header=['Location','Building age',usePeople?'Staff':budgetLabel,'Workstation density (m\u00B2 per person NIA)','Extent of hybrid working (workstations per staff)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const densityLabel=densitySel.value;
         const hybridLabel='1:'+hybridSel.value;
         const lines=['Lambert Smith Hampton', '', header.join(',')];
         const sqmPerPerson=parseFloat(densityLabel || DEFAULT_SQM_PER_PERSON);
         const n=usePeople?parseInt(pplInp.value,10):0;
-        const budget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
+        const inputBudget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
+        const budget=!usePeople?(budgetPeriod==='monthly'?inputBudget*12:inputBudget):0;
         function q(str){return `"${String(str).replace(/"/g,'""')}"`;}
         function addRow(loc){
           const cpsqm=costPerSqm(loc);
@@ -998,6 +1042,8 @@
             const sqft=sqm*SQM_TO_SQFT;
             const cost=Math.round(sqm*cpsqm);
             const perWS=Math.round(cpsqm*sqmPerPerson);
+            const outCost=costPeriod==='annual'?cost:Math.round(cost/12);
+            const outPerWs=costPeriod==='annual'?perWS:Math.round(perWS/12);
             lines.push([
               q(loc),
               ageLabel,
@@ -1006,8 +1052,8 @@
               hybridLabel,
               sqm.toFixed(2),
               sqft.toFixed(0),
-              cost,
-              perWS
+              outCost,
+              outPerWs
             ].join(','));
           }else{
             const sqm=budget/cpsqm;
@@ -1069,6 +1115,15 @@
         if(!budGrp.classList.contains('hidden') && !resWrap.classList.contains('hidden')) performCalc();
       });
 
+      budgetToggle.addEventListener('click',()=>{
+        budgetPeriod=budgetPeriod==='annual'?'monthly':'annual';
+        budgetLabel.textContent=budgetPeriod==='annual'?'Annual budget (£)':'Monthly budget (£)';
+        budgetToggle.textContent=budgetPeriod==='annual'?'Monthly budget (£)':'Annual budget (£)';
+        budInp.value='';
+        resWrap.classList.add('hidden');
+        calcDownloadWrap.classList.add('hidden');
+      });
+
       pplInp.addEventListener('input',()=>{
         if(!pplGrp.classList.contains('hidden') && !resWrap.classList.contains('hidden')) performCalc();
       });
@@ -1088,6 +1143,7 @@
         }else if(modeValue==='budget'){
           budget=parseInt(budInp.value.replace(/,/g,''),10);
           if(!budget||budget<=0){errs.budget.style.display='block'; budInp.classList.add('error'); bad=true; }
+          if(budgetPeriod==='monthly') budget*=12;
         }
         if(bad) return;
        function calcLoc(loc,areaEl,costEl,pplEl,titleEl){
@@ -1100,8 +1156,9 @@
             renderResult(areaEl,'Space required',`${sqm.toLocaleString()} m² / ${(sqm*SQM_TO_SQFT).toLocaleString(undefined,{maximumFractionDigits:0})} ft²`);
             const totalCost=Math.round(sqm*cpsqm);
             const perWS=Math.round(cpsqm*sqmPerPerson);
-            renderResult(costEl,'Annual cost',`£${totalCost.toLocaleString()}`);
-            renderResult(costEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
+            costEl.dataset.annualCost=totalCost;
+            costEl.dataset.annualPerWs=perWS;
+            costEl.innerHTML='';
             pplEl.innerHTML='';
             pplEl.classList.add('hidden');
           }else{
@@ -1111,9 +1168,13 @@
             const staff=Math.round(workstations*staffPerWS);
             renderResult(pplEl,'Workstations accommodated',`${workstations.toLocaleString()}`);
             renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`,true);
-            const perWS=Math.round(budget/workstations);
-            renderResult(pplEl,'Total per workstation (annual)',`£${perWS.toLocaleString()}`,true);
+            const perWSAnnual=Math.round(budget/workstations);
+            const perWS=budgetPeriod==='monthly'?Math.round(perWSAnnual/12):perWSAnnual;
+            const wsLabel=budgetPeriod==='monthly'?'Total per workstation (monthly)':'Total per workstation (annual)';
+            renderResult(pplEl,wsLabel,`£${perWS.toLocaleString()}`,true);
             costEl.innerHTML='';
+            delete costEl.dataset.annualCost;
+            delete costEl.dataset.annualPerWs;
             pplEl.classList.remove('hidden');
           }
         }
@@ -1128,17 +1189,20 @@
            resultContainer.classList.add('single');
            resultContainer.classList.remove('compare');
          }
-         resWrap.classList.remove('hidden');
-         resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
-         calcDownloadWrap.classList.remove('hidden');
-         updateComparePrompt();
-         updateScrollbars();
-         setTimeout(updateScrollbars,50);
+        costPeriodSel.classList.toggle('hidden',!usePeople);
+        if(usePeople) updateCostPeriod();
+        resWrap.classList.remove('hidden');
+        resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
+        calcDownloadWrap.classList.remove('hidden');
+        updateComparePrompt();
+        updateScrollbars();
+        setTimeout(updateScrollbars,50);
       }
 
       calcBtn.addEventListener('click',performCalc);
       densitySel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
       hybridSel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
+      costPeriodSel.addEventListener('change',updateCostPeriod);
 
       toggleInputs(); // initialise visibility
       updateComparePrompt();
