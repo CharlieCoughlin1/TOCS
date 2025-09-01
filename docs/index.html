@@ -493,9 +493,9 @@
         const densityDetail=$('densityDetail');
         const densityDots=[];
       const DENSITIES=[
-        {label:'Dense',value:'8',detail:'8 m² per person NIA'},
-        {label:'Standard',value:'10',detail:'10 m² per person NIA'},
-        {label:'Spacious',value:'12.5',detail:'12.5 m² per person NIA'}
+        {label:'Dense',value:'8',detail:'8 m² per workstation NIA'},
+        {label:'Standard',value:'10',detail:'10 m² per workstation NIA'},
+        {label:'Spacious',value:'12.5',detail:'12.5 m² per workstation NIA'}
       ];
       function setDensity(val){
         const idx=DENSITIES.findIndex(d=>d.value===val);
@@ -515,11 +515,23 @@
           const dot=document.createElement('div');
           dot.className='step-dot';
           dot.style.left=`${(i/(DENSITIES.length-1))*100}%`;
-          dot.addEventListener('mouseenter',()=>{densityDetail.textContent=`(${d.detail})`;densityDetail.classList.remove('hidden');});
-          dot.addEventListener('mouseleave',()=>densityDetail.classList.add('hidden'));
           densitySliderWrap.appendChild(dot);
           densityDots.push(dot);
         });
+        function handleDensityHover(e){
+          const rect=densitySliderWrap.getBoundingClientRect();
+          const x=e.clientX-rect.left;
+          const stepWidth=rect.width/(DENSITIES.length-1);
+          const idx=Math.round(x/stepWidth);
+          const stepX=idx*stepWidth;
+          if(Math.abs(x-stepX)<stepWidth/4){
+            densityDetail.textContent=`(${DENSITIES[idx].detail})`;
+            densityDetail.classList.remove('hidden');
+          }else{
+            densityDetail.classList.add('hidden');
+          }
+        }
+        densitySliderWrap.addEventListener('mousemove',handleDensityHover);
         densitySliderWrap.addEventListener('mouseleave',()=>densityDetail.classList.add('hidden'));
         densitySlider.addEventListener('input',updateDensity);
       updateDensity();
@@ -550,11 +562,23 @@
           const dot=document.createElement('div');
           dot.className='step-dot';
           dot.style.left=`${(i/(HYBRID_RATIOS.length-1))*100}%`;
-          dot.addEventListener('mouseenter',()=>{hybridDetail.textContent=HYBRID_DETAILS[i];hybridDetail.classList.remove('hidden');});
-          dot.addEventListener('mouseleave',()=>hybridDetail.classList.add('hidden'));
           hybridSliderWrap.appendChild(dot);
           hybridDots.push(dot);
         });
+        function handleHybridHover(e){
+          const rect=hybridSliderWrap.getBoundingClientRect();
+          const x=e.clientX-rect.left;
+          const stepWidth=rect.width/(HYBRID_RATIOS.length-1);
+          const idx=Math.round(x/stepWidth);
+          const stepX=idx*stepWidth;
+          if(Math.abs(x-stepX)<stepWidth/4){
+            hybridDetail.textContent=HYBRID_DETAILS[idx];
+            hybridDetail.classList.remove('hidden');
+          }else{
+            hybridDetail.classList.add('hidden');
+          }
+        }
+        hybridSliderWrap.addEventListener('mousemove',handleHybridHover);
         hybridSliderWrap.addEventListener('mouseleave',()=>hybridDetail.classList.add('hidden'));
         hybridSlider.addEventListener('input',updateHybrid);
       updateHybrid();
