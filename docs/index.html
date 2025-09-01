@@ -55,6 +55,7 @@
       min-width:12rem;             /* standard box width */
       text-align:left;
     }
+    .result-item.hybrid-highlight{border:2px solid var(--lsh-red);}
     .result-item + .result-item{margin-top:0.5rem;}
     .result-scroll{
       overflow-x:hidden;overflow-y:hidden;scrollbar-gutter:stable both-edges;
@@ -123,6 +124,13 @@
     .density-label{margin-top:0;font-size:0.875rem;display:block;}
     .density-tooltip{display:none;}
     .slider-pop{position:absolute;top:-1.5rem;left:50%;transform:translateX(-50%);background:#e5e7eb;padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.875rem;pointer-events:none;}
+    /* step sliders */
+    .step-slider{position:relative;height:1.5rem;}
+    .step-line{position:absolute;top:50%;left:0;right:0;height:2px;background:#d1d5db;transform:translateY(-50%);transition:background-color .2s;pointer-events:none;}
+    .step-slider:hover .step-line{background:var(--lsh-red);}
+    .step-dot{position:absolute;top:50%;width:0.75rem;height:0.75rem;background:#d1d5db;border:2px solid #fff;border-radius:50%;transform:translate(-50%,-50%);transition:background-color .2s,border-color .2s;pointer-events:none;}
+    .step-slider:hover .step-dot{border-color:var(--lsh-red);}
+    .step-dot.active{background:var(--lsh-red);border-color:var(--lsh-red);}
   </style>
 </head>
 <body class="bg-gray-50 antialiased">
@@ -190,8 +198,9 @@
         <p id="comparePrompt" class="text-sm text-gray-500 mb-3 hidden">Select another location on the map to compare results.</p>
 
         <label class="block text-lg font-din-bold text-gray-700 mb-1">Workstation density</label>
-        <div id="densitySliderWrap" class="relative mb-1">
-          <input type="range" id="densitySlider" min="0" max="2" step="1" value="1" class="w-full" />
+        <div id="densitySliderWrap" class="relative mb-1 step-slider">
+          <div class="step-line"></div>
+          <input type="range" id="densitySlider" min="0" max="2" step="1" value="1" class="absolute inset-0 w-full opacity-0 cursor-pointer" />
           <output id="densityOutput" class="slider-pop"></output>
         </div>
         <input type="hidden" id="densitySelect" value="10" />
@@ -199,8 +208,9 @@
         <div id="hybridLegacy" class="mt-4">
           <label class="block text-lg font-din-bold text-gray-700 mb-1">Hybrid extent</label>
           <p class="text-sm text-gray-600 font-din-light mb-1">How many workstations per member of staff?</p>
-          <div id="hybridSliderWrap" class="relative mb-1">
-            <input type="range" id="hybridSlider" min="0" max="4" step="1" value="0" class="w-full" />
+          <div id="hybridSliderWrap" class="relative mb-1 step-slider">
+            <div class="step-line"></div>
+            <input type="range" id="hybridSlider" min="0" max="4" step="1" value="0" class="absolute inset-0 w-full opacity-0 cursor-pointer" />
             <output id="hybridOutput" class="slider-pop"></output>
           </div>
           <input type="hidden" id="hybridSelect" value="1" />
@@ -456,8 +466,9 @@
       const SQM_TO_SQFT = 10.76391041671;
       const DEFAULT_SQM_PER_PERSON = 10;
       function renderResult(el,label,valueStr,append=false,highlight=false){
+        const itemCls=highlight? 'result-item hybrid-highlight':'result-item';
         const valCls=highlight? 'result-value text-lsh-red':'result-value';
-        const html=`<div class="result-item"><span class="result-label">${label}</span><span class="${valCls}">${valueStr}</span></div>`;
+        const html=`<div class="${itemCls}"><span class="result-label">${label}</span><span class="${valCls}">${valueStr}</span></div>`;
         if(append) el.innerHTML+=html; else el.innerHTML=html;
         el.scrollLeft=0; // ensure leftmost part visible
       }
@@ -478,11 +489,17 @@
       const densitySel=$('densitySelect');
       const densitySlider=$('densitySlider');
       const densityOutput=$('densityOutput');
+      const densitySliderWrap=$('densitySliderWrap');
+      const densityDots=[];
       const DENSITIES=[
         {label:'Dense',value:'8',detail:'8 m² per person NIA'},
         {label:'Standard',value:'10',detail:'10 m² per person NIA'},
         {label:'Spacious',value:'12.5',detail:'12.5 m² per person NIA'}
       ];
+      function setDensity(val){
+        const idx=DENSITIES.findIndex(d=>d.value===val);
+        if(idx>=0){densitySlider.value=idx; updateDensity();}
+      }
       function updateDensity(){
         const idx=parseInt(densitySlider.value,10);
         const d=DENSITIES[idx];
@@ -490,28 +507,33 @@
         densityOutput.textContent=d.label;
         const pct=idx/(DENSITIES.length-1);
         densityOutput.style.left=`${pct*100}%`;
+        densityDots.forEach((dot,i)=>{dot.classList.toggle('active',i===idx);});
         densitySel.dispatchEvent(new Event('change'));
       }
+      DENSITIES.forEach((_,i)=>{const dot=document.createElement('div');dot.className='step-dot';dot.style.left=`${(i/(DENSITIES.length-1))*100}%`;densitySliderWrap.appendChild(dot);densityDots.push(dot);});
       densitySlider.addEventListener('input',updateDensity);
       updateDensity();
 
       const hybridSel=$('hybridSelect');
       const hybridSlider=$('hybridSlider');
       const hybridOutput=$('hybridOutput');
+      const hybridSliderWrap=$('hybridSliderWrap');
+      const hybridDots=[];
       const HYBRID_RATIOS=[1,1.5,2,2.5,3];
       function updateHybrid(){
         const idx=parseInt(hybridSlider.value,10);
         const r=HYBRID_RATIOS[idx];
-        hybridSel.value=String(r);
         hybridOutput.textContent=`1:${r}`;
         const pct=idx/(HYBRID_RATIOS.length-1);
         hybridOutput.style.left=`${pct*100}%`;
-        hybridSel.dispatchEvent(new Event('change'));
+        hybridDots.forEach((dot,i)=>{dot.classList.toggle('active',i===idx);});
       }
+      HYBRID_RATIOS.forEach((_,i)=>{const dot=document.createElement('div');dot.className='step-dot';dot.style.left=`${(i/(HYBRID_RATIOS.length-1))*100}%`;hybridSliderWrap.appendChild(dot);hybridDots.push(dot);});
       hybridSlider.addEventListener('input',updateHybrid);
       updateHybrid();
 
       let standardData=null;
+      let hybridApplied=false;
       const hybridFab=$('hybridFab');
       const hybridModal=$('hybridModal');
       const hybridClose=$('hybridClose');
@@ -601,6 +623,8 @@
         });
         updateScrollbars();
         hybridModal.classList.add('hidden');
+        hybridApplied=true;
+        hybridFab.textContent='Edit hybrid options';
       }
       applyHybrid.addEventListener('click',applyHybridResult);
       const modeGroup=$('modeBtns'); const ageGroup=$('ageBtns');
@@ -928,6 +952,9 @@
         activeExtras.clear();
         EXTRA_NAMES.forEach(x=>activeExtras.add(x));
         extrasWrap.querySelectorAll('input[type="checkbox"]').forEach(cb=>cb.checked=true);
+        hybridApplied=false;
+        hybridFab.textContent='Right-size for Hybrid?';
+        hybridFab.classList.add('hidden');
       });
       removeLoc2.addEventListener('click',()=>{
         locSel2.value='';
@@ -1143,6 +1170,7 @@
            standardData.push({headcount:n,densityPerPerson:sqmPerPerson,originalAnnualCost:totalCost2,originalTotalArea:sqm,location:locSel2.value});
          }
          hybridFab.classList.remove('hidden');
+         hybridFab.textContent=hybridApplied?'Edit hybrid options':'Right-size for Hybrid?';
        }else{
          const cpsqm1=costPerSqm(locSel.value);
          const sqm1=budget/cpsqm1;
@@ -1157,6 +1185,7 @@
            standardData.push({headcount:staff2,densityPerPerson:sqmPerPerson,originalAnnualCost:budget,originalTotalArea:sqm2,location:locSel2.value});
          }
          hybridFab.classList.remove('hidden');
+         hybridFab.textContent=hybridApplied?'Edit hybrid options':'Right-size for Hybrid?';
        }
        if(locSel2.value){
          calcLoc(locSel2.value,areaR2,costR2,pplR2,title2);
@@ -1172,6 +1201,7 @@
        resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
        calcDownloadWrap.classList.remove('hidden');
        updateComparePrompt();
+       if(hybridApplied) applyHybridResult();
        updateScrollbars();
        setTimeout(updateScrollbars,50);
       }
