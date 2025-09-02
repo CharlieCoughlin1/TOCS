@@ -59,18 +59,27 @@
     .result-item.hybrid-highlight{border:2px solid var(--lsh-red);}
     .result-item + .result-item{margin-top:0.5rem;}
     .result-scroll{
+      overflow-x:hidden;
+      overflow-y:hidden;
+      scrollbar-gutter:stable both-edges;
+      text-align:left;
+    }
+    .result-scroll.need-scroll{overflow-x:auto;}
+    #resultContainer .result-scroll{
       display:flex;
       flex-wrap:wrap;
       gap:0.5rem;
-      justify-content:flex-end;
+      justify-content:flex-start;
       overflow:visible;
-      text-align:left;
     }
-    .result-scroll.need-scroll{overflow:visible;}
+    #resultContainer .result-scroll.need-scroll{overflow:visible;}
     .result-title{
-      white-space:nowrap;
+      white-space:normal;
+      overflow-wrap:anywhere;
       min-height:2.5rem;
-      display:block;
+      display:flex;
+      align-items:center;
+      justify-content:center;
       text-align:center;
       background:#e5e7eb;
       padding:0.5rem 1rem;
@@ -132,7 +141,7 @@
     .density-label{margin-top:0;font-size:0.875rem;display:block;}
     .density-tooltip{display:none;}
     .slider-pop{position:absolute;top:-1.5rem;left:50%;transform:translateX(-50%);background:#e5e7eb;padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.875rem;pointer-events:none;}
-    .slider-pop-below{top:auto;bottom:-2rem;font-size:0.75rem;white-space:nowrap;}
+    .slider-pop-below{top:auto;bottom:-2.5rem;font-size:0.75rem;white-space:nowrap;}
     /* step sliders */
     .step-slider{position:relative;height:1.5rem;}
     .step-line{position:absolute;top:50%;left:0;right:0;height:2px;background:#d1d5db;transform:translateY(-50%);transition:background-color .2s;pointer-events:none;}
@@ -240,7 +249,7 @@
             </div>
           </label>
           <p class="text-sm text-gray-600 font-din-light mb-1">How many staff per workstation?</p>
-          <div id="hybridSliderWrap" class="relative mt-6 mb-8 step-slider">
+          <div id="hybridSliderWrap" class="relative mt-6 mb-10 step-slider">
             <div class="step-line"></div>
             <input type="range" id="hybridSlider" min="0" max="4" step="1" value="0" class="absolute inset-0 w-full opacity-0 cursor-pointer" />
             <output id="hybridOutput" class="slider-pop"></output>
@@ -284,6 +293,7 @@
               <div id="peopleResult2" class="result-scroll"></div>
             </div>
           </div>
+          <p class="mt-4 text-xs text-gray-500 font-din-light">All results are based on live LSH office costs data, last updated June 2025.</p>
         </div>
 
         <div id="calcDownloadWrap" class="flex justify-end mt-2 hidden">
@@ -668,6 +678,13 @@
       let occData=[];
       let showNew=true, showOld=true;
       let budgetPeriod='annual';
+      function alignResultTitles(){
+        title1.style.height='auto';
+        title2.style.height='auto';
+        if(!locSel2.value) return;
+        const max=Math.max(title1.offsetHeight,title2.offsetHeight);
+        title1.style.height=title2.style.height=max+'px';
+      }
       updateFieldHighlight(locSel);
       updateFieldHighlight(locSel2);
       updateFieldHighlight(pplInp);
@@ -1279,8 +1296,9 @@
         resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
         calcDownloadWrap.classList.remove('hidden');
         updateComparePrompt();
+        alignResultTitles();
         updateScrollbars();
-        setTimeout(updateScrollbars,50);
+        setTimeout(()=>{alignResultTitles(); updateScrollbars();},50);
       }
 
       calcBtn.addEventListener('click',performCalc);
@@ -1293,7 +1311,7 @@
 
       // Map ------------------------------------------------------------------
       if(typeof L!=='undefined'){
-        map=L.map('map',{zoomControl:false,attributionControl:false}).setView(REGIONS[0].center,REGIONS[0].zoom);
+        map=L.map('map',{zoomControl:false,attributionControl:false,preferCanvas:true}).setView(REGIONS[0].center,REGIONS[0].zoom);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',attribution:'&copy; OpenStreetMap & CartoDB'}).addTo(map);
 
         function tooltipDir(latlng){
@@ -1345,6 +1363,12 @@
 
         const markers={};
         choicePopup=null;
+        function updateMarkerSize(){
+          const z=map.getZoom();
+          const r=z<6?4:(z<9?6:8);
+          Object.values(markers).forEach(m=>m.setRadius(r));
+        }
+        map.on('zoom',updateMarkerSize);
         function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
        highlightSelections=function(showTips=true){
           const activeBtn = regionToggle.querySelector('button.active');
@@ -1583,11 +1607,13 @@
             }
           });
           resetMarkers();
+          updateMarkerSize();
           return coords.length? L.latLngBounds(coords): null;
         }
 
         showMarkers('All UK');
         highlightSelections(false);
+        updateMarkerSize();
         switchTab('occ');
 
         // respond to location dropdown changes
