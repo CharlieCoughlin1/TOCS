@@ -71,6 +71,7 @@
       gap:0.5rem;
       justify-content:flex-start;
       overflow:visible;
+      width:100%;
     }
     #resultContainer .result-scroll.need-scroll{overflow:visible;}
     .result-title{
@@ -85,6 +86,7 @@
       padding:0.5rem 1rem;
       border-radius:0.375rem;
       width:100%;
+      box-sizing:border-box;
     }
     #resultContainer.compare .result-value{font-size:1.5rem;}
     #resultContainer.compare #areaResult1 .result-value,
@@ -141,7 +143,7 @@
     .density-label{margin-top:0;font-size:0.875rem;display:block;}
     .density-tooltip{display:none;}
     .slider-pop{position:absolute;top:-1.5rem;left:50%;transform:translateX(-50%);background:#e5e7eb;padding:0.25rem 0.5rem;border-radius:0.25rem;font-size:0.875rem;pointer-events:none;}
-    .slider-pop-below{top:auto;bottom:-2.5rem;font-size:0.75rem;white-space:nowrap;}
+    .slider-pop-below{top:auto;bottom:-1.5rem;font-size:0.75rem;white-space:nowrap;}
     /* step sliders */
     .step-slider{position:relative;height:1.5rem;}
     .step-line{position:absolute;top:50%;left:0;right:0;height:2px;background:#d1d5db;transform:translateY(-50%);transition:background-color .2s;pointer-events:none;}
