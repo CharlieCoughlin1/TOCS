@@ -180,7 +180,7 @@
 
     <!-- Calculator / Occupancy -->
     <section class="bg-white p-6 rounded-lg shadow-md order-1 md:order-2" id="calcSection">
-        <h2 class="text-2xl md:text-3xl font-din-bold mb-4 text-lsh-red">UK office cost calculator</h2>
+        <h2 class="text-2xl md:text-3xl font-din-bold mb-4 text-lsh-red">Office cost calculator</h2>
       <div class="mb-4 flex gap-2">
         <button id="occTab" class="tab-btn active">Per sq ft costs</button>
         <button id="calcTab" class="tab-btn">Space calculator</button>
@@ -254,7 +254,7 @@
           <label id="hybridLabel" class="block text-lg font-din-bold text-gray-700 mb-1 flex items-center relative">Hybrid working factor (optional)
             <span id="hybridInfo" class="info-icon ml-1">i</span>
             <div id="hybridTooltip" class="hidden absolute right-0 mt-1 w-64 bg-white border border-gray-300 p-2 rounded shadow-md text-xs">
-              For ratios above 1:1, a 10% buffer is added to workstation numbers. Actual hybrid work patterns vary by company.
+              For staff to workstation ratios above 1:1, a 10% buffer is added to workstation numbers to ensure sufficient desks are available during unexpected peaks and / or anchor days.
             </div>
           </label>
           <p class="text-sm text-gray-600 font-din-light mb-1">How many staff per workstation?</p>
@@ -302,7 +302,7 @@
               <div id="peopleResult2" class="result-scroll"></div>
             </div>
           </div>
-          <p class="mt-4 text-xs text-gray-500 font-din-light">All results are based on live LSH office costs data, last updated June 2025.</p>
+          <p class="mt-4 text-xs text-gray-500 font-din-light">Indicative costs are based on LSH office costs data, last updated June 2025.</p>
         </div>
 
         <div id="calcDownloadWrap" class="flex justify-end mt-2 hidden">
@@ -851,7 +851,7 @@
           const costLabel=isAnnual?'Annual cost':'Monthly cost';
           const wsLabel=isAnnual?'Total per workstation (annual)':'Total per workstation (monthly)';
           renderResult(el,costLabel,`£${cost.toLocaleString()}`);
-          renderResult(el,wsLabel,`£${perWs.toLocaleString()}`,true,false,false,true);
+          renderResult(el,wsLabel,`£${perWs.toLocaleString()}`,true,false,false,!!locSel2.value);
         });
         updateScrollbars();
       }
@@ -1324,7 +1324,7 @@
             const perWSAnnual=Math.round(budget/workstations);
             const perWS=budgetPeriod==='monthly'?Math.round(perWSAnnual/12):perWSAnnual;
             const wsLabel=budgetPeriod==='monthly'?'Total per workstation (monthly)':'Total per workstation (annual)';
-            renderResult(pplEl,wsLabel,`£${perWS.toLocaleString()}`,true,false,false,true);
+            renderResult(pplEl,wsLabel,`£${perWS.toLocaleString()}`,true,false,false,!!locSel2.value);
             costEl.innerHTML='';
             delete costEl.dataset.annualCost;
             delete costEl.dataset.annualPerWs;
@@ -1427,6 +1427,12 @@
           const activeBtn = regionToggle.querySelector('button.active');
           const region = activeBtn ? activeBtn.textContent : 'All UK';
           showMarkers(region);
+          const loc1=LOCS.find(l=>l.name===locSel.value);
+          const loc2=LOCS.find(l=>l.name===locSel2.value);
+          if(loc1&&loc2&&loc1.region==='London'&&loc2.region==='London'){
+            const lm=markers['London'];
+            if(lm&&map.hasLayer(lm)) map.removeLayer(lm);
+          }
           // close any previously opened tooltips
           Object.values(markers).forEach(m=>m.closeTooltip());
           const coords=[];
