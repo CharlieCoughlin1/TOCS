@@ -176,6 +176,10 @@
       <div id="regionToggle" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="map" class="rounded"></div>
       <p class="mt-4 text-xs text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
+      <div id="contactSection" class="mt-6 hidden">
+        <h3 class="text-xl font-din-bold mb-4">Contact us</h3>
+        <div id="contactsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
+      </div>
     </section>
 
     <!-- Calculator / Occupancy -->
@@ -655,6 +659,8 @@
       const ageButtons=ageGroup.querySelectorAll('button');
       let modeValue='';
       let ageValue='';
+      let calcClicked=false;
+      let contactsLoaded=false;
       const pplInp=$('peopleInput'); const budInp=$('budgetInput');
       const pplGrp=$('peopleGroup'); const budGrp=$('budgetGroup');
       const extrasSection=$('extrasSection');
@@ -663,6 +669,8 @@
       const extrasWrap=$('extrasWrap');
       const calcBtn=$('calcBtn');
       const calcBtnWrap=$('calcBtnWrap');
+      const contactSection=$('contactSection');
+      const contactsContainer=$('contactsContainer');
       const costPeriodSel=$('costPeriod');
       const budgetToggle=$('budgetToggle');
       const budgetLabel=$('budgetLabel');
@@ -794,6 +802,49 @@
         }
         return psf*SQM_TO_SQFT;
       }
+
+      async function loadContacts(){
+        if(contactsLoaded) return;
+        const res=await fetch('../Office_staff_info.csv');
+        const text=await res.text();
+        const rows=text.trim().split('\n').slice(1).map(l=>l.split(','));
+        const targets=['David Earle','Oliver Du Sautoy'];
+        const imgMap={
+          'David Earle':'../Agent%20photos/David%20Earle.jpg',
+          'Oliver Du Sautoy':'../Agent%20photos/Oliver%20du%20Sautoy.jpg'
+        };
+        rows.filter(r=>targets.includes(r[0])).forEach(r=>{
+          const [name,location,mobile,email,status]=r;
+          const card=document.createElement('div');
+          card.className='bg-gray-50 p-4 rounded shadow text-center';
+          const img=document.createElement('img');
+          img.src=imgMap[name];
+          img.alt=`Photo of ${name}`;
+          img.className='mx-auto mb-2 w-32 h-32 object-cover';
+          card.appendChild(img);
+          const nm=document.createElement('div'); nm.className='font-din-bold'; nm.textContent=name; card.appendChild(nm);
+          const st=document.createElement('div'); st.className='text-sm text-gray-600'; st.textContent=status; card.appendChild(st);
+          const loc=document.createElement('div'); loc.className='text-sm text-gray-600'; loc.textContent=location; card.appendChild(loc);
+          const mob=document.createElement('div'); mob.className='text-sm text-gray-600';
+          const mobLink=document.createElement('a'); mobLink.href=`tel:${mobile.replace(/\s+/g,'')}`; mobLink.textContent=mobile; mobLink.className='hover:underline';
+          mob.appendChild(mobLink); card.appendChild(mob);
+          const em=document.createElement('div'); em.className='text-sm text-gray-600';
+          const emLink=document.createElement('a'); emLink.href=`mailto:${email}`; emLink.textContent=email; emLink.className='text-lsh-red hover:underline';
+          em.appendChild(emLink); card.appendChild(em);
+          contactsContainer.appendChild(card);
+        });
+        contactsLoaded=true;
+      }
+
+      function showContacts(){
+        loadContacts();
+        contactSection.classList.remove('hidden');
+      }
+
+      function hideContacts(){
+        contactSection.classList.add('hidden');
+      }
+
       function toggleInputs(){
         const showPeople=modeValue==='people';
         const showBudget=modeValue==='budget';
@@ -803,6 +854,7 @@
         calcBtnWrap.classList.toggle('mt-3',!showPeople&&!showBudget);
         resWrap.classList.add('hidden');
         calcDownloadWrap.classList.add('hidden');
+        hideContacts();
         costPeriodSel.classList.add('hidden');
         costPeriodSel.value='annual';
         if(!(showPeople||showBudget)){
@@ -1022,6 +1074,8 @@
         loc2Wrap.classList.add('hidden');
         resWrap.classList.add('hidden');
         calcDownloadWrap.classList.add('hidden');
+        hideContacts();
+        calcClicked=false;
         resetMarkers();
         updateComparePrompt();
         toggleInputs();
@@ -1236,12 +1290,13 @@
           }
           updateFieldHighlight(budInp);
           if(budInp.value && !resWrap.classList.contains('hidden')) performCalc();
-          else{resWrap.classList.add('hidden'); calcDownloadWrap.classList.add('hidden');}
+          else{resWrap.classList.add('hidden'); calcDownloadWrap.classList.add('hidden'); hideContacts();}
         }else{
           budInp.value='';
           updateFieldHighlight(budInp);
           resWrap.classList.add('hidden');
           calcDownloadWrap.classList.add('hidden');
+          hideContacts();
         }
       });
 
@@ -1347,13 +1402,14 @@
         resWrap.classList.remove('hidden');
         resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
         calcDownloadWrap.classList.remove('hidden');
+        if(calcClicked) showContacts(); else hideContacts();
         updateComparePrompt();
         alignResultTitles();
         updateScrollbars();
         setTimeout(()=>{alignResultTitles(); updateScrollbars();},50);
       }
 
-      calcBtn.addEventListener('click',performCalc);
+      calcBtn.addEventListener('click',()=>{calcClicked=true; performCalc();});
       densitySel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
       hybridSel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
       costPeriodSel.addEventListener('change',updateCostPeriod);
