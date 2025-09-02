@@ -481,6 +481,8 @@
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
       const DEFAULT_SQM_PER_PERSON = 10;
+      const MAX_ANNUAL_BUDGET  = 50_000_000;
+      const MAX_MONTHLY_BUDGET = Math.ceil(MAX_ANNUAL_BUDGET / 12); // 4,166,667
         function renderResult(el,label,valueStr,append=false,highlight=false,labelBelow=false,wrapLabel=false){
           const itemCls=highlight? 'result-item hybrid-highlight':'result-item';
           const valCls=highlight? 'result-value text-lsh-red':'result-value';
@@ -594,8 +596,10 @@
         const hybridSliderWrap=$('hybridSliderWrap');
         const hybridDetail=$('hybridDetail');
         const hybridDots=[];
-        const HYBRID_RATIOS=[1,1.25,1.7,2.5,5];
-        const HYBRID_OCC=[1,0.8,0.6,0.4,0.2];
+        // Exact mapping between staff-per-workstation ratio and desks-per-staff occupancy.
+        // 1.666... is 5/3, matching the “3 days in office” (≈60%) intent precisely.
+        const HYBRID_RATIOS = [1, 1.25, 1.6666666667, 2.5, 5];
+        const HYBRID_OCC    = HYBRID_RATIOS.map(r => 1 / r); // 1.00, 0.80, 0.60, 0.40, 0.20
         const HYBRID_BUFFER=1.1;
         const HYBRID_DETAILS=[
           'Suitable for an average of 5 days in office per week',
@@ -790,17 +794,19 @@
         ageGroup.classList.remove('error');
       }
       function costPerSqm(loc){
-        const data=COSTS[loc];
-        const age=AGE_MAP[ageValue];
-        if(!data||!age||!data[age]) return 0;
-        let psf=data[age].totalSqft;
-        const extras=EXTRAS_CLEAN[loc];
-        if(extras){
+        const data = COSTS[loc];
+        const age  = AGE_MAP[ageValue];
+        if(!data || !age || !data[age]) return 0;
+
+        let psf = data[age].totalSqft; // £ per ft²
+        const extras = EXTRAS_CLEAN[loc];
+        if (extras){
           EXTRA_NAMES.forEach(n=>{
-            if(!activeExtras.has(n)) psf-=extras[n]||0;
+            if(!activeExtras.has(n)) psf -= (extras[n] || 0);
           });
         }
-        return psf*SQM_TO_SQFT;
+        psf = Math.max(0, psf);               // guard against negative totals
+        return psf * SQM_TO_SQFT;             // £ per m²
       }
 
       async function loadContacts(){
@@ -1213,8 +1219,8 @@
               staff,
               densityLabel,
               hybridLabel,
-              sqm.toFixed(2),
-              sqft.toFixed(0),
+              Math.round(sqm),
+              Math.round(sqft),
               outCost,
               outPerWs
             ].join(','));
@@ -1356,13 +1362,13 @@
             errs.budget.style.display='block';
             budInp.classList.add('error');
             bad=true;
-          }else if(budgetPeriod==='annual' && budget>50000000){
-            errs.budget.textContent='Maximum annual budget is 50,000,000';
+          }else if(budgetPeriod==='annual' && budget>MAX_ANNUAL_BUDGET){
+            errs.budget.textContent = `Maximum annual budget is ${MAX_ANNUAL_BUDGET.toLocaleString()}`;
             errs.budget.style.display='block';
             budInp.classList.add('error');
             bad=true;
-          }else if(budgetPeriod==='monthly' && budget>8000000){
-            errs.budget.textContent='Maximum monthly budget is 8,000,000';
+          }else if(budgetPeriod==='monthly' && budget>MAX_MONTHLY_BUDGET){
+            errs.budget.textContent = `Maximum monthly budget is ${MAX_MONTHLY_BUDGET.toLocaleString()}`;
             errs.budget.style.display='block';
             budInp.classList.add('error');
             bad=true;
@@ -1382,7 +1388,7 @@
             const sqm=workstations*sqmPerPerson;
             const sqft=Math.round(sqm*SQM_TO_SQFT);
             areaEl.innerHTML='';
-            renderResult(areaEl,'Of space required',`${sqft.toLocaleString()} sq ft`,false,false,true);
+            renderResult(areaEl,'Space required',`${sqft.toLocaleString()} sq ft`,false,false,true);
             renderResult(areaEl,'Workstations required',`${workstations.toLocaleString()}`,true,false,true);
             pplEl.innerHTML='';
             pplEl.classList.add('hidden');
@@ -1391,23 +1397,46 @@
             costEl.dataset.annualCost=totalCost;
             costEl.dataset.annualPerWs=perWS;
             costEl.innerHTML='';
-          }else{
-            const sqm=budget/cpsqm;
-            const sqft=Math.round(sqm*SQM_TO_SQFT);
-            const workstations=Math.floor(sqm/sqmPerPerson);
-            const staff=Math.floor((workstations/ buffer)*staffPerWS);
+          } else {
+            // Guard: if cost per m² is zero (e.g., all extras toggled off), area is not computable.
+            const cpsqmSafe = costPerSqm(loc);
             areaEl.innerHTML='';
-            renderResult(areaEl,'Of space required',`${sqft.toLocaleString()} sq ft`,false,false,true);
-            renderResult(areaEl,'Workstations required',`${workstations.toLocaleString()}`,true,false,true);
             pplEl.innerHTML='';
-            renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`);
-            const perWSAnnual=Math.round(budget/workstations);
-            const perWS=budgetPeriod==='monthly'?Math.round(perWSAnnual/12):perWSAnnual;
-            const wsLabel=budgetPeriod==='monthly'?'Total per workstation (monthly)':'Total per workstation (annual)';
-            renderResult(pplEl,wsLabel,`£${perWS.toLocaleString()}`,true,false,false,!!locSel2.value);
             costEl.innerHTML='';
             delete costEl.dataset.annualCost;
             delete costEl.dataset.annualPerWs;
+
+            if (cpsqmSafe <= 0) {
+              renderResult(areaEl,'Area achievable','0 sq ft',false,false,true);
+              renderResult(areaEl,'Workstations accommodated','0',true,false,true);
+              renderResult(pplEl,'Staff accommodated','0');
+              pplEl.classList.remove('hidden');
+              return;
+            }
+
+            const sqm  = budget / cpsqmSafe;
+            const sqft = Math.round(sqm * SQM_TO_SQFT);
+            const workstations = Math.floor(sqm / sqmPerPerson);
+
+            // Labels for budget mode
+            renderResult(areaEl,'Area achievable',`${sqft.toLocaleString()} sq ft`,false,false,true);
+            renderResult(areaEl,'Workstations accommodated',`${workstations.toLocaleString()}`,true,false,true);
+
+            let staff = 0;
+            if (workstations > 0) {
+              const occ = parseFloat(hybridSel.dataset.occ || '1'); // desks per staff
+              const buffer = hybridSel.value==='1' ? 1 : HYBRID_BUFFER;
+              staff = Math.floor((workstations / buffer) / occ);
+              renderResult(pplEl,'Staff accommodated',`${staff.toLocaleString()}`);
+
+              const perWSAnnual = Math.round(budget / workstations);
+              const perWS = budgetPeriod==='monthly' ? Math.round(perWSAnnual/12) : perWSAnnual;
+              const wsLabel = budgetPeriod==='monthly' ? 'Total per workstation (monthly)' : 'Total per workstation (annual)';
+              renderResult(pplEl, wsLabel, `£${perWS.toLocaleString()}`, true, false, false, !!locSel2.value);
+            } else {
+              renderResult(pplEl,'Staff accommodated','0');
+            }
+
             pplEl.classList.remove('hidden');
           }
         }
