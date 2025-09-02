@@ -158,6 +158,7 @@
   <header class="bg-white shadow">
     <div class="max-w-6xl mx-auto px-4 py-6">
       <h1 class="text-4xl font-din-bold text-gray-900">Explore costs</h1>
+      <p class="mt-1 text-gray-600 font-din-light">Use this tool to calculate indicative office costs or space requirements based on your chosen criteria.</p>
     </div>
   </header>
 
@@ -1192,13 +1193,23 @@
       });
 
       budgetToggle.addEventListener('click',()=>{
-        budgetPeriod=budgetPeriod==='annual'?'monthly':'annual';
+        const wasAnnual=budgetPeriod==='annual';
+        budgetPeriod=wasAnnual?'monthly':'annual';
         budgetLabel.textContent=budgetPeriod==='annual'?'Annual budget (£)':'Monthly budget (£)';
         budgetToggle.textContent=budgetPeriod==='annual'?'Monthly budget (£)':'Annual budget (£)';
-        budInp.value='';
-        updateFieldHighlight(budInp);
-        resWrap.classList.add('hidden');
-        calcDownloadWrap.classList.add('hidden');
+        const raw=budInp.value.replace(/,/g,'');
+        if(modeValue==='budget' && raw){
+          const num=parseInt(raw,10);
+          const converted=wasAnnual?Math.round(num/12):num*12;
+          budInp.value=converted.toLocaleString();
+          updateFieldHighlight(budInp);
+          if(!resWrap.classList.contains('hidden')) performCalc();
+        }else{
+          budInp.value='';
+          updateFieldHighlight(budInp);
+          resWrap.classList.add('hidden');
+          calcDownloadWrap.classList.add('hidden');
+        }
       });
 
       pplInp.addEventListener('input',()=>{
@@ -1371,7 +1382,8 @@
         choicePopup=null;
         function updateMarkerSize(){
           const z=map.getZoom();
-          const r=z<6?4:(z<9?6:8);
+          // enlarge markers on the whole‑UK view for consistency with regional zoom levels
+          const r=z<6?6:(z<9?6:8);
           Object.values(markers).forEach(m=>m.setRadius(r));
         }
         map.on('zoom',updateMarkerSize);
