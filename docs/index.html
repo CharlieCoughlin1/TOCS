@@ -329,7 +329,7 @@
         </div>
         <div id="occBars" class="flex gap-4 items-end mb-4 w-full result-scroll"></div>
         <p id="occLimitMsg" class="hidden text-xs text-lsh-red mb-2">You can compare up to 3 locations.</p>
-        <div id="occTables" class="result-scroll"></div>
+        <div id="occTables"></div>
         <div id="occDownloadWrap" class="flex justify-end mt-2 hidden">
           <div class="relative">
             <button id="downloadBtn" class="p-1" aria-label="Download">
@@ -356,6 +356,9 @@
     (function(){
       const AGE_MAP={ '20':'old', New:'new' };
       const ENABLE_DOWNLOADS=false; // toggle to enable CSV downloads
+      const style=getComputedStyle(document.documentElement);
+      const LSH_RED=style.getPropertyValue('--lsh-red').trim()||'#cc2030';
+      const LSH_RED_DARK=style.getPropertyValue('--lsh-red-dark').trim()||'#871720';
       const LOCS=[
         {name:'Edinburgh',coords:[55.9533,-3.1883],region:'Scotland',main:true},
         {name:'Birmingham',coords:[52.4862,-1.8904],region:'West Midlands',main:true},
@@ -919,7 +922,7 @@
           col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
           occBars.appendChild(col);
           const wrap=document.createElement('div');
-          wrap.className='relative mb-4';
+          wrap.className='relative mb-4 result-scroll';
           const table=document.createElement("table");
           table.className="w-full text-sm border-collapse";
           const rem2=rem.cloneNode(true);
@@ -987,6 +990,7 @@
         }
         if(hasData){
         }
+        updateScrollbars();
       }
 
       occFilterBtn.addEventListener('click',e=>{
@@ -1369,7 +1373,7 @@
           Object.values(markers).forEach(m=>m.setRadius(r));
         }
         map.on('zoom',updateMarkerSize);
-        function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)'}));}
+        function resetMarkers(){Object.values(markers).forEach(m=>m.setStyle({stroke:false,color:LSH_RED,fillColor:LSH_RED}));}
        highlightSelections=function(showTips=true){
           const activeBtn = regionToggle.querySelector('button.active');
           const region = activeBtn ? activeBtn.textContent : 'All UK';
@@ -1383,7 +1387,7 @@
               const m=markers[n];
               if(m){
                 if(!map.hasLayer(m)) m.addTo(map);
-                m.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
+                m.setStyle({stroke:false,color:LSH_RED_DARK,fillColor:LSH_RED_DARK});
                 activeMarkers.push(m);
                 coords.push(m.getLatLng());
               }
@@ -1420,7 +1424,7 @@
           }
         }
         LOCS.forEach(loc=>{
-          const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:'var(--lsh-red)',fillColor:'var(--lsh-red)',fillOpacity:0.9});
+          const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:LSH_RED,fillColor:LSH_RED,fillOpacity:0.9});
           const cost=COSTS[loc.name];
           if(cost){
             let tip = `<div class="text-xs"><div class="tooltip-name font-din-bold text-sm mb-1 text-center">${loc.name}</div>`;
@@ -1451,7 +1455,7 @@
               return;
             }
             resetMarkers();
-            marker.setStyle({stroke:false,color:'var(--lsh-red-dark)',fillColor:'var(--lsh-red-dark)'});
+            marker.setStyle({stroke:false,color:LSH_RED_DARK,fillColor:LSH_RED_DARK});
             {
               const tt=marker.getTooltip();
               tt.options.direction=tooltipDir(marker.getLatLng());
@@ -1615,6 +1619,14 @@
         highlightSelections(false);
         updateMarkerSize();
         switchTab('occ');
+
+        [locSel,locSel2].forEach(sel=>{
+          sel.addEventListener('focus',()=>{
+            sel.classList.remove('bg-lsh-red','text-white');
+            sel.classList.add('bg-white');
+          });
+          sel.addEventListener('blur',()=>updateFieldHighlight(sel));
+        });
 
         // respond to location dropdown changes
         locSel.addEventListener('change',()=>{
