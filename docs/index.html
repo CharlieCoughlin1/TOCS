@@ -40,6 +40,9 @@
       line-height:1.2;
       white-space:nowrap;
     }
+    .result-label.wrap{
+      white-space:normal;
+    }
     /* result value (larger, bolder) */
     .result-value{
       font-size:1.875rem;          /* text-3xl */
@@ -474,12 +477,13 @@
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
       const DEFAULT_SQM_PER_PERSON = 10;
-        function renderResult(el,label,valueStr,append=false,highlight=false,labelBelow=false){
+        function renderResult(el,label,valueStr,append=false,highlight=false,labelBelow=false,wrapLabel=false){
           const itemCls=highlight? 'result-item hybrid-highlight':'result-item';
           const valCls=highlight? 'result-value text-lsh-red':'result-value';
+          const lblCls=wrapLabel? 'result-label wrap':'result-label';
           const content=labelBelow
-            ? `<span class="${valCls}">${valueStr}</span><span class="result-label">${label}</span>`
-            : `<span class="result-label">${label}</span><span class="${valCls}">${valueStr}</span>`;
+            ? `<span class="${valCls}">${valueStr}</span><span class="${lblCls}">${label}</span>`
+            : `<span class="${lblCls}">${label}</span><span class="${valCls}">${valueStr}</span>`;
           const html=`<div class="${itemCls}">${content}</div>`;
           if(append) el.innerHTML+=html; else el.innerHTML=html;
         }
@@ -847,7 +851,7 @@
           const costLabel=isAnnual?'Annual cost':'Monthly cost';
           const wsLabel=isAnnual?'Total per workstation (annual)':'Total per workstation (monthly)';
           renderResult(el,costLabel,`£${cost.toLocaleString()}`);
-          renderResult(el,wsLabel,`£${perWs.toLocaleString()}`,true);
+          renderResult(el,wsLabel,`£${perWs.toLocaleString()}`,true,false,false,true);
         });
         updateScrollbars();
       }
@@ -1320,7 +1324,7 @@
             const perWSAnnual=Math.round(budget/workstations);
             const perWS=budgetPeriod==='monthly'?Math.round(perWSAnnual/12):perWSAnnual;
             const wsLabel=budgetPeriod==='monthly'?'Total per workstation (monthly)':'Total per workstation (annual)';
-            renderResult(pplEl,wsLabel,`£${perWS.toLocaleString()}`,true);
+            renderResult(pplEl,wsLabel,`£${perWS.toLocaleString()}`,true,false,false,true);
             costEl.innerHTML='';
             delete costEl.dataset.annualCost;
             delete costEl.dataset.annualPerWs;
