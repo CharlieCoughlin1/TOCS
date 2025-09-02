@@ -38,6 +38,7 @@
       color:#4b5563;               /* gray-700 */
       display:block;
       line-height:1.2;
+      white-space:nowrap;
     }
     /* result value (larger, bolder) */
     .result-value{
@@ -686,6 +687,7 @@
       let occData=[];
       let showNew=true, showOld=true;
       let budgetPeriod='annual';
+      let annualBudgetRaw='', monthlyBudgetRaw='';
       function alignResultTitles(){
         title1.style.height='auto';
         title2.style.height='auto';
@@ -1109,7 +1111,7 @@
         const occupancy=parseFloat(hybridSel.dataset.occ || '1');
         const buffer = hybridSel.value==='1'?1:HYBRID_BUFFER;
         const inputBudget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
-        const budget=!usePeople?(budgetPeriod==='monthly'?inputBudget*12:inputBudget):0;
+        const budget=!usePeople?(budgetPeriod==='monthly'?(annualBudgetRaw?parseInt(annualBudgetRaw,10):inputBudget*12):inputBudget):0;
         function q(str){return `"${String(str).replace(/"/g,'""')}"`;}
         function addRow(loc){
           const cpsqm=costPerSqm(loc);
@@ -1186,10 +1188,19 @@
         }
       });
 
-      // auto‑comma budget
+      // auto‑comma budget and store raw values
       budInp.addEventListener('input',()=>{
         const raw=budInp.value.replace(/[^0-9]/g,'');
         budInp.value=raw?parseInt(raw,10).toLocaleString():'';
+        if(modeValue==='budget'){
+          if(budgetPeriod==='annual'){
+            annualBudgetRaw=raw;
+            monthlyBudgetRaw=raw?Math.round(parseInt(raw,10)/12).toString():'';
+          }else{
+            monthlyBudgetRaw=raw;
+            annualBudgetRaw=raw?(parseInt(raw,10)*12).toString():'';
+          }
+        }
         updateFieldHighlight(budInp);
         if(!budGrp.classList.contains('hidden') && !resWrap.classList.contains('hidden')) performCalc();
       });
@@ -1199,13 +1210,29 @@
         budgetPeriod=wasAnnual?'monthly':'annual';
         budgetLabel.textContent=budgetPeriod==='annual'?'Annual budget (£)':'Monthly budget (£)';
         budgetToggle.textContent=budgetPeriod==='annual'?'Monthly budget (£)':'Annual budget (£)';
-        const raw=budInp.value.replace(/,/g,'');
-        if(modeValue==='budget' && raw){
-          const num=parseInt(raw,10);
-          const converted=wasAnnual?Math.round(num/12):num*12;
-          budInp.value=converted.toLocaleString();
+        if(modeValue==='budget'){
+          if(wasAnnual){
+            if(annualBudgetRaw){
+              const converted=Math.round(parseInt(annualBudgetRaw,10)/12);
+              monthlyBudgetRaw=String(converted);
+              budInp.value=converted.toLocaleString();
+            }else{
+              budInp.value='';
+            }
+          }else{
+            if(annualBudgetRaw){
+              budInp.value=parseInt(annualBudgetRaw,10).toLocaleString();
+            }else if(monthlyBudgetRaw){
+              const converted=parseInt(monthlyBudgetRaw,10)*12;
+              annualBudgetRaw=String(converted);
+              budInp.value=converted.toLocaleString();
+            }else{
+              budInp.value='';
+            }
+          }
           updateFieldHighlight(budInp);
-          if(!resWrap.classList.contains('hidden')) performCalc();
+          if(budInp.value && !resWrap.classList.contains('hidden')) performCalc();
+          else{resWrap.classList.add('hidden'); calcDownloadWrap.classList.add('hidden');}
         }else{
           budInp.value='';
           updateFieldHighlight(budInp);
@@ -1256,7 +1283,9 @@
             budInp.classList.add('error');
             bad=true;
           }
-          if(!bad && budgetPeriod==='monthly') budget*=12;
+          if(!bad && budgetPeriod==='monthly'){
+            budget = annualBudgetRaw ? parseInt(annualBudgetRaw,10) : budget*12;
+          }
         }
         if(bad) return;
        function calcLoc(loc,areaEl,costEl,pplEl,titleEl){
