@@ -600,6 +600,7 @@
         // 1.666... is 5/3, matching the “3 days in office” (≈60%) intent precisely.
         const HYBRID_RATIOS = [1, 1.25, 1.6666666667, 2.5, 5];
         const HYBRID_OCC    = HYBRID_RATIOS.map(r => 1 / r); // 1.00, 0.80, 0.60, 0.40, 0.20
+        const fmtRatio = (x)=> (Math.round(x*100)/100).toFixed(2);
         const HYBRID_BUFFER=1.1;
         const HYBRID_DETAILS=[
           'Suitable for an average of 5 days in office per week',
@@ -613,7 +614,7 @@
         const r=HYBRID_RATIOS[idx];
         hybridSel.value=r;
         hybridSel.dataset.occ=HYBRID_OCC[idx];
-        hybridOutput.textContent=`1:${r}`;
+        hybridOutput.textContent=`1:${fmtRatio(r)}`;
         const pct=idx/(HYBRID_RATIOS.length-1);
         hybridOutput.style.left=`${pct*100}%`;
         if(idx===0) hybridOutput.style.transform='translateX(0)';
@@ -644,7 +645,7 @@
             else if(idx>=HYBRID_RATIOS.length-2) hybridDetail.style.transform='translateX(-100%)';
             else hybridDetail.style.transform='translateX(-50%)';
             hybridDetail.classList.remove('hidden');
-            hybridOutput.textContent=`1:${HYBRID_RATIOS[idx]}`;
+            hybridOutput.textContent=`1:${fmtRatio(HYBRID_RATIOS[idx])}`;
             hybridOutput.style.left=`${pct*100}%`;
             if(idx===0) hybridOutput.style.transform='translateX(0)';
             else if(idx===HYBRID_RATIOS.length-1) hybridOutput.style.transform='translateX(-100%)';
@@ -1344,7 +1345,6 @@
 
         const usePeople=modeValue==='people';
         let n,budget; const sqmPerPerson=parseFloat(densitySel.value || DEFAULT_SQM_PER_PERSON);
-        const staffPerWS=parseFloat(hybridSel.value || 1);
         const occupancy=parseFloat(hybridSel.dataset.occ || 1);
         const buffer = hybridSel.value==='1'?1:HYBRID_BUFFER;
         if(usePeople){
@@ -1398,15 +1398,14 @@
             costEl.dataset.annualPerWs=perWS;
             costEl.innerHTML='';
           } else {
-            // Guard: if cost per m² is zero (e.g., all extras toggled off), area is not computable.
-            const cpsqmSafe = costPerSqm(loc);
+            // Reuse already-computed cost/m²; still guard against zero.
             areaEl.innerHTML='';
             pplEl.innerHTML='';
             costEl.innerHTML='';
             delete costEl.dataset.annualCost;
             delete costEl.dataset.annualPerWs;
 
-            if (cpsqmSafe <= 0) {
+            if (cpsqm <= 0) {
               renderResult(areaEl,'Area achievable','0 sq ft',false,false,true);
               renderResult(areaEl,'Workstations accommodated','0',true,false,true);
               renderResult(pplEl,'Staff accommodated','0');
@@ -1414,7 +1413,7 @@
               return;
             }
 
-            const sqm  = budget / cpsqmSafe;
+            const sqm  = budget / cpsqm;
             const sqft = Math.round(sqm * SQM_TO_SQFT);
             const workstations = Math.floor(sqm / sqmPerPerson);
 
