@@ -30,7 +30,7 @@
     input[type="checkbox"]{ accent-color:var(--lsh-red); }
     .error{ border-color:#dc2626!important; }
     .err-msg{ display:none; color:#dc2626; font-size:0.75rem; }
-    .info-icon{display:inline-block;border:1px solid currentColor;border-radius:50%;width:1rem;height:1rem;line-height:1rem;text-align:center;font-size:0.75rem;cursor:help;}
+    .info-icon{display:inline-block;border:1px solid #9ca3af;border-radius:50%;width:1rem;height:1rem;line-height:1rem;text-align:center;font-size:0.75rem;cursor:pointer;color:#9ca3af;}
     /* result label (smaller, lighter) */
     .result-label{
       font-size:0.875rem;          /* text-sm */
@@ -59,14 +59,23 @@
     .result-item.hybrid-highlight{border:2px solid var(--lsh-red);}
     .result-item + .result-item{margin-top:0.5rem;}
     .result-scroll{
-      overflow-x:hidden;overflow-y:hidden;scrollbar-gutter:stable both-edges;
+      display:flex;
+      flex-wrap:wrap;
+      gap:0.5rem;
+      justify-content:flex-end;
+      overflow:visible;
       text-align:left;
     }
-    .result-scroll.need-scroll{overflow-x:auto;}
+    .result-scroll.need-scroll{overflow:visible;}
     .result-title{
-      white-space:nowrap;min-height:2.5rem;
+      white-space:nowrap;
+      min-height:2.5rem;
       display:block;
-      text-align:left;
+      text-align:center;
+      background:#e5e7eb;
+      padding:0.5rem 1rem;
+      border-radius:0.375rem;
+      width:100%;
     }
     #resultContainer.compare .result-value{font-size:1.5rem;}
     #resultContainer.compare #areaResult1 .result-value,
@@ -224,8 +233,11 @@
         <input type="hidden" id="densitySelect" value="10" />
 
         <div id="hybridLegacy" class="mt-4">
-          <label class="block text-lg font-din-bold text-gray-700 mb-1 flex items-center">Hybrid working factor (optional)
-            <span class="info-icon ml-1" title="For ratios above 1:1, a 10% buffer is added to workstation numbers. Actual hybrid work patterns vary by company.">i</span>
+          <label id="hybridLabel" class="block text-lg font-din-bold text-gray-700 mb-1 flex items-center relative">Hybrid working factor (optional)
+            <span id="hybridInfo" class="info-icon ml-1">i</span>
+            <div id="hybridTooltip" class="hidden absolute right-0 mt-1 w-64 bg-white border border-gray-300 p-2 rounded shadow-md text-xs">
+              For ratios above 1:1, a 10% buffer is added to workstation numbers. Actual hybrid work patterns vary by company.
+            </div>
           </label>
           <p class="text-sm text-gray-600 font-din-light mb-1">How many staff per workstation?</p>
           <div id="hybridSliderWrap" class="relative mt-6 mb-8 step-slider">
@@ -260,13 +272,13 @@
         <div id="resultWrapper" class="mt-6 hidden">
           <div id="resultContainer" class="grid md:grid-cols-2 gap-4">
             <div id="resultBox1" class="space-y-3">
-              <h3 id="resultTitle1" class="font-din-bold text-xl result-scroll result-title"></h3>
+              <h3 id="resultTitle1" class="font-din-bold result-title"></h3>
               <div id="areaResult1" class="result-scroll"></div>
               <div id="costResult1" class="result-scroll"></div>
               <div id="peopleResult1" class="result-scroll"></div>
             </div>
             <div id="resultBox2" class="space-y-3 md:border-l md:pl-4 hidden">
-              <h3 id="resultTitle2" class="font-din-bold text-xl result-scroll result-title"></h3>
+              <h3 id="resultTitle2" class="font-din-bold result-title"></h3>
               <div id="areaResult2" class="result-scroll"></div>
               <div id="costResult2" class="result-scroll"></div>
               <div id="peopleResult2" class="result-scroll"></div>
@@ -451,13 +463,20 @@
             : `<span class="result-label">${label}</span><span class="${valCls}">${valueStr}</span>`;
           const html=`<div class="${itemCls}">${content}</div>`;
           if(append) el.innerHTML+=html; else el.innerHTML=html;
-          el.scrollLeft=0; // ensure leftmost part visible
         }
       function updateScrollbars(){
         document.querySelectorAll('.result-scroll').forEach(el=>{
           if(el.scrollWidth - el.clientWidth > 1) el.classList.add('need-scroll');
           else el.classList.remove('need-scroll');
         });
+      }
+      function adjustTitle(el){
+        let size=1.5; // rem
+        el.style.fontSize=size+'rem';
+        while(el.scrollWidth>el.clientWidth && size>0.9){
+          size-=0.05;
+          el.style.fontSize=size+'rem';
+        }
       }
       function updateFieldHighlight(el){
         const hasValue=!!el.value;
@@ -645,6 +664,7 @@
       const calcDownloadMenu=$('calcDownloadMenu');
       const calcDownloadCsv=$('calcDownloadCsv');
       const calcSection=$("calcSection");
+      const hybridInfo=$('hybridInfo'); const hybridTooltip=$('hybridTooltip');
       let occData=[];
       let showNew=true, showOld=true;
       let budgetPeriod='annual';
@@ -652,6 +672,13 @@
       updateFieldHighlight(locSel2);
       updateFieldHighlight(pplInp);
       updateFieldHighlight(budInp);
+
+      hybridInfo.addEventListener('click',e=>{
+        e.stopPropagation();
+        hybridTooltip.classList.toggle('hidden');
+      });
+      hybridTooltip.addEventListener('click',e=>e.stopPropagation());
+      document.addEventListener('click',()=>hybridTooltip.classList.add('hidden'));
 
       EXTRA_NAMES.forEach(name=>{
         const row=document.createElement('div');
@@ -1199,6 +1226,7 @@
        function calcLoc(loc,areaEl,costEl,pplEl,titleEl){
          const cpsqm=costPerSqm(loc);
          titleEl.textContent=loc;
+         adjustTitle(titleEl);
           if(usePeople){
             const staff=n;
             const workstations=Math.ceil(staff*occupancy*buffer);
