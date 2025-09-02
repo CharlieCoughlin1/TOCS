@@ -231,7 +231,7 @@
             <output id="hybridOutput" class="slider-pop"></output>
             <output id="hybridDetail" class="slider-pop slider-pop-below hidden"></output>
           </div>
-          <input type="hidden" id="hybridSelect" value="1" />
+          <input type="hidden" id="hybridSelect" value="1" data-occ="1" />
         </div>
 
         <div id="extrasSection" class="mb-3 hidden">
@@ -535,7 +535,9 @@
         const hybridSliderWrap=$('hybridSliderWrap');
         const hybridDetail=$('hybridDetail');
         const hybridDots=[];
-        const HYBRID_RATIOS=[1,1.5,2,2.5,3];
+        const HYBRID_RATIOS=[1,1.25,1.7,2.5,5];
+        const HYBRID_OCC=[1,0.8,0.6,0.4,0.2];
+        const HYBRID_BUFFER=1.1;
         const HYBRID_DETAILS=[
           'Suitable for an average of 5 days in office per week',
           'Suitable for an average of 4 days in office per week',
@@ -547,6 +549,7 @@
         const idx=parseInt(hybridSlider.value,10);
         const r=HYBRID_RATIOS[idx];
         hybridSel.value=r;
+        hybridSel.dataset.occ=HYBRID_OCC[idx];
         hybridOutput.textContent=`1:${r}`;
         const pct=idx/(HYBRID_RATIOS.length-1);
         hybridOutput.style.left=`${pct*100}%`;
@@ -1030,6 +1033,7 @@
         const sqmPerPerson=parseFloat(densityLabel || DEFAULT_SQM_PER_PERSON);
         const n=usePeople?parseInt(pplInp.value,10):0;
         const staffPerWS=parseFloat(hybridSel.value || '1');
+        const occupancy=parseFloat(hybridSel.dataset.occ || '1');
         const inputBudget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
         const budget=!usePeople?(budgetPeriod==='monthly'?inputBudget*12:inputBudget):0;
         function q(str){return `"${String(str).replace(/"/g,'""')}"`;}
@@ -1037,7 +1041,7 @@
           const cpsqm=costPerSqm(loc);
           if(usePeople){
             const staff=n;
-            const workstations=Math.ceil(staff/staffPerWS);
+            const workstations=Math.ceil(staff*occupancy*HYBRID_BUFFER);
             const sqm=workstations*sqmPerPerson;
             const sqft=sqm*SQM_TO_SQFT;
             const cost=Math.round(sqm*cpsqm);
@@ -1059,7 +1063,7 @@
             const sqm=budget/cpsqm;
             const sqft=sqm*SQM_TO_SQFT;
             const workstations=Math.floor(sqm/sqmPerPerson);
-            const staff=Math.floor(workstations*parseFloat(hybridSel.value || '1'));
+            const staff=Math.floor((workstations/ HYBRID_BUFFER)*staffPerWS);
             lines.push([
               q(loc),
               ageLabel,
@@ -1137,6 +1141,7 @@
         const usePeople=modeValue==='people';
         let n,budget; const sqmPerPerson=parseFloat(densitySel.value || DEFAULT_SQM_PER_PERSON);
         const staffPerWS=parseFloat(hybridSel.value || 1);
+        const occupancy=parseFloat(hybridSel.dataset.occ || 1);
         if(usePeople){
           n=parseInt(pplInp.value,10);
           if(!n||n<=0||n>2000){
@@ -1171,7 +1176,7 @@
          titleEl.textContent=loc;
           if(usePeople){
             const staff=n;
-            const workstations=Math.ceil(staff/staffPerWS);
+            const workstations=Math.ceil(staff*occupancy*HYBRID_BUFFER);
             const sqm=workstations*sqmPerPerson;
             const sqft=Math.round(sqm*SQM_TO_SQFT);
             areaEl.innerHTML='';
@@ -1188,7 +1193,7 @@
             const sqm=budget/cpsqm;
             const sqft=Math.round(sqm*SQM_TO_SQFT);
             const workstations=Math.floor(sqm/sqmPerPerson);
-            const staff=Math.floor(workstations*staffPerWS);
+            const staff=Math.floor((workstations/ HYBRID_BUFFER)*staffPerWS);
             areaEl.innerHTML='';
             renderResult(areaEl,'Of space required',`${sqft.toLocaleString()} sq ft`,false,false,true);
             renderResult(areaEl,'Workstations required',`${workstations.toLocaleString()}`,true,false,true);
