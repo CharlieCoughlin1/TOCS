@@ -855,10 +855,19 @@
       function showContacts(){
         loadContacts();
         contactSection.classList.remove('hidden');
+        requestAnimationFrame(()=>{
+          const heading=contactSection.querySelector('h3');
+          if(heading && title1){
+            const offset=title1.getBoundingClientRect().top-heading.getBoundingClientRect().top;
+            const current=parseFloat(getComputedStyle(contactSection).marginTop)||0;
+            contactSection.style.marginTop=`${current+offset}px`;
+          }
+        });
       }
 
       function hideContacts(){
         contactSection.classList.add('hidden');
+        contactSection.style.marginTop='';
       }
 
       function toggleInputs(){
