@@ -30,6 +30,7 @@
     input[type="checkbox"]{ accent-color:var(--lsh-red); }
     .error{ border-color:#dc2626!important; }
     .err-msg{ display:none; color:#dc2626; font-size:0.75rem; }
+    .info-icon{display:inline-block;border:1px solid currentColor;border-radius:50%;width:1rem;height:1rem;line-height:1rem;text-align:center;font-size:0.75rem;cursor:help;}
     /* result label (smaller, lighter) */
     .result-label{
       font-size:0.875rem;          /* text-sm */
@@ -223,7 +224,9 @@
         <input type="hidden" id="densitySelect" value="10" />
 
         <div id="hybridLegacy" class="mt-4">
-          <label class="block text-lg font-din-bold text-gray-700 mb-1">Hybrid working factor</label>
+          <label class="block text-lg font-din-bold text-gray-700 mb-1 flex items-center">Hybrid working factor (optional)
+            <span class="info-icon ml-1" title="For ratios above 1:1, a 10% buffer is added to workstation numbers. Actual hybrid work patterns vary by company.">i</span>
+          </label>
           <p class="text-sm text-gray-600 font-din-light mb-1">How many staff per workstation?</p>
           <div id="hybridSliderWrap" class="relative mt-6 mb-8 step-slider">
             <div class="step-line"></div>
@@ -456,6 +459,16 @@
           else el.classList.remove('need-scroll');
         });
       }
+      function updateFieldHighlight(el){
+        const hasValue=!!el.value;
+        if(hasValue){
+          el.classList.add('bg-lsh-red','text-white');
+          el.classList.remove('bg-white');
+        }else{
+          el.classList.remove('bg-lsh-red','text-white');
+          if(el.tagName==='SELECT') el.classList.add('bg-white');
+        }
+      }
       // -----------------------------
       const locSel=$('locationSelect');
       const locSel2=$('locationSelect2');
@@ -480,7 +493,7 @@
         if(idx>=0){densitySlider.value=idx; updateDensity();}
       }
 
-      function updateDensity(){
+      function updateDensity(emit=true){
         const idx=parseInt(densitySlider.value,10);
         const d=DENSITIES[idx];
         densitySel.value=d.value;
@@ -491,7 +504,7 @@
         else if(idx===DENSITIES.length-1) densityOutput.style.transform='translateX(-100%)';
         else densityOutput.style.transform='translateX(-50%)';
         densityDots.forEach((dot,i)=>{dot.classList.toggle('active',i===idx);});
-        densitySel.dispatchEvent(new Event('change'));
+        if(emit) densitySel.dispatchEvent(new Event('change'));
       }
         DENSITIES.forEach((d,i)=>{
           const dot=document.createElement('div');
@@ -525,8 +538,8 @@
           }
         }
         densitySliderWrap.addEventListener('mousemove',handleDensityHover);
-        densitySliderWrap.addEventListener('mouseleave',()=>{densityDetail.classList.add('hidden'); updateDensity();});
-        densitySlider.addEventListener('input',updateDensity);
+        densitySliderWrap.addEventListener('mouseleave',()=>{densityDetail.classList.add('hidden'); updateDensity(false);});
+        densitySlider.addEventListener('input',()=>updateDensity());
       updateDensity();
 
         const hybridSel=$('hybridSelect');
@@ -545,7 +558,7 @@
           'Suitable for an average of 2 days in office per week',
           'Suitable for an average of 1 day in office per week'
         ];
-      function updateHybrid(){
+      function updateHybrid(emit=true){
         const idx=parseInt(hybridSlider.value,10);
         const r=HYBRID_RATIOS[idx];
         hybridSel.value=r;
@@ -557,7 +570,7 @@
         else if(idx===HYBRID_RATIOS.length-1) hybridOutput.style.transform='translateX(-100%)';
         else hybridOutput.style.transform='translateX(-50%)';
         hybridDots.forEach((dot,i)=>{dot.classList.toggle('active',i===idx);});
-        hybridSel.dispatchEvent(new Event('change'));
+        if(emit) hybridSel.dispatchEvent(new Event('change'));
       }
         HYBRID_RATIOS.forEach((r,i)=>{
           const dot=document.createElement('div');
@@ -591,8 +604,8 @@
           }
         }
         hybridSliderWrap.addEventListener('mousemove',handleHybridHover);
-        hybridSliderWrap.addEventListener('mouseleave',()=>{hybridDetail.classList.add('hidden'); updateHybrid();});
-        hybridSlider.addEventListener('input',updateHybrid);
+        hybridSliderWrap.addEventListener('mouseleave',()=>{hybridDetail.classList.add('hidden'); updateHybrid(false);});
+        hybridSlider.addEventListener('input',()=>updateHybrid());
       updateHybrid();
 
       const modeGroup=$('modeBtns'); const ageGroup=$('ageBtns');
@@ -635,6 +648,10 @@
       let occData=[];
       let showNew=true, showOld=true;
       let budgetPeriod='annual';
+      updateFieldHighlight(locSel);
+      updateFieldHighlight(locSel2);
+      updateFieldHighlight(pplInp);
+      updateFieldHighlight(budInp);
 
       EXTRA_NAMES.forEach(name=>{
         const row=document.createElement('div');
@@ -743,6 +760,7 @@
           budgetLabel.textContent='Annual budget (£)';
           budgetToggle.textContent='Monthly budget (£)';
           budInp.value='';
+          updateFieldHighlight(budInp);
         }
       }
 
@@ -750,6 +768,8 @@
         comparePrompt.classList.toggle('hidden',!(locSel.value && !locSel2.value));
         removeLoc1.style.display = locSel.value ? 'block' : 'none';
         removeLoc2.style.display = locSel2.value ? 'block' : 'none';
+        updateFieldHighlight(locSel);
+        updateFieldHighlight(locSel2);
       }
 
       function autoCalcIfReady(){
@@ -936,7 +956,7 @@
       occClear.addEventListener('click',()=>{occData=[]; document.getElementById('occLimitMsg').classList.add('hidden'); updateOccUI();});
       calcClear.addEventListener('click',()=>{
         modeValue=''; ageValue='';
-        [locSel,locSel2,pplInp,budInp].forEach(el=>{el.value='';});
+        [locSel,locSel2,pplInp,budInp].forEach(el=>{el.value=''; updateFieldHighlight(el);});
         setDensity('10');
         modeButtons.forEach(b=>b.classList.remove('active'));
         ageButtons.forEach(b=>b.classList.remove('active'));
@@ -1034,6 +1054,7 @@
         const n=usePeople?parseInt(pplInp.value,10):0;
         const staffPerWS=parseFloat(hybridSel.value || '1');
         const occupancy=parseFloat(hybridSel.dataset.occ || '1');
+        const buffer = hybridSel.value==='1'?1:HYBRID_BUFFER;
         const inputBudget=!usePeople?parseInt(budInp.value.replace(/,/g,''),10):0;
         const budget=!usePeople?(budgetPeriod==='monthly'?inputBudget*12:inputBudget):0;
         function q(str){return `"${String(str).replace(/"/g,'""')}"`;}
@@ -1041,7 +1062,7 @@
           const cpsqm=costPerSqm(loc);
           if(usePeople){
             const staff=n;
-            const workstations=Math.ceil(staff*occupancy*HYBRID_BUFFER);
+            const workstations=Math.ceil(staff*occupancy*buffer);
             const sqm=workstations*sqmPerPerson;
             const sqft=sqm*SQM_TO_SQFT;
             const cost=Math.round(sqm*cpsqm);
@@ -1063,7 +1084,7 @@
             const sqm=budget/cpsqm;
             const sqft=sqm*SQM_TO_SQFT;
             const workstations=Math.floor(sqm/sqmPerPerson);
-            const staff=Math.floor((workstations/ HYBRID_BUFFER)*staffPerWS);
+            const staff=Math.floor((workstations/ buffer)*staffPerWS);
             lines.push([
               q(loc),
               ageLabel,
@@ -1116,6 +1137,7 @@
       budInp.addEventListener('input',()=>{
         const raw=budInp.value.replace(/[^0-9]/g,'');
         budInp.value=raw?parseInt(raw,10).toLocaleString():'';
+        updateFieldHighlight(budInp);
         if(!budGrp.classList.contains('hidden') && !resWrap.classList.contains('hidden')) performCalc();
       });
 
@@ -1124,11 +1146,13 @@
         budgetLabel.textContent=budgetPeriod==='annual'?'Annual budget (£)':'Monthly budget (£)';
         budgetToggle.textContent=budgetPeriod==='annual'?'Monthly budget (£)':'Annual budget (£)';
         budInp.value='';
+        updateFieldHighlight(budInp);
         resWrap.classList.add('hidden');
         calcDownloadWrap.classList.add('hidden');
       });
 
       pplInp.addEventListener('input',()=>{
+        updateFieldHighlight(pplInp);
         if(!pplGrp.classList.contains('hidden') && !resWrap.classList.contains('hidden')) performCalc();
       });
 
@@ -1142,6 +1166,7 @@
         let n,budget; const sqmPerPerson=parseFloat(densitySel.value || DEFAULT_SQM_PER_PERSON);
         const staffPerWS=parseFloat(hybridSel.value || 1);
         const occupancy=parseFloat(hybridSel.dataset.occ || 1);
+        const buffer = hybridSel.value==='1'?1:HYBRID_BUFFER;
         if(usePeople){
           n=parseInt(pplInp.value,10);
           if(!n||n<=0||n>2000){
@@ -1176,7 +1201,7 @@
          titleEl.textContent=loc;
           if(usePeople){
             const staff=n;
-            const workstations=Math.ceil(staff*occupancy*HYBRID_BUFFER);
+            const workstations=Math.ceil(staff*occupancy*buffer);
             const sqm=workstations*sqmPerPerson;
             const sqft=Math.round(sqm*SQM_TO_SQFT);
             areaEl.innerHTML='';
@@ -1193,7 +1218,7 @@
             const sqm=budget/cpsqm;
             const sqft=Math.round(sqm*SQM_TO_SQFT);
             const workstations=Math.floor(sqm/sqmPerPerson);
-            const staff=Math.floor((workstations/ HYBRID_BUFFER)*staffPerWS);
+            const staff=Math.floor((workstations/ buffer)*staffPerWS);
             areaEl.innerHTML='';
             renderResult(areaEl,'Of space required',`${sqft.toLocaleString()} sq ft`,false,false,true);
             renderResult(areaEl,'Workstations required',`${workstations.toLocaleString()}`,true,false,true);
@@ -1456,6 +1481,7 @@
             }else{
               locSel.value=loc.name;
               autoCalcIfReady();
+              updateComparePrompt();
               highlightSelections();
             }
             } else if(occTab.classList.contains('active')){
@@ -1538,6 +1564,7 @@
 
         // respond to location dropdown changes
         locSel.addEventListener('change',()=>{
+          updateFieldHighlight(locSel);
           const selected=LOCS.find(l=>l.name===locSel.value);
           if(!selected) return;
           const region=REGIONS.find(r=>r.name===selected.region);
@@ -1556,6 +1583,7 @@
         });
 
         locSel2.addEventListener('change',()=>{
+          updateFieldHighlight(locSel2);
           const selected=LOCS.find(l=>l.name===locSel2.value);
           if(!selected) return;
           loc2Wrap.classList.remove('hidden');
