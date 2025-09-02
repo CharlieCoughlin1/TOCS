@@ -805,13 +805,13 @@
 
       async function loadContacts(){
         if(contactsLoaded) return;
-        const res=await fetch('../Office_staff_info.csv');
+        const res=await fetch('Office_staff_info.csv');
         const text=await res.text();
         const rows=text.trim().split('\n').slice(1).map(l=>l.split(','));
         const targets=['David Earle','Oliver Du Sautoy'];
         const imgMap={
-          'David Earle':'../Agent%20photos/David%20Earle.jpg',
-          'Oliver Du Sautoy':'../Agent%20photos/Oliver%20du%20Sautoy.jpg'
+          'David Earle':'Agent%20photos/David%20Earle.jpg',
+          'Oliver Du Sautoy':'Agent%20photos/Oliver%20du%20Sautoy.jpg'
         };
         rows.filter(r=>targets.includes(r[0])).forEach(r=>{
           const [name,location,mobile,email,status]=r;
