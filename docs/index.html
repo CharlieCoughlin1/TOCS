@@ -177,7 +177,7 @@
       <div id="map" class="rounded"></div>
       <p class="mt-4 text-xs text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
       <div id="contactSection" class="mt-6 hidden">
-        <h3 class="text-xl font-din-bold mb-4">Contact us</h3>
+        <h3 class="text-2xl font-din-bold mb-4">Contact us</h3>
         <div id="contactsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
       </div>
     </section>
@@ -814,29 +814,25 @@
           'Oliver Du Sautoy':'Agent%20photos/Oliver%20du%20Sautoy.jpg'
         };
         rows.filter(r=>targets.includes(r[0])).forEach(r=>{
-          const [name,location,mobile,email,status]=r;
+          const [name,,mobile,email,status]=r;
           const card=document.createElement('div');
-          card.className='bg-gray-50 p-4 rounded shadow text-left';
+          card.className='bg-gray-50 p-6 rounded-lg shadow flex flex-col items-center text-center';
           const img=document.createElement('img');
           img.src=imgMap[name];
           img.alt=`Photo of ${name}`;
-          img.className='mb-2 w-40 h-40 object-cover mx-auto';
+          img.className='mb-3 w-32 h-32 object-cover rounded-full';
           if(name==='Oliver Du Sautoy') img.style.objectPosition='center 60%';
           card.appendChild(img);
           const nm=document.createElement('div');
-          nm.className='font-din-bold mb-1';
+          nm.className='font-din-bold mb-1 text-lg';
           nm.textContent=name;
           card.appendChild(nm);
           const st=document.createElement('div');
-          st.className='text-sm text-gray-600 min-h-[2.5rem]';
+          st.className='text-sm text-gray-600 h-12 flex items-center justify-center mb-2';
           st.textContent=status;
           card.appendChild(st);
-          const loc=document.createElement('div');
-          loc.className='text-sm text-gray-600 min-h-[1.25rem]';
-          loc.textContent=location;
-          card.appendChild(loc);
           const mob=document.createElement('div');
-          mob.className='text-sm text-gray-600 min-h-[1.25rem]';
+          mob.className='text-sm text-gray-600 mb-1';
           const mobLink=document.createElement('a');
           mobLink.href=`tel:${mobile.replace(/\s+/g,'')}`;
           mobLink.textContent=mobile;
@@ -844,7 +840,7 @@
           mob.appendChild(mobLink);
           card.appendChild(mob);
           const em=document.createElement('div');
-          em.className='text-sm text-gray-600 min-h-[1.25rem]';
+          em.className='text-sm text-gray-600';
           const emLink=document.createElement('a');
           emLink.href=`mailto:${email}`;
           emLink.textContent=email;
