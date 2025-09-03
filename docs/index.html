@@ -581,6 +581,7 @@
             page_referrer: document.referrer || null,
             user_agent: navigator.userAgent,
             session_id: getSessionId(),
+            userid: getSessionId(), // stable per-browser id
             calc_type: mode,                            // 'people' | 'budget'
             building_age: calcInputs.ageValue,
             workstation_density_m2: parseFloat(calcInputs.density),
@@ -1696,13 +1697,13 @@
           const mode = modeValue; // 'people' | 'budget'
           if (locSel.value){
             const base1 = buildEventPayloadForLocation(locSel.value, mode, calcInputs);
-            const row1  = { ...base1, user_id: getSessionId(), calc_seq: calcSeq }; // NEW FIELDS
+            const row1  = { ...base1, calc_seq: calcSeq }; // NEW FIELD
             lastCalcRows.push(row1);
             insertEvent(row1);
           }
           if (locSel2.value){
             const base2 = buildEventPayloadForLocation(locSel2.value, mode, calcInputs);
-            const row2  = { ...base2, user_id: getSessionId(), calc_seq: calcSeq }; // NEW FIELDS
+            const row2  = { ...base2, calc_seq: calcSeq }; // NEW FIELD
             lastCalcRows.push(row2);
             insertEvent(row2);
           }
