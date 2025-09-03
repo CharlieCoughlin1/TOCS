@@ -106,6 +106,8 @@
     .occ-bar-new{background:var(--lsh-red);transition:height .3s ease,opacity .3s ease;}
     .occ-bar-old{background:#6b7280;transition:height .3s ease,opacity .3s ease;}
     .tooltip-name{color:var(--lsh-red);background:none;border-radius:0;padding:0;}
+    .leaflet-tooltip.cost-tooltip{background:#fff;color:#111827;border:1px solid #d1d5db;border-radius:0.375rem;box-shadow:0 2px 6px rgba(0,0,0,0.1);padding:0;}
+    .leaflet-tooltip.cost-tooltip:before{border-top-color:#fff;}
     .compare-popup .btn{padding:0.25rem 0.5rem;font-size:0.75rem;border-radius:0.25rem;}
     .compare-popup .btn-red{background:var(--lsh-red);color:#fff;}
     .compare-popup .btn-gray{background:#e5e7eb;color:#111827;}
@@ -1895,13 +1897,13 @@
           const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:LSH_RED,fillColor:LSH_RED,fillOpacity:0.9});
           const cost=COSTS[loc.name];
           if(cost){
-            let tip = `<div class="text-xs"><div class="tooltip-name font-din-bold text-sm mb-1 text-center">${loc.name}</div>`;
-            if(cost.new) tip += `<div class="font-semibold">New build: <span class="font-light">£${cost.new.totalSqft.toFixed(2)} psf</span></div>`;
-            if(cost.old) tip += `<div class="font-semibold">20‑yr old: <span class="font-light">£${cost.old.totalSqft.toFixed(2)} psf</span></div>`;
+            let tip = `<div class="p-2 space-y-1"><div class="tooltip-name font-din-bold text-sm text-center mb-1">${loc.name}</div>`;
+            if(cost.new) tip += `<div class="flex justify-between text-xs text-gray-700"><span class="font-semibold">New build</span><span class="font-din-regular">£${cost.new.totalSqft.toFixed(2)} psf</span></div>`;
+            if(cost.old) tip += `<div class="flex justify-between text-xs text-gray-700"><span class="font-semibold">20‑yr old</span><span class="font-din-regular">£${cost.old.totalSqft.toFixed(2)} psf</span></div>`;
             tip += '</div>';
-            marker.bindTooltip(tip,{direction:'top',offset:[0,-8]});
+            marker.bindTooltip(tip,{className:'cost-tooltip',direction:'top',offset:[0,-8],opacity:1});
           }else{
-            marker.bindTooltip(`<div class="tooltip-name font-din-bold text-sm text-center">${loc.name}</div>`,{direction:'top',offset:[0,-8]});
+            marker.bindTooltip(`<div class="tooltip-name font-din-bold text-sm text-center">${loc.name}</div>`,{className:'cost-tooltip',direction:'top',offset:[0,-8],opacity:1});
           }
           marker.on('mouseover',function(){
             const tt=this.getTooltip();
