@@ -487,6 +487,115 @@
       const DEFAULT_SQM_PER_PERSON = 10;
       const MAX_ANNUAL_BUDGET  = 50_000_000;
       const MAX_MONTHLY_BUDGET = Math.ceil(MAX_ANNUAL_BUDGET / 12); // 4,166,667
+      // ===== Analytics → Supabase (INSERT-only) =====
+      const SUPABASE_URL = 'https://gtjyewrhtzvhghfthati.supabase.co';
+      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0anlld3JodHp2aGdoZnRoYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4OTQwNzQsImV4cCI6MjA3MjQ3MDA3NH0.M08J92PDe-V3_8fF_D7J-gWvXa0itaB5PoREIVp73wg';
+      const TRACK_EVENTS = true; // flip to false to silence analytics during dev
+
+      async function _insertEvent(row){
+        try{
+          const res = await fetch(`${SUPABASE_URL}/rest/v1/lsh_calculator_events`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+              'apikey': SUPABASE_ANON_KEY,
+              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+              'Prefer': 'return=minimal'
+            },
+            body: JSON.stringify(row),
+            keepalive: true // helps if user navigates away quickly
+          });
+          // Accept 201 Created or 204 No Content (min)
+          if(!res.ok && res.status !== 204) {
+            console.warn('Supabase insert failed', await res.text());
+          }
+        }catch(err){
+          console.warn('Supabase network error', err);
+        }
+      }
+
+      function _annualisedBudget(rawBudgetInput, budgetPeriod){
+        // rawBudgetInput is the numeric value from the field (no commas)
+        if(!rawBudgetInput) return 0;
+        return budgetPeriod === 'monthly' ? rawBudgetInput * 12 : rawBudgetInput;
+      }
+
+      function trackCalculateEvent(){
+        if(!TRACK_EVENTS) return;
+        // Must have the same guards as performCalc() success path
+        if(!modeValue || !ageValue || !locSel.value) return;
+        if(modeValue === 'people' && !pplInp.value) return;
+        if(modeValue === 'budget' && !budInp.value) return;
+
+        const common = {
+          page_url: location.href,
+          user_agent: navigator.userAgent,
+          calc_type: modeValue,                 // 'people' | 'budget'
+          building_age: ageValue,               // 'New' | '20'
+          workstation_density_m2: parseFloat(densitySel.value || '10'),
+          hybrid_factor: parseFloat(hybridSel.value || '1'),
+          hybrid_occupancy: parseFloat(hybridSel.dataset.occ || '1'),
+          budget_type: (modeValue==='budget' ? budgetPeriod : null)
+        };
+
+        // Build one row per selected location (so outputs are unambiguous)
+        const selected = [locSel.value].concat(locSel2.value ? [locSel2.value] : []);
+        selected.forEach(locName => {
+          const other = selected.find(n => n !== locName) || null;
+          const cpsqm = costPerSqm(locName); // £/m²
+          const density = parseFloat(densitySel.value || '10'); // m² per workstation
+          const occ = parseFloat(hybridSel.dataset.occ || '1'); // desks per staff
+          const buffer = (hybridSel.value === '1') ? 1 : HYBRID_BUFFER;
+
+          let staff_input = null;
+          let budget_value = null;           // annualised
+          let space_required_sqft = null;
+          let workstations_required = null;
+          let annual_cost = null;
+          let cost_per_workstation_annual = null;
+          let cost_per_workstation_monthly = null;
+
+          if(modeValue === 'people'){
+            const staff = parseInt(pplInp.value, 10);
+            if(!Number.isFinite(staff) || !Number.isFinite(cpsqm) || cpsqm<=0) return;
+            staff_input = staff;
+            workstations_required = Math.ceil(staff * occ * buffer);
+            const sqm = workstations_required * density;
+            space_required_sqft = Math.round(sqm * SQM_TO_SQFT);
+            annual_cost = Math.round(sqm * cpsqm);
+            cost_per_workstation_annual  = Math.round(cpsqm * density);
+            cost_per_workstation_monthly = Math.round(cost_per_workstation_annual / 12);
+          } else {
+            // budget mode → compute from annualised budget
+            const raw = parseInt(String(budInp.value).replace(/,/g,''),10);
+            budget_value = _annualisedBudget(raw, budgetPeriod);
+            if(!Number.isFinite(budget_value) || !Number.isFinite(cpsqm) || cpsqm<=0) return;
+            const sqm = budget_value / cpsqm;
+            space_required_sqft = Math.round(sqm * SQM_TO_SQFT);
+            workstations_required = Math.max(0, Math.floor(sqm / density));
+            if(workstations_required > 0){
+              cost_per_workstation_annual  = Math.round(budget_value / workstations_required);
+              cost_per_workstation_monthly = Math.round(cost_per_workstation_annual / 12);
+            }
+            // no annual_cost in budget mode (that column is primarily for people→cost)
+          }
+
+          _insertEvent({
+            ...common,
+            location1: locName,
+            location2: other,
+            staff_input,
+            budget_value,
+            space_required_sqft,
+            workstations_required,
+            annual_cost,
+            cost_per_workstation_annual,
+            cost_per_workstation_monthly
+          });
+        });
+      }
+      // ===== /Analytics =====
+
         function renderResult(el,label,valueStr,append=false,highlight=false,labelBelow=false,wrapLabel=false){
           const itemCls=highlight? 'result-item hybrid-highlight':'result-item';
           const valCls=highlight? 'result-value text-lsh-red':'result-value';
@@ -1477,7 +1586,12 @@
         setTimeout(()=>{alignResultTitles(); updateScrollbars();},50);
       }
 
-      calcBtn.addEventListener('click',()=>{calcClicked=true; performCalc();});
+      calcBtn.addEventListener('click', ()=> {
+        calcClicked = true;
+        performCalc();
+        // fire analytics after a successful render (same guards are inside trackCalculateEvent)
+        trackCalculateEvent();
+      });
       densitySel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
       hybridSel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
       costPeriodSel.addEventListener('change',updateCostPeriod);
