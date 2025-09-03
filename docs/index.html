@@ -1897,13 +1897,13 @@
           const marker=L.circleMarker(loc.coords,{radius:6,stroke:false,color:LSH_RED,fillColor:LSH_RED,fillOpacity:0.9});
           const cost=COSTS[loc.name];
           if(cost){
-            let tip = `<div class="p-2 space-y-1"><div class="tooltip-name font-din-bold text-sm text-center mb-1">${loc.name}</div>`;
-            if(cost.new) tip += `<div class="flex justify-between text-xs text-gray-700"><span class="font-semibold">New build</span><span class="font-din-regular">£${cost.new.totalSqft.toFixed(2)} psf</span></div>`;
-            if(cost.old) tip += `<div class="flex justify-between text-xs text-gray-700"><span class="font-semibold">20‑yr old</span><span class="font-din-regular">£${cost.old.totalSqft.toFixed(2)} psf</span></div>`;
-            tip += '</div>';
+            let tip = `<div class="p-2 w-48"><div class="tooltip-name font-din-bold text-sm text-center mb-2">${loc.name}</div><div class="grid grid-cols-2 gap-2 text-xs text-gray-700">`;
+            if(cost.new) tip += `<div class="bg-gray-100 rounded p-1 text-center"><div class="font-semibold">New build</div><div class="font-din-regular">£${cost.new.totalSqft.toFixed(2)} psf</div></div>`;
+            if(cost.old) tip += `<div class="bg-gray-100 rounded p-1 text-center"><div class="font-semibold">20‑yr old</div><div class="font-din-regular">£${cost.old.totalSqft.toFixed(2)} psf</div></div>`;
+            tip += '</div></div>';
             marker.bindTooltip(tip,{className:'cost-tooltip',direction:'top',offset:[0,-8],opacity:1});
           }else{
-            marker.bindTooltip(`<div class="tooltip-name font-din-bold text-sm text-center">${loc.name}</div>`,{className:'cost-tooltip',direction:'top',offset:[0,-8],opacity:1});
+            marker.bindTooltip(`<div class="tooltip-name font-din-bold text-sm text-center w-48">${loc.name}</div>`,{className:'cost-tooltip',direction:'top',offset:[0,-8],opacity:1});
           }
           marker.on('mouseover',function(){
             const tt=this.getTooltip();
