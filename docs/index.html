@@ -783,7 +783,8 @@
         // 1.666... is 5/3, matching the “3 days in office” (≈60%) intent precisely.
         const HYBRID_RATIOS = [1, 1.25, 1.6666666667, 2.5, 5];
         const HYBRID_OCC    = HYBRID_RATIOS.map(r => 1 / r); // 1.00, 0.80, 0.60, 0.40, 0.20
-          const fmtRatio = x => (Math.round(x*100)/100).toFixed(2);
+          // Format ratios without unnecessary trailing zeros (e.g. 1:1 instead of 1:1.00)
+          const fmtRatio = x => parseFloat((Math.round(x*100)/100).toFixed(2)).toString();
           const HYBRID_DETAILS=[
           'Suitable for an average of 5 days in office per week',
           'Suitable for an average of 4 days in office per week',
@@ -1829,9 +1830,8 @@
         const markers={};
         choicePopup=null;
         function updateMarkerSize(){
-          const z=map.getZoom();
-          // enlarge markers on the whole‑UK view for consistency with regional zoom levels
-          const r=z<6?4:(z<9?6:8);
+          // Keep markers a consistent size across all zoom levels
+          const r=6;
           Object.values(markers).forEach(m=>m.setRadius(r));
         }
         map.on('zoom',updateMarkerSize);
