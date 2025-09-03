@@ -176,10 +176,8 @@
       <div id="regionToggle" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="map" class="rounded"></div>
       <p class="mt-4 text-xs text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
-      <div id="contactSection" class="mt-6 hidden">
-        <h3 class="text-2xl font-din-bold mb-4">Contact us</h3>
-        <div id="contactsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4"></div>
-      </div>
+      <h3 id="contactHeading" class="text-2xl font-din-bold mt-6 mb-4 hidden">Contact us</h3>
+      <div id="contactsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden"></div>
     </section>
 
     <!-- Calculator / Occupancy -->
@@ -674,7 +672,7 @@
       const extrasWrap=$('extrasWrap');
       const calcBtn=$('calcBtn');
       const calcBtnWrap=$('calcBtnWrap');
-      const contactSection=$('contactSection');
+      const contactHeading=$('contactHeading');
       const contactsContainer=$('contactsContainer');
       const costPeriodSel=$('costPeriod');
       const budgetToggle=$('budgetToggle');
@@ -815,13 +813,17 @@
         const res=await fetch('Office_staff_info.csv');
         const text=await res.text();
         const rows=text.trim().split('\n').slice(1).map(l=>l.split(','));
-        const targets=['David Earle','Oliver Du Sautoy'];
+        const targets=['David Earle','Peter Musgrove','Matthew Walker','Oliver Du Sautoy'];
         const imgMap={
           'David Earle':'Agent%20photos/David%20Earle.jpg',
+          'Peter Musgrove':'Agent%20photos/Peter%20Musgrove.jpg',
+          'Matthew Walker':'Agent%20photos/Matthew%20Walker.jpg',
           'Oliver Du Sautoy':'Agent%20photos/Oliver%20du%20Sautoy.jpg'
         };
-        rows.filter(r=>targets.includes(r[0])).forEach(r=>{
-          const [name,,mobile,email,status]=r;
+        targets.forEach(name=>{
+          const r=rows.find(row=>row[0]===name);
+          if(!r) return;
+          const [,,mobile,email,status]=r;
           const card=document.createElement('div');
           card.className='bg-gray-50 p-6 rounded-lg shadow flex flex-col items-center text-center';
           const img=document.createElement('img');
@@ -861,20 +863,13 @@
 
       function showContacts(){
         loadContacts();
-        contactSection.classList.remove('hidden');
-        requestAnimationFrame(()=>{
-          const heading=contactSection.querySelector('h3');
-          if(heading && title1){
-            const offset=title1.getBoundingClientRect().top-heading.getBoundingClientRect().top;
-            const current=parseFloat(getComputedStyle(contactSection).marginTop)||0;
-            contactSection.style.marginTop=`${current+offset}px`;
-          }
-        });
+        contactHeading.classList.remove('hidden');
+        contactsContainer.classList.remove('hidden');
       }
 
       function hideContacts(){
-        contactSection.classList.add('hidden');
-        contactSection.style.marginTop='';
+        contactHeading.classList.add('hidden');
+        contactsContainer.classList.add('hidden');
       }
 
       function toggleInputs(){
