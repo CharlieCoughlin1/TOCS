@@ -584,11 +584,11 @@
           };
 
           // Ensure non-PII analytics rows never include contact data
-          payload.company = null;
-          payload.contact_name = null;
-          payload.contact_email = null;
-          payload.contact_phone = null;
-          payload.marketing_opt_in = null;
+          payload.company = '';
+          payload.contact_name = '';
+          payload.contact_email = '';
+          payload.contact_phone = '';
+          payload.marketing_opt_in = false;
           payload.is_lead = false;
 
           // Compute outputs deterministically (same formulas you display)
@@ -643,6 +643,7 @@
 
         async function insertEvent(row){
           try{
+            console.log('Sending event to Supabase:', row);
             const { error } = await supabase.from('lsh_calculator_events').insert(row);
             if(error) console.error('Supabase insert error:', error);
           }catch(e){
@@ -1733,10 +1734,10 @@
             for (const baseRow of lastCalcRows){
               const row = {
                 ...baseRow,
-                company: lead.company || null,
-                contact_name: lead.contact_name || null,
-                contact_email: lead.contact_email || null,
-                contact_phone: lead.contact_phone || null,
+                company: lead.company || '',
+                contact_name: lead.contact_name || '',
+                contact_email: lead.contact_email || '',
+                contact_phone: lead.contact_phone || '',
                 marketing_opt_in: !!lead.marketing_opt_in,
                 is_lead: true
               };
