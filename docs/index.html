@@ -111,6 +111,10 @@
     .compare-popup .btn-gray{background:#e5e7eb;color:#111827;}
     .remove-btn{position:absolute;top:0;right:0;padding:0 0.25rem;line-height:1;font-size:0.875rem;}
     .remove-btn:hover{color:var(--lsh-red);}
+    .add-btn{position:absolute;top:0;right:-1.25rem;padding:0 0.25rem;line-height:1;font-size:0.875rem;}
+    .add-btn:hover{color:var(--lsh-red);}
+    #peopleInput::-webkit-outer-spin-button,#peopleInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
+    #peopleInput{-moz-appearance:textfield;}
     .table-remove{position:sticky;right:0;top:0;z-index:10;}
     .occ-placeholder{display:flex;align-items:center;justify-content:center;font-size:2rem;color:#cbd5e0;}
     .placeholder-col{border:2px dashed #cbd5e0;}
@@ -208,6 +212,7 @@
           <div id="loc1Wrap" class="flex-1 relative">
             <label for="locationSelect" class="block text-lg font-din-bold text-gray-700 mb-1">Location</label>
             <button id="removeLoc1" class="remove-btn hidden" aria-label="Remove location 1">&times;</button>
+            <button id="addLoc2" class="add-btn hidden" aria-label="Add location 2">+</button>
             <div>
               <select id="locationSelect" class="w-full border rounded p-2 mb-1 bg-white">
                 <option value="" disabled selected>Please select</option>
@@ -521,6 +526,7 @@
       const locSel2=$('locationSelect2');
       const removeLoc1=$('removeLoc1');
       const removeLoc2=$('removeLoc2');
+      const addLoc2=$('addLoc2');
       const loc2Wrap=$('loc2Wrap');
       const comparePrompt=$('comparePrompt');
       const calcClear=$('calcClear');
@@ -814,24 +820,28 @@
         const res=await fetch('Office_staff_info.csv');
         const text=await res.text();
         const rows=text.trim().split('\n').slice(1).map(l=>l.split(','));
-        const targets=['David Earle','Peter Musgrove','Matthew Walker','Oliver Du Sautoy'];
+        const targets=['David Earle','Peter Musgrove','Matthew Walker','Oliver du Sautoy'];
         const imgMap={
           'David Earle':'Agent%20photos/David%20Earle.jpg',
           'Peter Musgrove':'Agent%20photos/Peter%20Musgrove.jpg',
           'Matthew Walker':'Agent%20photos/Matthew%20Walker.jpg',
-          'Oliver Du Sautoy':'Agent%20photos/Oliver%20du%20Sautoy.jpg'
+          'Oliver du Sautoy':'Agent%20photos/Oliver%20du%20Sautoy.jpg'
         };
-        targets.forEach(name=>{
+        targets.forEach((name,i)=>{
           const r=rows.find(row=>row[0]===name);
           if(!r) return;
           const [,,mobile,email,status]=r;
           const card=document.createElement('div');
           card.className='bg-gray-50 p-6 rounded-lg shadow flex flex-col items-center text-center';
+          card.classList.add('fade-in');
+          card.style.opacity=0;
+          card.style.animationDelay=`${i*0.2}s`;
+          card.style.animationFillMode='forwards';
           const img=document.createElement('img');
           img.src=imgMap[name];
           img.alt=`Photo of ${name}`;
           img.className='mb-3 w-32 h-40 object-cover rounded-lg';
-          if(name==='Oliver Du Sautoy') img.style.objectPosition='center 60%';
+          if(name==='Oliver du Sautoy') img.style.objectPosition='center 60%';
           card.appendChild(img);
           const nm=document.createElement('div');
           nm.className='font-din-bold mb-1 text-lg';
@@ -1100,6 +1110,7 @@
         modeButtons.forEach(b=>b.classList.remove('active'));
         ageButtons.forEach(b=>b.classList.remove('active'));
         loc2Wrap.classList.add('hidden');
+        addLoc2.classList.add('hidden');
         resWrap.classList.add('hidden');
         calcDownloadWrap.classList.add('hidden');
         hideContacts();
@@ -1118,6 +1129,7 @@
       removeLoc2.addEventListener('click',()=>{
         locSel2.value='';
         loc2Wrap.classList.add('hidden');
+        addLoc2.classList.remove('hidden');
         highlightSelections();
         updateComparePrompt();
         autoCalcIfReady();
@@ -1130,9 +1142,16 @@
         }else{
           locSel.value='';
         }
+        addLoc2.classList.add('hidden');
         highlightSelections();
         updateComparePrompt();
         autoCalcIfReady();
+      });
+      addLoc2.addEventListener('click',()=>{
+        loc2Wrap.classList.remove('hidden');
+        addLoc2.classList.add('hidden');
+        highlightSelections();
+        updateComparePrompt();
       });
 
       function buildCSV(){
@@ -1781,10 +1800,12 @@
         switchTab('occ');
 
         [locSel,locSel2].forEach(sel=>{
-          sel.addEventListener('focus',()=>{
+          const reset=()=>{
             sel.classList.remove('bg-lsh-red','text-white');
             sel.classList.add('bg-white');
-          });
+          };
+          sel.addEventListener('focus',reset);
+          sel.addEventListener('mousedown',reset);
           sel.addEventListener('blur',()=>updateFieldHighlight(sel));
         });
 
@@ -1795,6 +1816,7 @@
           if(!selected) return;
           const region=REGIONS.find(r=>r.name===selected.region);
           loc2Wrap.classList.remove('hidden');
+          addLoc2.classList.add('hidden');
           if(region && locSel2.value){
             regionToggle.querySelectorAll('button').forEach(b=>b.classList.remove('active'));
             const btn=Array.from(regionToggle.children).find(b=>b.textContent===region.name);
