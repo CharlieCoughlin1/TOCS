@@ -319,7 +319,7 @@
         <div id="leadWrap" class="mt-6 hidden">
           <div class="bg-white p-4 rounded border">
             <div class="flex items-center justify-between mb-2">
-              <h4 class="text-lg font-din-bold">Want a local expert to follow up?</h4>
+              <h4 class="text-lg font-din-bold">Explore your options with one of our local experts.</h4>
               <span class="text-xs text-gray-500">Optional</span>
             </div>
 
@@ -352,7 +352,7 @@
 
             <div class="mt-3 flex flex-wrap gap-2 items-center">
               <button id="leadSaveBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold">Send my details</button>
-              <span id="leadMsg" class="text-sm text-green-700 hidden">Thanks — details received.</span>
+              <span id="leadMsg" class="text-sm text-green-700 hidden">Details sent</span>
             </div>
 
             <p class="text-xs text-gray-500 mt-2">
@@ -411,7 +411,7 @@
       </div>
     </section>
   </main>
-  <footer class="text-center text-sm text-gray-400 py-6 font-din-light">© Lambert Smith Hampton — Prototype tool for illustration only.</footer>
+  <footer class="text-center text-sm text-gray-400 py-6 font-din-light">© Lambert Smith Hampton — All rights reserved.</footer>
 
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="costs.js"></script>
@@ -1744,9 +1744,7 @@
             }
           }
 
-          leadMsg.textContent = 'Thanks — details received.';
-          leadMsg.classList.remove('hidden','text-red-700');
-          leadMsg.classList.add('text-green-700');
+          leadWrap.innerHTML = '<p class="text-sm text-green-700">Details sent</p>';
         });
 
         toggleInputs(); // initialise visibility
