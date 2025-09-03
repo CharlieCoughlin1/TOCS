@@ -182,8 +182,8 @@
       <div id="map" class="rounded"></div>
       <p class="mt-4 text-xs text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
       <h3 id="contactHeading" class="text-2xl font-din-bold mt-6 mb-2 hidden">Contact us</h3>
-      <p id="contactSubheading" class="text-base text-gray-700 font-din-light mb-4 hidden">
-        For further advice on your workspace requirements please reach out to one of our experts
+      <p id="contactSubheading" class="text-sm text-gray-700 font-din-light mb-4 hidden">
+        For further advice on your workspace requirements, please reach out to one of our experts
       </p>
       <div id="contactsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden"></div>
     </section>
@@ -583,15 +583,13 @@
             location2: (locName===locSel.value? (locSel2.value||null) : null)
           };
 
-          // Merge saved lead (if any)
-          const lead = getSavedLead();
-          if(lead && (lead.company || lead.contact_email || lead.contact_name || lead.contact_phone)){
-            payload.company         = lead.company || null;
-            payload.contact_name    = lead.contact_name || null;
-            payload.contact_email   = lead.contact_email || null;
-            payload.contact_phone   = lead.contact_phone || null;
-            payload.marketing_opt_in= !!lead.marketing_opt_in;
-          }
+          // Ensure non-PII analytics rows never include contact data
+          payload.company = null;
+          payload.contact_name = null;
+          payload.contact_email = null;
+          payload.contact_phone = null;
+          payload.marketing_opt_in = null;
+          payload.is_lead = false;
 
           // Compute outputs deterministically (same formulas you display)
           const SQFT_PER_SQM = 10.76391041671;
@@ -1707,7 +1705,7 @@
         leadSaveBtn.addEventListener('click', async (e)=>{
           e.preventDefault();
 
-          // Bot honeypot
+          // Honeypot (bot trap)
           if (leadHP && leadHP.value) return;
 
           const lead = {
@@ -1718,7 +1716,7 @@
             marketing_opt_in: !!leadOptIn.checked
           };
 
-          // Basic checks (email optional but recommended)
+          // Optional email validation
           if (lead.contact_email && !validEmail(lead.contact_email)){
             leadMsg.classList.remove('hidden');
             leadMsg.textContent = 'Please enter a valid email.';
@@ -1727,12 +1725,14 @@
             return;
           }
 
+          // Prefill convenience only (not used in analytics)
           saveLeadToLocal(lead);
 
-          // If we have a last calculation, create a dedicated "lead" row now
+          // Create dedicated lead rows with PII (one per location in the last calc)
           if (lastCalcRows.length){
             for (const baseRow of lastCalcRows){
-              const row = { ...baseRow,
+              const row = {
+                ...baseRow,
                 company: lead.company || null,
                 contact_name: lead.contact_name || null,
                 contact_email: lead.contact_email || null,
