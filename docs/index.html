@@ -601,7 +601,7 @@
           payload.is_lead = false;
 
           // Compute outputs deterministically (same formulas you display)
-          const SQFT_PER_SQM = 10.76391041671;
+          const SQFT_PER_SQM = SQM_TO_SQFT;
           const sqmPerPerson = parseFloat(calcInputs.density);
           const cpsqm = costPerSqm(locName); // £/m²
 
@@ -624,9 +624,10 @@
             });
           } else {
             // budget mode
+            const cleanedBudget = String(calcInputs.budgetValue || '').replace(/,/g,'');
             const annualBudget = (calcInputs.budgetPeriod==='monthly')
-              ? (calcInputs.annualBudgetRaw ? parseInt(calcInputs.annualBudgetRaw,10) : parseInt(calcInputs.budgetValue,10)*12)
-              : parseInt(calcInputs.budgetValue,10);
+              ? (calcInputs.annualBudgetRaw ? parseInt(calcInputs.annualBudgetRaw,10) : parseInt(cleanedBudget,10)*12)
+              : parseInt(cleanedBudget,10);
 
             let sqm=0, sqft=0, workstations=0, staff=0;
             if (cpsqm > 0) {
@@ -638,7 +639,7 @@
             }
 
             Object.assign(payload, {
-              budget_value: parseInt(calcInputs.budgetValue.replace(/,/g,''),10),
+              budget_value: parseInt(cleanedBudget,10),
               space_required_sqft: sqft,
               workstations_required: workstations,
               annual_cost: null,
@@ -782,7 +783,7 @@
         // 1.666... is 5/3, matching the “3 days in office” (≈60%) intent precisely.
         const HYBRID_RATIOS = [1, 1.25, 1.6666666667, 2.5, 5];
         const HYBRID_OCC    = HYBRID_RATIOS.map(r => 1 / r); // 1.00, 0.80, 0.60, 0.40, 0.20
-          const fmtRatio = x => Number((Math.round(x*100)/100).toFixed(2)).toString();
+          const fmtRatio = x => (Math.round(x*100)/100).toFixed(2);
           const HYBRID_DETAILS=[
           'Suitable for an average of 5 days in office per week',
           'Suitable for an average of 4 days in office per week',
@@ -1020,7 +1021,7 @@
         const imgMap={
           'David Earle':'Agent%20photos/David%20Earle.jpg',
           'Peter Musgrove':'Agent%20photos/Peter%20Musgrove.jpg',
-          'Matthew Walker':'Agent%20photos/Matt%20Walker.jpg',
+          'Matthew Walker':'Agent%20photos/Matthew%20Walker.jpg',
           'Oliver du Sautoy':'Agent%20photos/Oliver%20du%20Sautoy.jpg'
         };
         targets.forEach((name,i)=>{
@@ -1406,7 +1407,7 @@
         const header=['Location','Building age',usePeople?'Staff':budgetLabel,'Workstation density (m\u00B2 per workstation NIA)','Hybrid working factor (staff per workstation)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const densityLabel=densitySel.value;
-        const hybridLabel='1:'+fmtRatio(parseFloat(hybridSel.value));
+        const hybridLabel='1:'+String(hybridSel.value);
         const lines=['Lambert Smith Hampton', '', header.join(',')];
         const sqmPerPerson=parseFloat(densityLabel || DEFAULT_SQM_PER_PERSON);
         const n=usePeople?parseInt(pplInp.value,10):0;
@@ -1605,11 +1606,19 @@
             renderResult(areaEl,'Workstations required',`${workstations.toLocaleString()}`,true,false,true);
             pplEl.innerHTML='';
             pplEl.classList.add('hidden');
-            const totalCost=Math.round(sqm*cpsqm);
-            const perWS=Math.round(cpsqm*sqmPerPerson);
-            costEl.dataset.annualCost=totalCost;
-            costEl.dataset.annualPerWs=perWS;
-            costEl.innerHTML='';
+            if (cpsqm <= 0) {
+              delete costEl.dataset.annualCost;
+              delete costEl.dataset.annualPerWs;
+              costEl.innerHTML='';
+              renderResult(costEl,'Annual cost','N/A');
+              renderResult(costEl,'Total per workstation (annual)','N/A',true,false,false,!!locSel2.value);
+            } else {
+              const totalCost=Math.round(sqm*cpsqm);
+              const perWS=Math.round(cpsqm*sqmPerPerson);
+              costEl.dataset.annualCost=totalCost;
+              costEl.dataset.annualPerWs=perWS;
+              costEl.innerHTML='';
+            }
           } else {
             // Reuse already-computed cost/m²; still guard against zero.
             areaEl.innerHTML='';
@@ -1767,7 +1776,7 @@
 
       // Map ------------------------------------------------------------------
       if(typeof L!=='undefined'){
-        map=L.map('map',{zoomControl:false,attributionControl:false,preferCanvas:true}).setView(REGIONS[0].center,REGIONS[0].zoom);
+        map=L.map('map',{zoomControl:false,attributionControl:false,preferCanvas:true,scrollWheelZoom:false,doubleClickZoom:false,touchZoom:false}).setView(REGIONS[0].center,REGIONS[0].zoom);
         L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png',{subdomains:'abcd',attribution:'&copy; OpenStreetMap & CartoDB'}).addTo(map);
 
         function tooltipDir(latlng){
@@ -1822,7 +1831,7 @@
         function updateMarkerSize(){
           const z=map.getZoom();
           // enlarge markers on the whole‑UK view for consistency with regional zoom levels
-          const r=z<6?6:(z<9?6:8);
+          const r=z<6?4:(z<9?6:8);
           Object.values(markers).forEach(m=>m.setRadius(r));
         }
         map.on('zoom',updateMarkerSize);
