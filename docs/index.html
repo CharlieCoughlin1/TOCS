@@ -64,6 +64,7 @@
     }
     .result-item.hybrid-highlight{border:2px solid var(--lsh-red);}
     .result-item + .result-item{margin-top:0.5rem;}
+    #resultContainer.single .result-item{flex:1 1 100%; width:100%;}
     .result-scroll{
       overflow-x:hidden;
       overflow-y:hidden;
@@ -598,7 +599,7 @@
         // 1.666... is 5/3, matching the “3 days in office” (≈60%) intent precisely.
         const HYBRID_RATIOS = [1, 1.25, 1.6666666667, 2.5, 5];
         const HYBRID_OCC    = HYBRID_RATIOS.map(r => 1 / r); // 1.00, 0.80, 0.60, 0.40, 0.20
-        const fmtRatio = (x)=> (Math.round(x*100)/100).toFixed(2);
+        const fmtRatio = x => Number((Math.round(x*100)/100).toFixed(2)).toString();
         const HYBRID_BUFFER=1.1;
         const HYBRID_DETAILS=[
           'Suitable for an average of 5 days in office per week',
@@ -1188,7 +1189,7 @@
         const header=['Location','Building age',usePeople?'Staff':budgetLabel,'Workstation density (m\u00B2 per workstation NIA)','Hybrid working factor (staff per workstation)',...metricHeaders];
         const ageLabel=ageValue==='New'? 'New build':'20-yr old';
         const densityLabel=densitySel.value;
-        const hybridLabel='1:'+hybridSel.value;
+        const hybridLabel='1:'+fmtRatio(parseFloat(hybridSel.value));
         const lines=['Lambert Smith Hampton', '', header.join(',')];
         const sqmPerPerson=parseFloat(densityLabel || DEFAULT_SQM_PER_PERSON);
         const n=usePeople?parseInt(pplInp.value,10):0;
