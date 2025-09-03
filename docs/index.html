@@ -431,9 +431,17 @@
           if(!sid){
             if (window.crypto && crypto.randomUUID) sid = crypto.randomUUID();
             else sid = String(Date.now()) + '-' + Math.random().toString(16).slice(2);
-            localStorage.setItem('lsh_sid', sid);
+          localStorage.setItem('lsh_sid', sid);
           }
           return sid;
+        }
+
+        // Monotonic per-browser click counter (persists in localStorage)
+        let __calcSeq = parseInt(localStorage.getItem('lsh_calc_seq') || '0', 10);
+        function nextCalcSeq(){
+          __calcSeq += 1;
+          localStorage.setItem('lsh_calc_seq', String(__calcSeq));
+          return __calcSeq;
         }
 
         // Lead local storage
@@ -1680,16 +1688,21 @@
             annualBudgetRaw
           };
 
+          // One sequence number per Calculate click (shared by both locations)
+          const calcSeq = nextCalcSeq();
+
           // Build rows (one per location shown)
           lastCalcRows = [];
           const mode = modeValue; // 'people' | 'budget'
           if (locSel.value){
-            const row1 = buildEventPayloadForLocation(locSel.value, mode, calcInputs);
+            const base1 = buildEventPayloadForLocation(locSel.value, mode, calcInputs);
+            const row1  = { ...base1, user_id: getSessionId(), calc_seq: calcSeq }; // NEW FIELDS
             lastCalcRows.push(row1);
             insertEvent(row1);
           }
           if (locSel2.value){
-            const row2 = buildEventPayloadForLocation(locSel2.value, mode, calcInputs);
+            const base2 = buildEventPayloadForLocation(locSel2.value, mode, calcInputs);
+            const row2  = { ...base2, user_id: getSessionId(), calc_seq: calcSeq }; // NEW FIELDS
             lastCalcRows.push(row2);
             insertEvent(row2);
           }
