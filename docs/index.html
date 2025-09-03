@@ -181,7 +181,10 @@
       <div id="regionToggle" class="flex flex-wrap gap-2 mb-4"></div>
       <div id="map" class="rounded"></div>
       <p class="mt-4 text-xs text-gray-500 font-din-light">Hover a marker to view rental rates; click to select.</p>
-      <h3 id="contactHeading" class="text-2xl font-din-bold mt-6 mb-4 hidden">Contact us</h3>
+      <h3 id="contactHeading" class="text-2xl font-din-bold mt-6 mb-2 hidden">Contact us</h3>
+      <p id="contactSubheading" class="text-base text-gray-700 font-din-light mb-4 hidden">
+        For further advice on your workspace requirements please reach out to one of our experts
+      </p>
       <div id="contactsContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 hidden"></div>
     </section>
 
@@ -845,6 +848,7 @@
       const calcBtn=$('calcBtn');
       const calcBtnWrap=$('calcBtnWrap');
       const contactHeading=$('contactHeading');
+      const contactSubheading=$('contactSubheading');
       const contactsContainer=$('contactsContainer');
       const costPeriodSel=$('costPeriod');
       const budgetToggle=$('budgetToggle');
@@ -1059,11 +1063,13 @@
       function showContacts(){
         loadContacts();
         contactHeading.classList.remove('hidden');
+        contactSubheading.classList.remove('hidden');
         contactsContainer.classList.remove('hidden');
       }
 
       function hideContacts(){
         contactHeading.classList.add('hidden');
+        contactSubheading.classList.add('hidden');
         contactsContainer.classList.add('hidden');
       }
 
