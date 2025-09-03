@@ -313,6 +313,51 @@
           <p class="mt-4 text-xs text-gray-500 font-din-light">Indicative costs are based on LSH office costs data, last updated June 2025.</p>
         </div>
 
+        <div id="leadWrap" class="mt-6 hidden">
+          <div class="bg-white p-4 rounded border">
+            <div class="flex items-center justify-between mb-2">
+              <h4 class="text-lg font-din-bold">Want a local expert to follow up?</h4>
+              <span class="text-xs text-gray-500">Optional</span>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label class="text-sm text-gray-700">Company</label>
+                <input id="leadCompany" type="text" class="w-full border rounded p-2" placeholder="Your company" />
+              </div>
+              <div>
+                <label class="text-sm text-gray-700">Your name</label>
+                <input id="leadName" type="text" class="w-full border rounded p-2" placeholder="Jane Smith" />
+              </div>
+              <div>
+                <label class="text-sm text-gray-700">Email</label>
+                <input id="leadEmail" type="email" class="w-full border rounded p-2" placeholder="name@company.com" />
+              </div>
+              <div>
+                <label class="text-sm text-gray-700">Phone (optional)</label>
+                <input id="leadPhone" type="tel" class="w-full border rounded p-2" placeholder="+44 ..." />
+              </div>
+            </div>
+
+            <label class="flex items-center gap-2 text-sm text-gray-700 mt-3">
+              <input id="leadOptIn" type="checkbox" class="h-4 w-4" />
+              I agree to be contacted about my enquiry.
+            </label>
+
+            <!-- Honeypot (bot trap) -->
+            <input id="leadHP" type="text" class="hidden" autocomplete="off" tabindex="-1" />
+
+            <div class="mt-3 flex flex-wrap gap-2 items-center">
+              <button id="leadSaveBtn" class="bg-lsh-red hover:bg-lsh-red-dark text-white px-4 py-2 rounded font-din-bold">Send my details</button>
+              <span id="leadMsg" class="text-sm text-green-700 hidden">Thanks — details received.</span>
+            </div>
+
+            <p class="text-xs text-gray-500 mt-2">
+              By submitting, you consent to us storing your details to follow up on this enquiry. See our privacy notice.
+            </p>
+          </div>
+        </div>
+
         <div id="calcDownloadWrap" class="flex justify-end mt-2 hidden">
           <div class="relative">
             <button id="calcDownloadBtn" class="p-1" aria-label="Download">
@@ -368,10 +413,38 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="costs.js"></script>
   <script src="extras.js"></script>
-  <script>
-    if(typeof L==='undefined'){console.error('Leaflet failed to load.');}
-    (function(){
-      const AGE_MAP={ '20':'old', New:'new' };
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+      if(typeof L==='undefined'){console.error('Leaflet failed to load.');}
+      (function(){
+        // ---- Supabase init ----
+        const SUPABASE_URL = 'https://gtjyewrhtzvhghfthati.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0anlld3JodHp2aGdoZnRoYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4OTQwNzQsImV4cCI6MjA3MjQ3MDA3NH0.M08J92PDe-V3_8fF_D7J-gWvXa0itaB5PoREIVp73wg';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+        // Stable per-browser session id
+        function getSessionId(){
+          let sid = localStorage.getItem('lsh_sid');
+          if(!sid){
+            if (window.crypto && crypto.randomUUID) sid = crypto.randomUUID();
+            else sid = String(Date.now()) + '-' + Math.random().toString(16).slice(2);
+            localStorage.setItem('lsh_sid', sid);
+          }
+          return sid;
+        }
+
+        // Lead local storage
+        function getSavedLead(){
+          try { return JSON.parse(localStorage.getItem('lsh_lead') || '{}'); } catch(e){ return {}; }
+        }
+        function saveLeadToLocal(lead){
+          localStorage.setItem('lsh_lead', JSON.stringify(lead||{}));
+        }
+
+        // Simple email check
+        function validEmail(s){ return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(s||'').trim()); }
+
+        const AGE_MAP={ '20':'old', New:'new' };
       const ENABLE_DOWNLOADS=false; // toggle to enable CSV downloads
       const style=getComputedStyle(document.documentElement);
       const LSH_RED=style.getPropertyValue('--lsh-red').trim()||'#cc2030';
@@ -484,117 +557,101 @@
       // ---------- helpers ----------
       // more precise sqm to sqft conversion
       const SQM_TO_SQFT = 10.76391041671;
-      const DEFAULT_SQM_PER_PERSON = 10;
-      const MAX_ANNUAL_BUDGET  = 50_000_000;
-      const MAX_MONTHLY_BUDGET = Math.ceil(MAX_ANNUAL_BUDGET / 12); // 4,166,667
-      // ===== Analytics → Supabase (INSERT-only) =====
-      const SUPABASE_URL = 'https://gtjyewrhtzvhghfthati.supabase.co';
-      const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0anlld3JodHp2aGdoZnRoYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4OTQwNzQsImV4cCI6MjA3MjQ3MDA3NH0.M08J92PDe-V3_8fF_D7J-gWvXa0itaB5PoREIVp73wg';
-      const TRACK_EVENTS = true; // flip to false to silence analytics during dev
+        const DEFAULT_SQM_PER_PERSON = 10;
+        const MAX_ANNUAL_BUDGET  = 50_000_000;
+        const MAX_MONTHLY_BUDGET = Math.ceil(MAX_ANNUAL_BUDGET / 12); // 4,166,667
+        const HYBRID_BUFFER=1.1;
 
-      async function _insertEvent(row){
-        try{
-          const res = await fetch(`${SUPABASE_URL}/rest/v1/lsh_calculator_events`, {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-              'apikey': SUPABASE_ANON_KEY,
-              'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-              'Prefer': 'return=minimal'
-            },
-            body: JSON.stringify(row),
-            keepalive: true // helps if user navigates away quickly
-          });
-          // Accept 201 Created or 204 No Content (min)
-          if(!res.ok && res.status !== 204) {
-            console.warn('Supabase insert failed', await res.text());
-          }
-        }catch(err){
-          console.warn('Supabase network error', err);
-        }
-      }
-
-      function _annualisedBudget(rawBudgetInput, budgetPeriod){
-        // rawBudgetInput is the numeric value from the field (no commas)
-        if(!rawBudgetInput) return 0;
-        return budgetPeriod === 'monthly' ? rawBudgetInput * 12 : rawBudgetInput;
-      }
-
-      function trackCalculateEvent(){
-        if(!TRACK_EVENTS) return;
-        // Must have the same guards as performCalc() success path
-        if(!modeValue || !ageValue || !locSel.value) return;
-        if(modeValue === 'people' && !pplInp.value) return;
-        if(modeValue === 'budget' && !budInp.value) return;
-
-        const common = {
-          page_url: location.href,
-          user_agent: navigator.userAgent,
-          calc_type: modeValue,                 // 'people' | 'budget'
-          building_age: ageValue,               // 'New' | '20'
-          workstation_density_m2: parseFloat(densitySel.value || '10'),
-          hybrid_factor: parseFloat(hybridSel.value || '1'),
-          hybrid_occupancy: parseFloat(hybridSel.dataset.occ || '1'),
-          budget_type: (modeValue==='budget' ? budgetPeriod : null)
-        };
-
-        // Build one row per selected location (so outputs are unambiguous)
-        const selected = [locSel.value].concat(locSel2.value ? [locSel2.value] : []);
-        selected.forEach(locName => {
-          const other = selected.find(n => n !== locName) || null;
-          const cpsqm = costPerSqm(locName); // £/m²
-          const density = parseFloat(densitySel.value || '10'); // m² per workstation
-          const occ = parseFloat(hybridSel.dataset.occ || '1'); // desks per staff
-          const buffer = (hybridSel.value === '1') ? 1 : HYBRID_BUFFER;
-
-          let staff_input = null;
-          let budget_value = null;           // annualised
-          let space_required_sqft = null;
-          let workstations_required = null;
-          let annual_cost = null;
-          let cost_per_workstation_annual = null;
-          let cost_per_workstation_monthly = null;
-
-          if(modeValue === 'people'){
-            const staff = parseInt(pplInp.value, 10);
-            if(!Number.isFinite(staff) || !Number.isFinite(cpsqm) || cpsqm<=0) return;
-            staff_input = staff;
-            workstations_required = Math.ceil(staff * occ * buffer);
-            const sqm = workstations_required * density;
-            space_required_sqft = Math.round(sqm * SQM_TO_SQFT);
-            annual_cost = Math.round(sqm * cpsqm);
-            cost_per_workstation_annual  = Math.round(cpsqm * density);
-            cost_per_workstation_monthly = Math.round(cost_per_workstation_annual / 12);
-          } else {
-            // budget mode → compute from annualised budget
-            const raw = parseInt(String(budInp.value).replace(/,/g,''),10);
-            budget_value = _annualisedBudget(raw, budgetPeriod);
-            if(!Number.isFinite(budget_value) || !Number.isFinite(cpsqm) || cpsqm<=0) return;
-            const sqm = budget_value / cpsqm;
-            space_required_sqft = Math.round(sqm * SQM_TO_SQFT);
-            workstations_required = Math.max(0, Math.floor(sqm / density));
-            if(workstations_required > 0){
-              cost_per_workstation_annual  = Math.round(budget_value / workstations_required);
-              cost_per_workstation_monthly = Math.round(cost_per_workstation_annual / 12);
-            }
-            // no annual_cost in budget mode (that column is primarily for people→cost)
-          }
-
-          _insertEvent({
-            ...common,
+        function buildEventPayloadForLocation(locName, mode, calcInputs){
+          // calcInputs: { ageValue, density, hybridRatio, hybridOcc, budgetPeriod, budgetValue, staffCount, annualBudgetRaw }
+          const payload = {
+            ts: new Date().toISOString(),
+            page_url: location.href,
+            page_referrer: document.referrer || null,
+            user_agent: navigator.userAgent,
+            session_id: getSessionId(),
+            calc_type: mode,                            // 'people' | 'budget'
+            building_age: calcInputs.ageValue,
+            workstation_density_m2: parseFloat(calcInputs.density),
+            hybrid_factor: parseFloat(calcInputs.hybridRatio),
+            hybrid_occupancy: parseFloat(calcInputs.hybridOcc),
+            budget_type: mode==='budget' ? calcInputs.budgetPeriod : null,
             location1: locName,
-            location2: other,
-            staff_input,
-            budget_value,
-            space_required_sqft,
-            workstations_required,
-            annual_cost,
-            cost_per_workstation_annual,
-            cost_per_workstation_monthly
-          });
-        });
-      }
-      // ===== /Analytics =====
+            location2: (locName===locSel.value? (locSel2.value||null) : null)
+          };
+
+          // Merge saved lead (if any)
+          const lead = getSavedLead();
+          if(lead && (lead.company || lead.contact_email || lead.contact_name || lead.contact_phone)){
+            payload.company         = lead.company || null;
+            payload.contact_name    = lead.contact_name || null;
+            payload.contact_email   = lead.contact_email || null;
+            payload.contact_phone   = lead.contact_phone || null;
+            payload.marketing_opt_in= !!lead.marketing_opt_in;
+          }
+
+          // Compute outputs deterministically (same formulas you display)
+          const SQFT_PER_SQM = 10.76391041671;
+          const sqmPerPerson = parseFloat(calcInputs.density);
+          const cpsqm = costPerSqm(locName); // £/m²
+
+          if(mode==='people'){
+            const staff       = parseInt(calcInputs.staffCount,10);
+            const buffer      = calcInputs.hybridRatio==='1' ? 1 : HYBRID_BUFFER;
+            const workstations= Math.ceil(staff * parseFloat(calcInputs.hybridOcc) * buffer);
+            const sqm         = workstations * sqmPerPerson;
+            const sqft        = Math.round(sqm * SQFT_PER_SQM);
+            const annualCost  = Math.round(sqm * cpsqm);
+            const perWSAnnual = Math.round(cpsqm * sqmPerPerson);
+
+            Object.assign(payload, {
+              staff_input: staff,
+              space_required_sqft: sqft,
+              workstations_required: workstations,
+              annual_cost: annualCost,
+              cost_per_workstation_annual: perWSAnnual,
+              cost_per_workstation_monthly: Math.round(perWSAnnual/12)
+            });
+          } else {
+            // budget mode
+            const annualBudget = (calcInputs.budgetPeriod==='monthly')
+              ? (calcInputs.annualBudgetRaw ? parseInt(calcInputs.annualBudgetRaw,10) : parseInt(calcInputs.budgetValue,10)*12)
+              : parseInt(calcInputs.budgetValue,10);
+
+            let sqm=0, sqft=0, workstations=0, staff=0;
+            if (cpsqm > 0) {
+              sqm         = annualBudget / cpsqm;
+              sqft        = Math.round(sqm * SQFT_PER_SQM);
+              workstations= Math.floor(sqm / sqmPerPerson);
+              const buffer = calcInputs.hybridRatio==='1' ? 1 : HYBRID_BUFFER;
+              staff       = Math.floor((workstations / buffer) / parseFloat(calcInputs.hybridOcc));
+            }
+
+            Object.assign(payload, {
+              budget_value: parseInt(calcInputs.budgetValue.replace(/,/g,''),10),
+              space_required_sqft: sqft,
+              workstations_required: workstations,
+              annual_cost: null,
+              cost_per_workstation_annual: workstations>0 ? Math.round(annualBudget / workstations) : null,
+              cost_per_workstation_monthly: workstations>0 ? Math.round((annualBudget / workstations) / 12) : null
+            });
+          }
+
+          return payload;
+        }
+
+        async function insertEvent(row){
+          try{
+            const { error } = await supabase.from('lsh_calculator_events').insert(row);
+            if(error) console.error('Supabase insert error:', error);
+          }catch(e){
+            console.error('Network/insert error:', e);
+          }
+        }
+
+        let lastCalcRows = []; // array of rows inserted on last calculation (for loc1 and maybe loc2)
+
+        // ===== /Analytics =====
 
         function renderResult(el,label,valueStr,append=false,highlight=false,labelBelow=false,wrapLabel=false){
           const itemCls=highlight? 'result-item hybrid-highlight':'result-item';
@@ -714,9 +771,8 @@
         // 1.666... is 5/3, matching the “3 days in office” (≈60%) intent precisely.
         const HYBRID_RATIOS = [1, 1.25, 1.6666666667, 2.5, 5];
         const HYBRID_OCC    = HYBRID_RATIOS.map(r => 1 / r); // 1.00, 0.80, 0.60, 0.40, 0.20
-        const fmtRatio = x => Number((Math.round(x*100)/100).toFixed(2)).toString();
-        const HYBRID_BUFFER=1.1;
-        const HYBRID_DETAILS=[
+          const fmtRatio = x => Number((Math.round(x*100)/100).toFixed(2)).toString();
+          const HYBRID_DETAILS=[
           'Suitable for an average of 5 days in office per week',
           'Suitable for an average of 4 days in office per week',
           'Suitable for an average of 3 days in office per week',
@@ -811,12 +867,31 @@
       const downloadCsv=$('downloadCsv');
       const calcDownloadWrap=$('calcDownloadWrap');
       const calcDownloadBtn=$('calcDownloadBtn');
-      const calcDownloadMenu=$('calcDownloadMenu');
-      const calcDownloadCsv=$('calcDownloadCsv');
-      const calcSection=$("calcSection");
-      const hybridInfo=$('hybridInfo'); const hybridTooltip=$('hybridTooltip');
-      let occData=[];
-      let showNew=true, showOld=true;
+        const calcDownloadMenu=$('calcDownloadMenu');
+        const calcDownloadCsv=$('calcDownloadCsv');
+        const calcSection=$("calcSection");
+        const hybridInfo=$('hybridInfo'); const hybridTooltip=$('hybridTooltip');
+        const leadWrap   = $('leadWrap');
+        const leadCompany= $('leadCompany');
+        const leadName   = $('leadName');
+        const leadEmail  = $('leadEmail');
+        const leadPhone  = $('leadPhone');
+        const leadOptIn  = $('leadOptIn');
+        const leadSaveBtn= $('leadSaveBtn');
+        const leadMsg    = $('leadMsg');
+        const leadHP     = $('leadHP');
+
+        (function prefillLead(){
+          const lead = getSavedLead();
+          if(lead.company)     leadCompany.value = lead.company;
+          if(lead.contact_name)leadName.value    = lead.contact_name;
+          if(lead.contact_email)leadEmail.value  = lead.contact_email;
+          if(lead.contact_phone)leadPhone.value  = lead.contact_phone;
+          if(typeof lead.marketing_opt_in==='boolean') leadOptIn.checked = lead.marketing_opt_in;
+        })();
+
+        let occData=[];
+        let showNew=true, showOld=true;
       let budgetPeriod='annual';
       let annualBudgetRaw='', monthlyBudgetRaw='';
       function alignResultTitles(){
@@ -1580,23 +1655,95 @@
         resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
         calcDownloadWrap.classList.remove('hidden');
         if(calcClicked) showContacts(); else hideContacts();
-        updateComparePrompt();
-        alignResultTitles();
-        updateScrollbars();
-        setTimeout(()=>{alignResultTitles(); updateScrollbars();},50);
-      }
+          updateComparePrompt();
+          alignResultTitles();
+          updateScrollbars();
+          setTimeout(()=>{alignResultTitles(); updateScrollbars();},50);
 
-      calcBtn.addEventListener('click', ()=> {
-        calcClicked = true;
-        performCalc();
-        // fire analytics after a successful render (same guards are inside trackCalculateEvent)
-        trackCalculateEvent();
-      });
+          // --- reveal lead form after any successful calculation ---
+          leadWrap.classList.remove('hidden');
+
+          // --- build inputs snapshot for logging ---
+          const calcInputs = {
+            ageValue,
+            density: densitySel.value,
+            hybridRatio: String(hybridSel.value),
+            hybridOcc: String(hybridSel.dataset.occ || '1'),
+            budgetPeriod,
+            budgetValue: budInp.value || '',
+            staffCount: pplInp.value || '',
+            annualBudgetRaw
+          };
+
+          // Build rows (one per location shown)
+          lastCalcRows = [];
+          const mode = modeValue; // 'people' | 'budget'
+          if (locSel.value){
+            const row1 = buildEventPayloadForLocation(locSel.value, mode, calcInputs);
+            lastCalcRows.push(row1);
+            insertEvent(row1);
+          }
+          if (locSel2.value){
+            const row2 = buildEventPayloadForLocation(locSel2.value, mode, calcInputs);
+            lastCalcRows.push(row2);
+            insertEvent(row2);
+          }
+        }
+
+        calcBtn.addEventListener('click', ()=> {
+          calcClicked = true;
+          performCalc();
+        });
       densitySel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
-      hybridSel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
-      costPeriodSel.addEventListener('change',updateCostPeriod);
+        hybridSel.addEventListener('change',()=>{if(!resWrap.classList.contains('hidden')) performCalc(); else autoCalcIfReady();});
+        costPeriodSel.addEventListener('change',updateCostPeriod);
 
-      toggleInputs(); // initialise visibility
+        leadSaveBtn.addEventListener('click', async (e)=>{
+          e.preventDefault();
+
+          // Bot honeypot
+          if (leadHP && leadHP.value) return;
+
+          const lead = {
+            company: (leadCompany.value||'').trim(),
+            contact_name: (leadName.value||'').trim(),
+            contact_email: (leadEmail.value||'').trim(),
+            contact_phone: (leadPhone.value||'').trim(),
+            marketing_opt_in: !!leadOptIn.checked
+          };
+
+          // Basic checks (email optional but recommended)
+          if (lead.contact_email && !validEmail(lead.contact_email)){
+            leadMsg.classList.remove('hidden');
+            leadMsg.textContent = 'Please enter a valid email.';
+            leadMsg.classList.remove('text-green-700');
+            leadMsg.classList.add('text-red-700');
+            return;
+          }
+
+          saveLeadToLocal(lead);
+
+          // If we have a last calculation, create a dedicated "lead" row now
+          if (lastCalcRows.length){
+            for (const baseRow of lastCalcRows){
+              const row = { ...baseRow,
+                company: lead.company || null,
+                contact_name: lead.contact_name || null,
+                contact_email: lead.contact_email || null,
+                contact_phone: lead.contact_phone || null,
+                marketing_opt_in: !!lead.marketing_opt_in,
+                is_lead: true
+              };
+              await insertEvent(row);
+            }
+          }
+
+          leadMsg.textContent = 'Thanks — details received.';
+          leadMsg.classList.remove('hidden','text-red-700');
+          leadMsg.classList.add('text-green-700');
+        });
+
+        toggleInputs(); // initialise visibility
       updateComparePrompt();
 
       // Map ------------------------------------------------------------------
