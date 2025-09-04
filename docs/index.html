@@ -674,9 +674,23 @@
           const content=labelBelow
             ? `<span class="${valCls}">${valueStr}</span><span class="${lblCls}">${label}</span>`
             : `<span class="${lblCls}">${label}</span><span class="${valCls}">${valueStr}</span>`;
-          const html=`<div class="${itemCls}">${content}</div>`;
+          const html=`<div class="${itemCls}" style="opacity:0">${content}</div>`;
           if(append) el.innerHTML+=html; else el.innerHTML=html;
         }
+
+      function animateResultBox(box){
+        const items = box.querySelectorAll('.result-title, .result-item');
+        const count = items.length;
+        const step = count>1 ? 0.6/(count-1) : 0;
+        items.forEach((el,i)=>{
+          el.classList.remove('fade-in');
+          el.style.opacity = 0;
+          el.style.animationDelay = `${(i*step).toFixed(2)}s`;
+          el.style.animationFillMode = 'forwards';
+          void el.offsetWidth;
+          el.classList.add('fade-in');
+        });
+      }
       function updateScrollbars(){
         document.querySelectorAll('.result-scroll').forEach(el=>{
           if(el.scrollWidth - el.clientWidth > 1) el.classList.add('need-scroll');
@@ -868,6 +882,7 @@
       const areaR1=$('areaResult1'); const costR1=$('costResult1'); const pplR1=$('peopleResult1');
       const areaR2=$('areaResult2'); const costR2=$('costResult2'); const pplR2=$('peopleResult2');
       const resultContainer=$('resultContainer');
+      const box1=$('resultBox1');
       const title1=$('resultTitle1'); const title2=$('resultTitle2'); const box2=$('resultBox2'); const resWrap=$('resultWrapper');
       const errs={mode:$('modeError'),location:$('locationError'),age:$('ageError'),people:$('peopleError'),budget:$('budgetError')};
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
@@ -1123,12 +1138,7 @@
       }
 
       function autoCalcIfReady(){
-        const ready =
-          locSel.value && ageValue && modeValue &&
-          ((modeValue==='people' && pplInp.value) ||
-           (modeValue==='budget' && budInp.value));
         if(!resWrap.classList.contains('hidden')) performCalc();
-        else if(ready) performCalc();
       }
 
       function updateCostPeriod(){
@@ -1599,6 +1609,7 @@
          const cpsqm=costPerSqm(loc);
          titleEl.textContent=loc;
          adjustTitle(titleEl);
+         titleEl.style.opacity=0;
           if(usePeople){
             const staff=n;
             const workstations=Math.ceil(staff*occupancy*buffer);
@@ -1678,13 +1689,14 @@
         costPeriodSel.classList.toggle('hidden',!usePeople);
         if(usePeople) updateCostPeriod();
         resWrap.classList.remove('hidden');
-        resWrap.classList.remove('fade-in'); void resWrap.offsetWidth; resWrap.classList.add('fade-in');
         calcDownloadWrap.classList.remove('hidden');
         if(calcClicked) showContacts(); else hideContacts();
-          updateComparePrompt();
-          alignResultTitles();
-          updateScrollbars();
-          setTimeout(()=>{alignResultTitles(); updateScrollbars();},50);
+        animateResultBox(box1);
+        if(locSel2.value) animateResultBox(box2);
+        updateComparePrompt();
+        alignResultTitles();
+        updateScrollbars();
+        setTimeout(()=>{alignResultTitles(); updateScrollbars();},50);
 
           // --- reveal lead form after any successful calculation ---
           leadWrap.classList.remove('hidden');
