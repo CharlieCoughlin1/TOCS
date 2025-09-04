@@ -14,7 +14,7 @@
     :root {
       --lsh-red:#cc2030;
       --lsh-red-dark:#871720;
-      --bar-max:120px;
+      --bar-max:160px;
       --axis-gutter:32px;
       --col-w:9rem;
       --col-gap:1rem;
@@ -158,7 +158,8 @@
     }
     .y-tick{
       position:absolute; right:0.25rem;
-      transform:none; font-size:0.75rem; color:#4b5563;
+      transform:translateY(0.2rem); font-size:0.75rem; color:#4b5563;
+      line-height:1;
     }
 
     #gridLayer{
@@ -512,7 +513,7 @@
             </div>
           </div>
         </div>
-        <div id="occChart" class="mb-4 mt-4 relative w-full">
+        <div id="occChart" class="mb-8 mt-4 relative w-full">
           <div id="yAxis" class="hidden"></div>
           <div id="occBars" class="result-scroll"></div>
           <div id="xAxis" class="hidden"></div>
@@ -1133,7 +1134,7 @@
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occChart=$("occChart"); const occBars=$("occBars"); const yAxis=$("yAxis"); const xAxis=$("xAxis");
-      const BAR_MAX = 120;
+      const BAR_MAX = 160;
       const gridLines=[];
       let gridLayer=null;
 
