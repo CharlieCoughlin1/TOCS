@@ -131,7 +131,7 @@
     #occTables table{min-width:52rem;}
     #occTables th{white-space:nowrap;}
     /* allow occupancy bars to scroll horizontally */
-    #occBars .bar-col{flex:1 1 8rem;}
+    #occBars .bar-col{flex:1 1 7rem;}
     #occBars.placeholder{justify-content:space-evenly;padding:0 0.5rem;}
     #occChart{position:relative;}
     #yAxis{position:absolute;left:0;top:0;bottom:0;width:2rem;}
@@ -737,7 +737,7 @@
         yAxisTicks.forEach((tick,i)=>{
           const value=Math.round(step*i/10)*10;
           tick.textContent=`£${value}`;
-          tick.style.bottom=`${(value/yMax*100)}%`;
+          tick.style.bottom=`${(value/yMax*BAR_MAX)}px`;
         });
       }
       function updateScrollbars(){
@@ -753,17 +753,13 @@
         if(!labs) return;
         const labStyle=getComputedStyle(labs);
         const labelHeight=labs.offsetHeight+parseFloat(labStyle.marginTop);
-        const maxExtra=Math.max(...cols.map(c=>{
-          const cs=getComputedStyle(c);
-          return parseFloat(cs.paddingBottom)+parseFloat(cs.borderBottomWidth);
-        }));
-        const offset=labelHeight+maxExtra;
+        const offset=labelHeight;
         xAxis.style.bottom=offset+'px';
         yAxis.style.bottom=offset+'px';
-        xAxis.style.right='auto';
+        yAxis.style.top='auto';
+        yAxis.style.height=BAR_MAX+'px';
         const barsRect=occBars.getBoundingClientRect();
-        const lastRect=cols[cols.length-1].getBoundingClientRect();
-        const width=Math.min(lastRect.right,barsRect.right)-barsRect.left;
+        const width=Math.min(occBars.scrollWidth,barsRect.width);
         xAxis.style.width=width+'px';
       }
       function adjustTitle(el){
@@ -957,6 +953,7 @@
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occChart=$("occChart"); const occBars=$("occBars"); const yAxis=$("yAxis"); const xAxis=$("xAxis");
+      const BAR_MAX = 120;
       const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt");
       let yAxisTicks=[];
       const occFilterBtn=$('occFilterBtn'); const occFilterMenu=$('occFilterMenu');
@@ -1282,12 +1279,14 @@
         }
         occData.forEach((d,idx)=>{
           const col=document.createElement("div");
-          col.className="bar-col flex flex-col items-center justify-between p-2 border rounded h-56 relative";
+          col.className="bar-col flex flex-col items-center h-56 relative";
+          const box=document.createElement('div');
+          box.className='bar-box flex flex-col items-center justify-between p-2 border rounded w-full flex-1';
           const rem=document.createElement('button');
           rem.className='remove-btn';
           rem.innerHTML='&times;';
           rem.addEventListener('click',()=>{occData.splice(idx,1);updateOccUI();});
-          col.appendChild(rem);
+          box.appendChild(rem);
           const label=document.createElement("div");
           label.className="text-sm font-din-bold mb-1 text-center h-10 flex items-center justify-center";
           label.textContent=d.name;
@@ -1302,6 +1301,7 @@
           ob.style.height="0px";
           ob.innerHTML=`<div class="bar-label">${d.old?`£${d.old.totalSqft.toFixed(2)}`:'N/A'}<br><small>psf</small></div>`;
           bars.appendChild(nb); bars.appendChild(ob);
+          box.appendChild(label); box.appendChild(bars);
           const labs=document.createElement("div");
           labs.className="flex gap-2 mt-1";
           const labNew=document.createElement('span');
@@ -1312,7 +1312,8 @@
           labOld.textContent='20-yr old';
           labs.appendChild(labNew);
           labs.appendChild(labOld);
-          col.appendChild(label); col.appendChild(bars); col.appendChild(labs);
+          col.appendChild(box);
+          col.appendChild(labs);
           occBars.appendChild(col);
           const wrap=document.createElement('div');
           wrap.className='relative mb-4 result-scroll';
@@ -1343,8 +1344,8 @@
             ob.style.opacity=showOld?"1":"0";
             labNew.style.opacity=showNew?"1":"0";
             labOld.style.opacity=showOld?"1":"0";
-            nb.style.height=showNew&&d.new?(d.new.totalSqft/max*120)+"px":"0px";
-            ob.style.height=showOld&&d.old?(d.old.totalSqft/max*120)+"px":"0px";
+            nb.style.height=showNew&&d.new?(d.new.totalSqft/max*BAR_MAX)+"px":"0px";
+            ob.style.height=showOld&&d.old?(d.old.totalSqft/max*BAR_MAX)+"px":"0px";
           }
           setTimeout(applyHeights,20);
         });
@@ -1360,7 +1361,7 @@
           const wrap=document.createElement('div');
           wrap.className='mt-2 hidden';
           const sel=document.createElement('select');
-          sel.className='w-full border rounded p-2 bg-white';
+          sel.className='w-full border rounded p-2 bg-white text-xs';
           sel.innerHTML=addOptionsHTML;
           wrap.appendChild(sel);
           btn.addEventListener('click',()=>{
