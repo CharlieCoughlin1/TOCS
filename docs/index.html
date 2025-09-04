@@ -118,8 +118,19 @@
     .compare-popup .btn{padding:0.25rem 0.5rem;font-size:0.75rem;border-radius:0.25rem;}
     .compare-popup .btn-red{background:var(--lsh-red);color:#fff;}
     .compare-popup .btn-gray{background:#e5e7eb;color:#111827;}
-    .remove-btn{position:absolute;top:0;right:0;padding:0 0.25rem;line-height:1;font-size:0.875rem;}
-    .remove-btn:hover{color:var(--lsh-red);}
+    .remove-btn{
+      position:absolute;
+      top:-6px;
+      right:-6px;
+      padding:0 0.25rem;
+      line-height:1;
+      font-size:0.875rem;
+      background:#fff;
+      border:1px solid #e5e7eb;
+      border-radius:9999px;
+      z-index:5;
+    }
+    .remove-btn:hover{ color:var(--lsh-red); }
     .add-btn{position:absolute;top:0;right:-1.25rem;padding:0 0.25rem;line-height:1;font-size:0.875rem;}
     .add-btn:hover{color:var(--lsh-red);}
     #peopleInput::-webkit-outer-spin-button,#peopleInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
@@ -137,9 +148,28 @@
     #yAxis{
       position:absolute; left:0; width:var(--axis-gutter);
       height:var(--bar-max); top:auto; bottom:0;
-      z-index:2; /* above bars, below tooltips */
+      z-index:3; /* above gridlines, below tooltips */
     }
-    .y-tick{ position:absolute; right:0.25rem; transform:none; font-size:0.75rem; color:#4b5563; }
+    #yAxis::after{
+      content:"";
+      position:absolute;
+      right:0; top:0; bottom:0;
+      width:1px; background:#d1d5db;   /* the Y-axis hairline */
+    }
+    .y-tick{
+      position:absolute; right:0.25rem;
+      transform:none; font-size:0.75rem; color:#4b5563;
+    }
+
+    #gridLayer{
+      position:absolute; left:var(--axis-gutter); right:auto; /* width set in JS */
+      bottom:0; height:var(--bar-max);
+      z-index:1; pointer-events:none;
+    }
+    .y-gridline{
+      position:absolute; left:0; right:0;
+      height:1px; background:#e5e7eb;
+    }
 
     /* X axis baseline */
     #xAxis{
@@ -153,7 +183,7 @@
       align-items:flex-end;             /* bottom align columns to axis */
       overflow-x:auto; overflow-y:visible;
       margin-left:var(--axis-gutter);   /* same as y-axis width */
-      padding:8px 1rem 14px 0;          /* top: let dashed placeholders breathe; bottom: clear x-axis */
+      padding:12px 1rem 14px 0;         /* more top padding to clear placeholder heads */
       box-sizing:border-box;
     }
 
@@ -162,6 +192,7 @@
 
     /* Remove the heavy outline around each location “box” */
     #occBars .bar-box{
+      position:relative;              /* ensures each .remove-btn anchors per column */
       border:none !important;
       background:transparent;
       box-shadow:none;
@@ -173,17 +204,28 @@
       height:var(--bar-max);
       display:flex; align-items:flex-end; justify-content:center; gap:0.5rem;
       position:relative;
+      z-index:2; /* above gridlines */
+    }
+    .bar-stage::before{
+      content:"";
+      position:absolute; left:50%; top:0; bottom:0;
+      width:1px; background:#e5e7eb; transform:translateX(-0.5px);
+      z-index:1; /* sits behind the bars themselves */
     }
 
     /* Bars keep your colours and transitions */
-    .occ-bar-new{ background:var(--lsh-red); transition:height .3s ease, opacity .3s ease; width:4rem; }
-    .occ-bar-old{ background:#6b7280;        transition:height .3s ease, opacity .3s ease; width:4rem; }
+    .occ-bar-new{ background:var(--lsh-red); transition:height .3s ease, opacity .3s ease; width:4rem; z-index:2; }
+    .occ-bar-old{ background:#6b7280;        transition:height .3s ease, opacity .3s ease; width:4rem; z-index:2; }
     .bar-label{ line-height:1; text-align:center; padding:2px 0; }
+    .bar-label small{ font-size:0.65rem; }
 
     /* Location label above stage */
     .loc-label{
-      height:2.5rem; display:flex; align-items:center; justify-content:center;
-      text-align:center; font-size:.875rem; font-weight:700; color:#111827; margin-bottom:.25rem;
+      display:flex; align-items:center; justify-content:center;
+      text-align:center; font-size:.875rem; font-weight:700; color:#111827;
+      margin-bottom:.25rem; padding:0.35rem 0.5rem;
+      background:#f3f4f6; border:1px solid #e5e7eb; border-radius:.375rem;
+      min-height:2rem;
     }
 
     /* Category labels under stage */
@@ -194,7 +236,8 @@
     .placeholder-col{
       border:2px dashed #cbd5e0; border-radius:.375rem;
       display:flex; flex-direction:column; align-items:center; justify-content:center;
-      padding:0.75rem; min-height:calc(var(--bar-max) + 70px);
+      padding:0.75rem;
+      min-height:calc(var(--bar-max) + 90px); /* extra headroom to avoid clipping */
       box-sizing:border-box;
     }
 
@@ -207,7 +250,6 @@
     /* Crisp axis line on HiDPI */
     @media (min-resolution:2dppx){ #xAxis{ transform:translateZ(0); } }
 
-    .bar-label small{font-size:0.65rem;}
     button{transition:transform .1s ease;}
     button:active{transform:scale(.95);}
     .fade-in{animation:fadeIn .3s ease;}
@@ -798,6 +840,7 @@
       function updateYAxis(maxVal){
         const yMax=Math.max(10,Math.ceil(maxVal/10)*10);
         const step=yMax/4;
+
         if(yAxisTicks.length===0){
           for(let i=0;i<=4;i++){
             const t=document.createElement('div');
@@ -809,7 +852,29 @@
         yAxisTicks.forEach((tick,i)=>{
           const value=Math.round(step*i);
           tick.textContent=`£${value}`;
-          tick.style.bottom=`${(value/yMax*BAR_MAX)}px`;
+          tick.style.bottom=`${(value / yMax) * BAR_MAX}px`;
+        });
+
+        return yMax;
+      }
+
+      function updateGridlines(yMax){
+        if(!gridLayer) return;
+        // Ensure 5 gridlines (0%, 25%, 50%, 75%, 100%)
+        while(gridLines.length<5){
+          const gl=document.createElement('div');
+          gl.className='y-gridline';
+          gridLayer.appendChild(gl);
+          gridLines.push(gl);
+        }
+        while(gridLines.length>5){
+          const gl=gridLines.pop();
+          gl.remove();
+        }
+        const step=yMax/4;
+        gridLines.forEach((gl,i)=>{
+          const value=step*i;
+          gl.style.bottom=`${(value / yMax) * BAR_MAX}px`;
         });
       }
       function updateScrollbars(){
@@ -824,6 +889,7 @@
         if(!dataCols.length){
           xAxis.style.width='0px';
           yAxis.style.height='0px';
+          if(gridLayer){ gridLayer.style.width='0px'; }
           return;
         }
 
@@ -849,11 +915,19 @@
         // but never beyond the chart tile width.
         const lastStage=dataCols[dataCols.length-1].querySelector('.bar-stage');
         const lastRight=lastStage?lastStage.getBoundingClientRect().right:chartRect.left;
-        const rightEdge=Math.min(lastRight, chartRect.right); // cap at tile edge
-        const leftEdge=chartRect.left + 32; // --axis-gutter (2rem)
+        const rightEdge=Math.min(lastRight, chartRect.right);
+        const leftEdge=chartRect.left + 32; // matches --axis-gutter (32px)
         const axisWidth=Math.max(0, Math.round(rightEdge - leftEdge));
 
         xAxis.style.width=`${axisWidth}px`;
+
+        // Grid layer uses same baseline & width as the X-axis, behind bars
+        if(gridLayer){
+          gridLayer.style.bottom=`${baselineFromBottom}px`;
+          gridLayer.style.height=`${BAR_MAX}px`;
+          gridLayer.style.left=`32px`;
+          gridLayer.style.width=`${axisWidth}px`;
+        }
       }
       function adjustTitle(el){
         let size=1.5; // rem
@@ -1047,6 +1121,20 @@
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occChart=$("occChart"); const occBars=$("occBars"); const yAxis=$("yAxis"); const xAxis=$("xAxis");
       const BAR_MAX = 120;
+      const gridLines=[];
+      let gridLayer=null;
+
+      // Create grid layer behind bars (once)
+      if(!document.getElementById('gridLayer')){
+        gridLayer=document.createElement('div');
+        gridLayer.id='gridLayer';
+        // Insert grid layer just above yAxis but behind bars in the DOM
+        // (placing it before #occBars keeps it behind due to z-index)
+        occChart.insertBefore(gridLayer,occBars);
+      }else{
+        gridLayer=document.getElementById('gridLayer');
+      }
+
       const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt");
       let yAxisTicks=[];
       const occFilterBtn=$('occFilterBtn'); const occFilterMenu=$('occFilterMenu');
@@ -1484,11 +1572,13 @@
         }
 
         if(hasData){
-          updateYAxis(max);      // only sets tick text + tick.bottom
-          positionAxes();        // locks geometry
+          const yMax=updateYAxis(max); // sets tick labels
+          updateGridlines(yMax);       // draws background lines at same heights
+          positionAxes();              // locks geometry (axis + grid layer)
         }else{
           xAxis.style.width='0px';
           yAxis.style.height='0px';
+          if(gridLayer){ gridLayer.style.width='0px'; }
         }
         updateScrollbars();
         setTimeout(positionAxes,0);
