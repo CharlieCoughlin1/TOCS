@@ -14,7 +14,7 @@
     :root {
       --lsh-red:#cc2030;
       --lsh-red-dark:#871720;
-      --bar-max:160px;
+      --bar-max:210px;
       --axis-gutter:32px;
       --col-w:9rem;
       --col-gap:1rem;
@@ -1134,7 +1134,7 @@
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occChart=$("occChart"); const occBars=$("occBars"); const yAxis=$("yAxis"); const xAxis=$("xAxis");
-      const BAR_MAX = 160;
+      const BAR_MAX = 210;
       const gridLines=[];
       let gridLayer=null;
 
@@ -1471,6 +1471,8 @@
             d.old?.totalSqft||0
           ]));
         }
+        let yMax=max, step=0;
+        if(hasData){ ({yMax,step} = updateYAxis(max)); }
 
         occData.forEach((d,idx)=>{
           // Column shell
@@ -1547,8 +1549,8 @@
             ob.style.opacity=showOld ? "1" : "0";
             labNew.style.opacity=showNew ? "1" : "0";
             labOld.style.opacity=showOld ? "1" : "0";
-            nb.style.height=(showNew && d.new) ? px((d.new.totalSqft / max) * BAR_MAX) : '0px';
-            ob.style.height=(showOld && d.old) ? px((d.old.totalSqft / max) * BAR_MAX) : '0px';
+            nb.style.height=(showNew && d.new) ? px((d.new.totalSqft / yMax) * BAR_MAX) : '0px';
+            ob.style.height=(showOld && d.old) ? px((d.old.totalSqft / yMax) * BAR_MAX) : '0px';
           }
           setTimeout(applyHeights,20);
         });
@@ -1589,9 +1591,8 @@
         }
 
         if(hasData){
-          const {yMax,step}=updateYAxis(max); // sets tick labels
           updateGridlines(yMax,step);         // draws background lines at same heights
-          positionAxes();                      // locks geometry (axis + grid layer)
+          positionAxes();                     // locks geometry (axis + grid layer)
         }else{
           xAxis.style.width='0px';
           yAxis.style.height='0px';
