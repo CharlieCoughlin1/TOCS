@@ -168,11 +168,11 @@ const COSTS = {
       "annualisedCosts": 11.17,
       "hardFM": 26.95,
       "managementFees": 2.05,
-      "netEffectiveRent": 36.75,
+      "netEffectiveRent": 33.25,
       "rates": 9.98,
       "softFM": 11.95,
-      "totalSqft": 98.85,
-      "totalWorkstation": 9884.92
+      "totalSqft": 95.35,
+      "totalWorkstation": 9534.92
     }
   },
   "Cambridge": {
