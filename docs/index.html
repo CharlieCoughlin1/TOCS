@@ -137,7 +137,7 @@
     #yAxis{position:absolute;left:0;top:0;bottom:0;width:2rem;}
     #yAxis:after{content:'';position:absolute;right:0;top:0;bottom:0;width:1px;background:#d1d5db;}
     .y-tick{position:absolute;right:0;transform:translateX(-0.25rem);font-size:0.75rem;color:#4b5563;transition:bottom .3s ease;}
-    #xAxis{position:absolute;left:2rem;right:0;bottom:0;height:1px;background:#d1d5db;}
+    #xAxis{position:absolute;left:2rem;bottom:0;height:1px;background:#d1d5db;width:0;}
     button{transition:transform .1s ease;}
     button:active{transform:scale(.95);}
     .fade-in{animation:fadeIn .3s ease;}
@@ -399,10 +399,10 @@
             </div>
           </div>
         </div>
-        <div id="occChart" class="mb-4 relative w-full">
+        <div id="occChart" class="mb-4 mt-4 relative w-full">
           <div id="yAxis" class="hidden absolute left-0 top-0 bottom-0 w-8 text-xs text-gray-700"></div>
           <div id="occBars" class="flex gap-4 items-end w-full h-56 result-scroll"></div>
-          <div id="xAxis" class="hidden absolute left-8 right-0 bottom-0 h-px bg-gray-300"></div>
+          <div id="xAxis" class="hidden absolute left-8 bottom-0 h-px bg-gray-300"></div>
         </div>
         <p id="occLimitMsg" class="hidden text-xs text-lsh-red mb-2">You can compare up to 3 locations.</p>
         <div id="occTables"></div>
@@ -1282,7 +1282,7 @@
           ob.innerHTML=`<div class="bar-label">${d.old?`£${d.old.totalSqft.toFixed(2)}`:'N/A'}<br><small>psf</small></div>`;
           bars.appendChild(nb); bars.appendChild(ob);
           const labs=document.createElement("div");
-          labs.className="flex gap-2 mt-0.5";
+          labs.className="flex gap-2 mt-1";
           const labNew=document.createElement('span');
           labNew.className='bar-cat w-16';
           labNew.textContent='New build';
@@ -1361,6 +1361,17 @@
           occBars.appendChild(col);
         }
         if(hasData){
+          const dataCols=[...occBars.querySelectorAll('.bar-col')].filter(c=>!c.classList.contains('placeholder-col'));
+          const labsEl=dataCols[0]?.querySelector('.bar-cat')?.parentElement;
+          if(labsEl){
+            const style=getComputedStyle(labsEl);
+            const labelHeight=labsEl.offsetHeight+parseFloat(style.marginTop);
+            xAxis.style.bottom=labelHeight+"px";
+            xAxis.style.right='auto';
+            const last=dataCols[dataCols.length-1];
+            const width=last.offsetLeft+last.offsetWidth;
+            xAxis.style.width=width+"px";
+          }
         }
         updateScrollbars();
       }
