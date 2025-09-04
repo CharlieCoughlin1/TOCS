@@ -11,7 +11,14 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
-    :root { --lsh-red:#cc2030; --lsh-red-dark:#871720; --bar-max:120px; }
+    :root {
+      --lsh-red:#cc2030;
+      --lsh-red-dark:#871720;
+      --bar-max:120px;
+      --axis-gutter:32px;
+      --col-w:9rem;
+      --col-gap:1rem;
+    }
     body { font-family:'DINPro','DIN Pro',Arial,sans-serif; font-feature-settings:'liga' 0; -webkit-font-feature-settings:'liga' 0; }
     h1,h2 { font-family:'DINPro','DIN Pro',Arial,sans-serif; }
     .font-din-bold{ font-family:'DINPro Bold','DINPro',Arial,sans-serif; font-weight:700; }
@@ -118,57 +125,89 @@
     #peopleInput::-webkit-outer-spin-button,#peopleInput::-webkit-inner-spin-button{-webkit-appearance:none;margin:0;}
     #peopleInput{-moz-appearance:textfield;}
     .table-remove{position:sticky;right:0;top:0;z-index:10;}
-    .occ-placeholder{display:flex;align-items:center;justify-content:center;font-size:2rem;color:#cbd5e0;}
-    .placeholder-col{border:2px dashed #cbd5e0;}
-    /* bar labels */
-    .bar-label{line-height:1;text-align:center;}
-    .bar-label small{font-size:0.65rem;}
-    /* category labels under bars */
-    .bar-cat{font-size:0.65rem;line-height:1;text-align:center;}
     /* table extra columns visible by default */
     .extra-col{display:table-cell;}
     /* tables scroll horizontally */
     #occTables table{min-width:52rem;}
     #occTables th{white-space:nowrap;}
-    /* === Chart stage normalisation === */
-    #occChart{position:relative;}
-    /* Reserve the left gutter for the Y-axis; we already toggle .ml-8 on #occBars in JS */
+    /* ---- Plot geometry ---- */
+    #occChart { position: relative; }
+
+    /* Y axis lives in a fixed left gutter */
     #yAxis{
-      position:absolute;
-      left:0;
-      width:2rem;
-      top:auto;
-      bottom:0;
-      height:var(--bar-max);
-      z-index:1;
+      position:absolute; left:0; width:var(--axis-gutter);
+      height:var(--bar-max); top:auto; bottom:0;
+      z-index:2; /* above bars, below tooltips */
     }
-    #yAxis:after{content:'';position:absolute;right:0;top:0;bottom:0;width:1px;background:#d1d5db;}
-    /* X-axis baseline line, positioned by JS */
+    .y-tick{ position:absolute; right:0.25rem; transform:none; font-size:0.75rem; color:#4b5563; }
+
+    /* X axis baseline */
     #xAxis{
-      position:absolute;
-      left:2rem;
-      height:1px;
-      background:#d1d5db;
-      bottom:0;
-      width:0;
-      z-index:1;
-      pointer-events:none;
+      position:absolute; left:var(--axis-gutter);
+      bottom:0; height:1px; background:#d1d5db; width:0; z-index:2; pointer-events:none;
     }
-    .y-tick{position:absolute;right:0;transform:translateX(-0.25rem);font-size:0.75rem;color:#4b5563;transition:bottom .3s ease;}
-    /* Make the bars lane horizontally scrollable and predictable */
+
+    /* Bar lane becomes a horizontal grid that scrolls gracefully */
     #occBars{
-      overflow-x:auto;
-      overflow-y:visible;
-      padding-right:1rem;
-      padding-bottom:12px;
+      display:grid; grid-auto-flow:column; grid-auto-columns:var(--col-w); gap:var(--col-gap);
+      align-items:flex-end;             /* bottom align columns to axis */
+      overflow-x:auto; overflow-y:visible;
+      margin-left:var(--axis-gutter);   /* same as y-axis width */
+      padding:8px 1rem 14px 0;          /* top: let dashed placeholders breathe; bottom: clear x-axis */
       box-sizing:border-box;
     }
-    /* Each bar column is a fixed, tidy width */
-    #occBars .bar-col{flex:0 0 8rem;}
-    /* Keep placeholder columns visually stable */
-    #occBars.placeholder{justify-content:flex-start;padding:0 0.5rem;}
-    /* (Optional) Make the axis line look crisp on DPR screens */
-    @media (min-resolution:2dppx){#xAxis{transform:translateZ(0);}}
+
+    /* Each location column has a fixed width and no outline box */
+    #occBars .bar-col{ width:var(--col-w); min-width:var(--col-w); }
+
+    /* Remove the heavy outline around each location “box” */
+    #occBars .bar-box{
+      border:none !important;
+      background:transparent;
+      box-shadow:none;
+      padding:0; /* spacing handled by grid/gaps */
+    }
+
+    /* Dedicated stage for bars with a fixed height = BAR_MAX */
+    .bar-stage{
+      height:var(--bar-max);
+      display:flex; align-items:flex-end; justify-content:center; gap:0.5rem;
+      position:relative;
+    }
+
+    /* Bars keep your colours and transitions */
+    .occ-bar-new{ background:var(--lsh-red); transition:height .3s ease, opacity .3s ease; width:4rem; }
+    .occ-bar-old{ background:#6b7280;        transition:height .3s ease, opacity .3s ease; width:4rem; }
+    .bar-label{ line-height:1; text-align:center; padding:2px 0; }
+
+    /* Location label above stage */
+    .loc-label{
+      height:2.5rem; display:flex; align-items:center; justify-content:center;
+      text-align:center; font-size:.875rem; font-weight:700; color:#111827; margin-bottom:.25rem;
+    }
+
+    /* Category labels under stage */
+    .bar-cats{ display:flex; gap:.5rem; justify-content:center; margin-top:.25rem; }
+    .bar-cat{ font-size:.65rem; line-height:1; width:4rem; text-align:center; }
+
+    /* Placeholder (Add location) cards: no clipping, neat dashed frame */
+    .placeholder-col{
+      border:2px dashed #cbd5e0; border-radius:.375rem;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      padding:0.75rem; min-height:calc(var(--bar-max) + 70px);
+      box-sizing:border-box;
+    }
+
+    /* Keep the big plus centered and not chopped */
+    .occ-placeholder{ display:flex; align-items:center; justify-content:center; font-size:2rem; color:#cbd5e0; }
+
+    /* Table wrapper still scrolls horizontally when needed */
+    #occTables .result-scroll{ overflow-x:auto; }
+
+    /* Crisp axis line on HiDPI */
+    @media (min-resolution:2dppx){ #xAxis{ transform:translateZ(0); } }
+
+    .bar-label small{font-size:0.65rem;}
     button{transition:transform .1s ease;}
     button:active{transform:scale(.95);}
     .fade-in{animation:fadeIn .3s ease;}
@@ -433,9 +472,9 @@
           </div>
         </div>
         <div id="occChart" class="mb-4 mt-4 relative w-full">
-          <div id="yAxis" class="hidden absolute left-0 top-0 bottom-0 w-8 text-xs text-gray-700"></div>
-          <div id="occBars" class="flex gap-4 items-end w-full h-56 result-scroll"></div>
-          <div id="xAxis" class="hidden absolute left-8 bottom-0 h-px bg-gray-300"></div>
+          <div id="yAxis" class="hidden"></div>
+          <div id="occBars" class="result-scroll"></div>
+          <div id="xAxis" class="hidden"></div>
         </div>
         <p id="occLimitMsg" class="hidden text-xs text-lsh-red mb-2">You can compare up to 3 locations.</p>
         <div id="occTables"></div>
@@ -780,8 +819,7 @@
         });
       }
       function px(n){ return Math.round(n)+"px"; }
-      function positionOccAxis(){
-        // If there are no data columns, hide axes and bail
+      function positionAxes(){
         const dataCols=[...occBars.querySelectorAll('.bar-col')].filter(c=>!c.classList.contains('placeholder-col'));
         if(!dataCols.length){
           xAxis.style.width='0px';
@@ -789,30 +827,31 @@
           return;
         }
 
-        const firstBox=dataCols[0].querySelector('.bar-box');
-        const barsRow=firstBox?firstBox.querySelector('.flex-1.flex.items-end'):null;
-        if(!barsRow) return;
-
         const chartRect=occChart.getBoundingClientRect();
-        const barsRect=barsRow.getBoundingClientRect();
 
-        const baselineFromTop=Math.round(barsRect.bottom-chartRect.top);
+        // Baseline = bottom of the first stage (all stages share the same height)
+        const firstStage=dataCols[0].querySelector('.bar-stage');
+        if(!firstStage) return;
+        const stageRect=firstStage.getBoundingClientRect();
+
+        const baselineFromTop=Math.round(stageRect.bottom-chartRect.top);
         const baselineFromBottom=Math.max(0,Math.round(chartRect.height-baselineFromTop));
 
-        const BAR_H=BAR_MAX;
-        yAxis.style.top=`${baselineFromTop-BAR_H}px`;
+        // Y axis spans exactly BAR_MAX above the baseline
+        yAxis.style.top=`${baselineFromTop-BAR_MAX}px`;
         yAxis.style.bottom='auto';
-        yAxis.style.height=`${BAR_H}px`;
+        yAxis.style.height=`${BAR_MAX}px`;
 
+        // X axis sits exactly on the baseline
         xAxis.style.bottom=`${baselineFromBottom}px`;
 
-        const lastBox=dataCols[dataCols.length-1].querySelector('.bar-box');
-        const lastBarsRow=lastBox?lastBox.querySelector('.flex-1.flex.items-end'):null;
-        if(!lastBarsRow) return;
-
-        const yGutter=32; // 2rem
-        const rightEdge=Math.round(lastBarsRow.getBoundingClientRect().right-chartRect.left);
-        const axisWidth=Math.max(0,rightEdge-yGutter);
+        // Width: from left gutter to right edge of the last REAL data column stage,
+        // but never beyond the chart tile width.
+        const lastStage=dataCols[dataCols.length-1].querySelector('.bar-stage');
+        const lastRight=lastStage?lastStage.getBoundingClientRect().right:chartRect.left;
+        const rightEdge=Math.min(lastRight, chartRect.right); // cap at tile edge
+        const leftEdge=chartRect.left + 32; // --axis-gutter (2rem)
+        const axisWidth=Math.max(0, Math.round(rightEdge - leftEdge));
 
         xAxis.style.width=`${axisWidth}px`;
       }
@@ -1311,10 +1350,8 @@
         occLimitMsg.classList.add('hidden');
         occPrompt.classList.add('hidden');
         occWrap.classList.remove('hidden');
+
         const hasData = occData.length > 0;
-        occBars.classList.toggle('placeholder', !hasData);
-        occBars.classList.toggle('ml-8', hasData);
-        occBars.classList.toggle('pr-4', hasData);
         occDownloadWrap.classList.toggle('hidden', !hasData);
         occUnits.classList.toggle('hidden', !hasData);
         yAxis.classList.toggle('hidden', !hasData);
@@ -1323,6 +1360,7 @@
           yAxisTicks.forEach(t=>t.remove());
           yAxisTicks=[];
         }
+
         let max=0;
         if(hasData){
           max=Math.max(...occData.flatMap(d=>[
@@ -1330,124 +1368,130 @@
             d.old?.totalSqft||0
           ]));
         }
+
         occData.forEach((d,idx)=>{
+          // Column shell
           const col=document.createElement("div");
-          col.className="bar-col flex flex-col items-center h-56 relative";
+          col.className="bar-col";
+
+          // Inside column: remove-button + location label + bar stage + category labels
           const box=document.createElement('div');
-          box.className='bar-box flex flex-col items-center justify-between p-2 border rounded w-full flex-1';
+          box.className='bar-box';
+
           const rem=document.createElement('button');
           rem.className='remove-btn';
           rem.innerHTML='&times;';
-          rem.addEventListener('click',()=>{occData.splice(idx,1);updateOccUI();});
+          rem.addEventListener('click',()=>{ occData.splice(idx,1); updateOccUI(); });
           box.appendChild(rem);
-          const label=document.createElement("div");
-          label.className="text-sm font-din-bold mb-1 text-center h-10 flex items-center justify-center";
+
+          const label=document.createElement('div');
+          label.className='loc-label';
           label.textContent=d.name;
-          const bars=document.createElement("div");
-          bars.className="flex-1 flex items-end gap-2";
-          const nb=document.createElement("div");
-          nb.className="occ-bar-new text-white text-xs flex items-center justify-center w-16";
-          nb.style.height="0px";
-          nb.innerHTML=`<div class="bar-label">${d.new?`£${d.new.totalSqft.toFixed(2)}`:'N/A'}<br><small>psf</small></div>`;
-          const ob=document.createElement("div");
-          ob.className="occ-bar-old text-white text-xs flex items-center justify-center w-16";
-          ob.style.height="0px";
-          ob.innerHTML=`<div class="bar-label">${d.old?`£${d.old.totalSqft.toFixed(2)}`:'N/A'}<br><small>psf</small></div>`;
-          bars.appendChild(nb); bars.appendChild(ob);
-          box.appendChild(label); box.appendChild(bars);
-          const labs=document.createElement("div");
-          labs.className="flex gap-2 mt-1";
-          const labNew=document.createElement('span');
-          labNew.className='bar-cat w-16';
-          labNew.textContent='New build';
-          const labOld=document.createElement('span');
-          labOld.className='bar-cat w-16';
-          labOld.textContent='20-yr old';
-          labs.appendChild(labNew);
-          labs.appendChild(labOld);
+          box.appendChild(label);
+
+          // === NEW: fixed-height stage for bars ===
+          const stage=document.createElement('div');
+          stage.className='bar-stage';
+
+          const nb=document.createElement('div');
+          nb.className='occ-bar-new text-white text-xs flex items-center justify-center';
+          nb.style.height='0px';
+          nb.innerHTML=`<div class=\"bar-label\">${d.new?`£${d.new.totalSqft.toFixed(2)}`:'N/A'}<br><small>psf</small></div>`;
+
+          const ob=document.createElement('div');
+          ob.className='occ-bar-old text-white text-xs flex items-center justify-center';
+          ob.style.height='0px';
+          ob.innerHTML=`<div class=\"bar-label\">${d.old?`£${d.old.totalSqft.toFixed(2)}`:'N/A'}<br><small>psf</small></div>`;
+
+          stage.appendChild(nb); stage.appendChild(ob);
+          box.appendChild(stage);
+
+          // Category labels under bars
+          const cats=document.createElement('div');
+          cats.className='bar-cats';
+          const labNew=document.createElement('span'); labNew.className='bar-cat'; labNew.textContent='New build';
+          const labOld=document.createElement('span'); labOld.className='bar-cat'; labOld.textContent='20-yr old';
+          cats.appendChild(labNew); cats.appendChild(labOld);
+
           col.appendChild(box);
-          col.appendChild(labs);
+          col.appendChild(cats);
           occBars.appendChild(col);
+
           const wrap=document.createElement('div');
           wrap.className='relative mb-4 result-scroll';
           const table=document.createElement("table");
           table.className="w-full text-sm border-collapse";
           const rem2=rem.cloneNode(true);
           rem2.classList.add('table-remove');
-          rem2.addEventListener('click',()=>{occData.splice(idx,1);updateOccUI();});
+          rem2.addEventListener('click',()=>{ occData.splice(idx,1); updateOccUI(); });
           wrap.appendChild(rem2);
           const headers=['Total','Net effective rent','Business rates','Annualised costs','Hard FM','Soft FM','Management fees','Total per workstation'];
           const keys=['totalSqft','netEffectiveRent','rates','annualisedCosts','hardFM','softFM','managementFees','totalWorkstation'];
           const headRow='<tr class="bg-gray-50"><th class="border px-2 py-1 text-center">Building age</th>'+headers.map((h,i)=>`<th class="border px-2 py-1 text-center${i>=4?' extra-col':''}">${h}</th>`).join('')+'</tr>';
           function buildRow(label,obj){
             if(!obj) return '';
-            return '<tr><td class="border px-2 py-1 text-center">'+label+'</td>'+keys.map((k,i)=>{
-              const v=obj[k];
-              return `<td class="border px-2 py-1 text-center${i>=4?' extra-col':''}">£${k==='totalWorkstation'?Math.round(v).toLocaleString():v.toFixed(2)}</td>`;
-            }).join('')+'</tr>';
+            return '<tr><td class="border px-2 py-1 text-center">'+label+'</td>'+keys.map((k,i)=>{ const v=obj[k]; return `<td class=\"border px-2 py-1 text-center${i>=4?' extra-col':''}\">£${k==='totalWorkstation'?Math.round(v).toLocaleString():v.toFixed(2)}</td>`; }).join('')+'</tr>';
           }
           let rows='';
           if(showNew) rows+=buildRow('New build',d.new);
           if(showOld) rows+=buildRow('20‑yr old',d.old);
-          table.innerHTML=`<thead><tr class="bg-gray-100"><th class="border px-2 py-1 text-center" colspan="${keys.length+1}">${d.name}</th></tr>${headRow}</thead><tbody>${rows}</tbody>`;
+          table.innerHTML=`<thead><tr class=\"bg-gray-100\"><th class=\"border px-2 py-1 text-center\" colspan=\"${keys.length+1}\">${d.name}</th></tr>${headRow}</thead><tbody>${rows}</tbody>`;
           wrap.appendChild(table);
           occTables.appendChild(wrap);
+
           function applyHeights(){
-            nb.style.opacity=showNew?"1":"0";
-            ob.style.opacity=showOld?"1":"0";
-            labNew.style.opacity=showNew?"1":"0";
-            labOld.style.opacity=showOld?"1":"0";
-            nb.style.height=showNew&&d.new?px(d.new.totalSqft/max*BAR_MAX):"0px";
-            ob.style.height=showOld&&d.old?px(d.old.totalSqft/max*BAR_MAX):"0px";
+            nb.style.opacity=showNew ? "1" : "0";
+            ob.style.opacity=showOld ? "1" : "0";
+            labNew.style.opacity=showNew ? "1" : "0";
+            labOld.style.opacity=showOld ? "1" : "0";
+            nb.style.height=(showNew && d.new) ? px((d.new.totalSqft / max) * BAR_MAX) : '0px';
+            ob.style.height=(showOld && d.old) ? px((d.old.totalSqft / max) * BAR_MAX) : '0px';
           }
           setTimeout(applyHeights,20);
         });
+
         for(let i=occData.length;i<3;i++){
           const col=document.createElement('div');
-          col.className='bar-col placeholder-col flex flex-col items-center justify-center p-2 rounded h-56';
+          col.className='bar-col placeholder-col';
           const plus=document.createElement('div');
           plus.className='occ-placeholder mb-2';
           plus.textContent='+';
+
           const btn=document.createElement('button');
           btn.className='bg-lsh-red hover:bg-lsh-red-dark text-white px-2 py-1 rounded font-din-bold mb-2';
           btn.textContent='Add location';
+
           const wrap=document.createElement('div');
           wrap.className='mt-2 hidden';
           const sel=document.createElement('select');
           sel.className='w-full border rounded p-2 bg-white text-xs';
           sel.innerHTML=addOptionsHTML;
           wrap.appendChild(sel);
-          btn.addEventListener('click',()=>{
-            wrap.classList.toggle('hidden');
-            positionOccAxis();
-            updateScrollbars();
-          });
+
+          btn.addEventListener('click',()=>{ wrap.classList.toggle('hidden'); positionAxes(); });
           sel.addEventListener('change',()=>{
             const val=sel.value;
             if(!val) return;
-            if(occData.length>=3){
-              occLimitMsg.classList.remove('hidden');
-              return;
-            }
+            if(occData.length>=3){ occLimitMsg.classList.remove('hidden'); return; }
             occLimitMsg.classList.add('hidden');
             const cost=COSTS[val]||{};
             occData.push({name:val,new:cost.new||null,old:cost.old||null});
             updateOccUI();
           });
-          col.appendChild(plus);
-          col.appendChild(btn);
-          col.appendChild(wrap);
+
+          col.appendChild(plus); col.appendChild(btn); col.appendChild(wrap);
           occBars.appendChild(col);
         }
+
         if(hasData){
-          updateYAxis(max);
-          positionOccAxis();
+          updateYAxis(max);      // only sets tick text + tick.bottom
+          positionAxes();        // locks geometry
         }else{
           xAxis.style.width='0px';
           yAxis.style.height='0px';
         }
         updateScrollbars();
-        setTimeout(()=>positionOccAxis(),0);
+        setTimeout(positionAxes,0);
       }
 
       occFilterBtn.addEventListener('click',e=>{
@@ -2294,10 +2338,10 @@
         window.addEventListener('load',()=>{
           setTimeout(()=>map.invalidateSize(),0);
           updateScrollbars();
-          positionOccAxis();
+          positionAxes();
         });
-        window.addEventListener('resize',()=>{updateScrollbars(); positionOccAxis();});
-        occBars.addEventListener('scroll',()=>positionOccAxis());
+        window.addEventListener('resize',()=>{updateScrollbars(); positionAxes();});
+        occBars.addEventListener('scroll', positionAxes);
 
       }
     })();
