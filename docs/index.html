@@ -1243,6 +1243,7 @@
         const hasData = occData.length > 0;
         occBars.classList.toggle('placeholder', !hasData);
         occBars.classList.toggle('ml-8', hasData);
+        occBars.classList.toggle('pr-4', hasData);
         occDownloadWrap.classList.toggle('hidden', !hasData);
         occUnits.classList.toggle('hidden', !hasData);
         yAxis.classList.toggle('hidden', !hasData);
@@ -1366,10 +1367,16 @@
           if(labsEl){
             const style=getComputedStyle(labsEl);
             const labelHeight=labsEl.offsetHeight+parseFloat(style.marginTop);
-            xAxis.style.bottom=labelHeight+"px";
+            const colStyle=getComputedStyle(labsEl.parentElement);
+            const extra=parseFloat(colStyle.paddingBottom)+parseFloat(colStyle.borderBottomWidth);
+            const offset=labelHeight+extra;
+            xAxis.style.bottom=offset+"px";
+            yAxis.style.bottom=offset+"px";
             xAxis.style.right='auto';
             const last=dataCols[dataCols.length-1];
-            const width=last.offsetLeft+last.offsetWidth;
+            const lastRect=last.getBoundingClientRect();
+            const barsRect=occBars.getBoundingClientRect();
+            const width=lastRect.right-barsRect.left;
             xAxis.style.width=width+"px";
           }
         }
