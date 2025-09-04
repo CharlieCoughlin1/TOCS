@@ -131,7 +131,7 @@
     #occTables table{min-width:52rem;}
     #occTables th{white-space:nowrap;}
     /* allow occupancy bars to scroll horizontally */
-    #occBars .bar-col{flex:1 0 8rem;}
+    #occBars .bar-col{flex:1 1 8rem;}
     #occBars.placeholder{justify-content:space-evenly;padding:0 0.5rem;}
     #occChart{position:relative;}
     #yAxis{position:absolute;left:0;top:0;bottom:0;width:2rem;}
@@ -742,9 +742,29 @@
       }
       function updateScrollbars(){
         document.querySelectorAll('.result-scroll').forEach(el=>{
-          if(el.scrollWidth - el.clientWidth > 1) el.classList.add('need-scroll');
+          if(el.scrollWidth - el.clientWidth > 0) el.classList.add('need-scroll');
           else el.classList.remove('need-scroll');
         });
+      }
+      function positionOccAxis(){
+        const cols=[...occBars.querySelectorAll('.bar-col')];
+        if(!cols.length) return;
+        const labs=cols[0].querySelector('.bar-cat')?.parentElement;
+        if(!labs) return;
+        const labStyle=getComputedStyle(labs);
+        const labelHeight=labs.offsetHeight+parseFloat(labStyle.marginTop);
+        const maxExtra=Math.max(...cols.map(c=>{
+          const cs=getComputedStyle(c);
+          return parseFloat(cs.paddingBottom)+parseFloat(cs.borderBottomWidth);
+        }));
+        const offset=labelHeight+maxExtra;
+        xAxis.style.bottom=offset+'px';
+        yAxis.style.bottom=offset+'px';
+        xAxis.style.right='auto';
+        const barsRect=occBars.getBoundingClientRect();
+        const lastRect=cols[cols.length-1].getBoundingClientRect();
+        const width=Math.min(lastRect.right,barsRect.right)-barsRect.left;
+        xAxis.style.width=width+'px';
       }
       function adjustTitle(el){
         let size=1.5; // rem
@@ -1340,10 +1360,14 @@
           const wrap=document.createElement('div');
           wrap.className='mt-2 hidden';
           const sel=document.createElement('select');
-          sel.className='border rounded p-2 bg-white';
+          sel.className='w-full border rounded p-2 bg-white';
           sel.innerHTML=addOptionsHTML;
           wrap.appendChild(sel);
-          btn.addEventListener('click',()=>{wrap.classList.toggle('hidden');});
+          btn.addEventListener('click',()=>{
+            wrap.classList.toggle('hidden');
+            positionOccAxis();
+            updateScrollbars();
+          });
           sel.addEventListener('change',()=>{
             const val=sel.value;
             if(!val) return;
@@ -1361,25 +1385,7 @@
           col.appendChild(wrap);
           occBars.appendChild(col);
         }
-        if(hasData){
-          const dataCols=[...occBars.querySelectorAll('.bar-col')].filter(c=>!c.classList.contains('placeholder-col'));
-          const labsEl=dataCols[0]?.querySelector('.bar-cat')?.parentElement;
-          if(labsEl){
-            const style=getComputedStyle(labsEl);
-            const labelHeight=labsEl.offsetHeight+parseFloat(style.marginTop);
-            const colStyle=getComputedStyle(labsEl.parentElement);
-            const extra=parseFloat(colStyle.paddingBottom)+parseFloat(colStyle.borderBottomWidth);
-            const offset=labelHeight+extra;
-            xAxis.style.bottom=offset+"px";
-            yAxis.style.bottom=offset+"px";
-            xAxis.style.right='auto';
-            const last=dataCols[dataCols.length-1];
-            const lastRect=last.getBoundingClientRect();
-            const barsRect=occBars.getBoundingClientRect();
-            const width=lastRect.right-barsRect.left;
-            xAxis.style.width=width+"px";
-          }
-        }
+        if(hasData) positionOccAxis();
         updateScrollbars();
       }
 
@@ -2227,8 +2233,9 @@
         window.addEventListener('load',()=>{
           setTimeout(()=>map.invalidateSize(),0);
           updateScrollbars();
+          positionOccAxis();
         });
-        window.addEventListener('resize',updateScrollbars);
+        window.addEventListener('resize',()=>{updateScrollbars(); positionOccAxis();});
 
       }
     })();
