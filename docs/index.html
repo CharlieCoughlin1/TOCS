@@ -207,10 +207,7 @@
       z-index:2; /* above gridlines */
     }
     .bar-stage::before{
-      content:"";
-      position:absolute; left:50%; top:0; bottom:0;
-      width:1px; background:#e5e7eb; transform:translateX(-0.5px);
-      z-index:1; /* sits behind the bars themselves */
+      content:none;
     }
 
     /* Bars keep your colours and transitions */
@@ -235,7 +232,7 @@
     /* Placeholder (Add location) cards: no clipping, neat dashed frame */
     .placeholder-col{
       border:2px dashed #cbd5e0; border-radius:.375rem;
-      display:flex; flex-direction:column; align-items:center; justify-content:center;
+      display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
       padding:0.75rem;
       min-height:calc(var(--bar-max) + 90px); /* extra headroom to avoid clipping */
       box-sizing:border-box;
@@ -288,10 +285,12 @@
   <header class="bg-white shadow">
     <div class="max-w-6xl mx-auto px-4 py-6">
       <h1 class="text-4xl font-din-bold text-gray-900">Explore costs</h1>
-        <p class="mt-1 text-gray-600 font-din-light">Use this tool to calculate total indicative office costs or space requirements based on your chosen criteria.</p>
-        <p class="mt-1 text-gray-600 font-din-light">Costs are comprehensice and span 22 separate metrics ranging from rents and rates through to cleaning, security, and catering.</p>
-        <p class="mt-1 text-gray-600 font-din-light">Refer to TOCS methodology for more information.</p>
-      </div>
+      <ul class="mt-1 text-gray-600 text-sm font-din-light list-disc pl-5">
+        <li>Use this tool to calculate total indicative office costs or space requirements based on your chosen criteria.</li>
+        <li>Costs are comprehensive and span 22 separate metrics ranging from rents and rates through to cleaning, security, and catering.</li>
+        <li>Refer to TOCS methodology for more information.</li>
+      </ul>
+    </div>
     </header>
 
   <main class="max-w-6xl mx-auto px-4 py-8 grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -820,6 +819,7 @@
         card.classList.remove('fade-in');
         card.style.opacity=0;
         card.style.animationDelay='0s';
+        card.style.animationFillMode='forwards';
         void card.offsetWidth;
         card.classList.add('fade-in');
         const items=card.querySelectorAll('.grid > div, label.flex, .text-right');
@@ -829,6 +829,7 @@
           el.classList.remove('fade-in');
           el.style.opacity=0;
           el.style.animationDelay=`${(0.3 + i*step).toFixed(2)}s`;
+          el.style.animationFillMode='forwards';
           void el.offsetWidth;
           el.classList.add('fade-in');
         });
@@ -852,7 +853,7 @@
         yAxisTicks.forEach((tick,i)=>{
           const value=Math.round(step*i);
           tick.textContent=`£${value}`;
-          tick.style.bottom=`${(value / yMax) * BAR_MAX}px`;
+          tick.style.bottom=px((value / yMax) * BAR_MAX);
         });
 
         return yMax;
@@ -874,7 +875,7 @@
         const step=yMax/4;
         gridLines.forEach((gl,i)=>{
           const value=step*i;
-          gl.style.bottom=`${(value / yMax) * BAR_MAX}px`;
+          gl.style.bottom=px((value / yMax) * BAR_MAX);
         });
       }
       function updateScrollbars(){
@@ -1440,6 +1441,7 @@
         occWrap.classList.remove('hidden');
 
         const hasData = occData.length > 0;
+        if(hasData) showContacts(); else hideContacts();
         occDownloadWrap.classList.toggle('hidden', !hasData);
         occUnits.classList.toggle('hidden', !hasData);
         yAxis.classList.toggle('hidden', !hasData);
