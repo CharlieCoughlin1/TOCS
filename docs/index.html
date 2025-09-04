@@ -11,7 +11,7 @@
   <!-- Leaflet CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="" />
   <style>
-    :root { --lsh-red:#cc2030; --lsh-red-dark:#871720; }
+    :root { --lsh-red:#cc2030; --lsh-red-dark:#871720; --bar-max:120px; }
     body { font-family:'DINPro','DIN Pro',Arial,sans-serif; font-feature-settings:'liga' 0; -webkit-font-feature-settings:'liga' 0; }
     h1,h2 { font-family:'DINPro','DIN Pro',Arial,sans-serif; }
     .font-din-bold{ font-family:'DINPro Bold','DINPro',Arial,sans-serif; font-weight:700; }
@@ -130,14 +130,45 @@
     /* tables scroll horizontally */
     #occTables table{min-width:52rem;}
     #occTables th{white-space:nowrap;}
-    /* allow occupancy bars to scroll horizontally */
-    #occBars .bar-col{flex:1 1 7rem;}
-    #occBars.placeholder{justify-content:space-evenly;padding:0 0.5rem;}
+    /* === Chart stage normalisation === */
     #occChart{position:relative;}
-    #yAxis{position:absolute;left:0;top:0;bottom:0;width:2rem;}
+    /* Reserve the left gutter for the Y-axis; we already toggle .ml-8 on #occBars in JS */
+    #yAxis{
+      position:absolute;
+      left:0;
+      width:2rem;
+      top:auto;
+      bottom:0;
+      height:var(--bar-max);
+      z-index:1;
+    }
     #yAxis:after{content:'';position:absolute;right:0;top:0;bottom:0;width:1px;background:#d1d5db;}
+    /* X-axis baseline line, positioned by JS */
+    #xAxis{
+      position:absolute;
+      left:2rem;
+      height:1px;
+      background:#d1d5db;
+      bottom:0;
+      width:0;
+      z-index:1;
+      pointer-events:none;
+    }
     .y-tick{position:absolute;right:0;transform:translateX(-0.25rem);font-size:0.75rem;color:#4b5563;transition:bottom .3s ease;}
-    #xAxis{position:absolute;left:2rem;bottom:0;height:1px;background:#d1d5db;width:0;}
+    /* Make the bars lane horizontally scrollable and predictable */
+    #occBars{
+      overflow-x:auto;
+      overflow-y:visible;
+      padding-right:1rem;
+      padding-bottom:12px;
+      box-sizing:border-box;
+    }
+    /* Each bar column is a fixed, tidy width */
+    #occBars .bar-col{flex:0 0 8rem;}
+    /* Keep placeholder columns visually stable */
+    #occBars.placeholder{justify-content:flex-start;padding:0 0.5rem;}
+    /* (Optional) Make the axis line look crisp on DPR screens */
+    @media (min-resolution:2dppx){#xAxis{transform:translateZ(0);}}
     button{transition:transform .1s ease;}
     button:active{transform:scale(.95);}
     .fade-in{animation:fadeIn .3s ease;}
@@ -737,7 +768,7 @@
           }
         }
         yAxisTicks.forEach((tick,i)=>{
-          const value=Math.round(step*i/10)*10;
+          const value=Math.round(step*i);
           tick.textContent=`£${value}`;
           tick.style.bottom=`${(value/yMax*BAR_MAX)}px`;
         });
@@ -748,21 +779,42 @@
           else el.classList.remove('need-scroll');
         });
       }
+      function px(n){ return Math.round(n)+"px"; }
       function positionOccAxis(){
-        const cols=[...occBars.querySelectorAll('.bar-col')];
-        if(!cols.length) return;
-        const labs=cols[0].querySelector('.bar-cat')?.parentElement;
-        if(!labs) return;
-        const labStyle=getComputedStyle(labs);
-        const labelHeight=labs.offsetHeight+parseFloat(labStyle.marginTop);
-        const offset=labelHeight;
-        xAxis.style.bottom=offset+'px';
-        yAxis.style.bottom=offset+'px';
-        yAxis.style.top='auto';
-        yAxis.style.height=BAR_MAX+'px';
-        const barsRect=occBars.getBoundingClientRect();
-        const width=Math.min(occBars.scrollWidth,barsRect.width);
-        xAxis.style.width=width+'px';
+        // If there are no data columns, hide axes and bail
+        const dataCols=[...occBars.querySelectorAll('.bar-col')].filter(c=>!c.classList.contains('placeholder-col'));
+        if(!dataCols.length){
+          xAxis.style.width='0px';
+          yAxis.style.height='0px';
+          return;
+        }
+
+        const firstBox=dataCols[0].querySelector('.bar-box');
+        const barsRow=firstBox?firstBox.querySelector('.flex-1.flex.items-end'):null;
+        if(!barsRow) return;
+
+        const chartRect=occChart.getBoundingClientRect();
+        const barsRect=barsRow.getBoundingClientRect();
+
+        const baselineFromTop=Math.round(barsRect.bottom-chartRect.top);
+        const baselineFromBottom=Math.max(0,Math.round(chartRect.height-baselineFromTop));
+
+        const BAR_H=BAR_MAX;
+        yAxis.style.top=`${baselineFromTop-BAR_H}px`;
+        yAxis.style.bottom='auto';
+        yAxis.style.height=`${BAR_H}px`;
+
+        xAxis.style.bottom=`${baselineFromBottom}px`;
+
+        const lastBox=dataCols[dataCols.length-1].querySelector('.bar-box');
+        const lastBarsRow=lastBox?lastBox.querySelector('.flex-1.flex.items-end'):null;
+        if(!lastBarsRow) return;
+
+        const yGutter=32; // 2rem
+        const rightEdge=Math.round(lastBarsRow.getBoundingClientRect().right-chartRect.left);
+        const axisWidth=Math.max(0,rightEdge-yGutter);
+
+        xAxis.style.width=`${axisWidth}px`;
       }
       function adjustTitle(el){
         let size=1.5; // rem
@@ -1277,7 +1329,6 @@
             d.new?.totalSqft||0,
             d.old?.totalSqft||0
           ]));
-          updateYAxis(max);
         }
         occData.forEach((d,idx)=>{
           const col=document.createElement("div");
@@ -1346,8 +1397,8 @@
             ob.style.opacity=showOld?"1":"0";
             labNew.style.opacity=showNew?"1":"0";
             labOld.style.opacity=showOld?"1":"0";
-            nb.style.height=showNew&&d.new?(d.new.totalSqft/max*BAR_MAX)+"px":"0px";
-            ob.style.height=showOld&&d.old?(d.old.totalSqft/max*BAR_MAX)+"px":"0px";
+            nb.style.height=showNew&&d.new?px(d.new.totalSqft/max*BAR_MAX):"0px";
+            ob.style.height=showOld&&d.old?px(d.old.totalSqft/max*BAR_MAX):"0px";
           }
           setTimeout(applyHeights,20);
         });
@@ -1388,8 +1439,15 @@
           col.appendChild(wrap);
           occBars.appendChild(col);
         }
-        if(hasData) positionOccAxis();
+        if(hasData){
+          updateYAxis(max);
+          positionOccAxis();
+        }else{
+          xAxis.style.width='0px';
+          yAxis.style.height='0px';
+        }
         updateScrollbars();
+        setTimeout(()=>positionOccAxis(),0);
       }
 
       occFilterBtn.addEventListener('click',e=>{
@@ -2239,6 +2297,7 @@
           positionOccAxis();
         });
         window.addEventListener('resize',()=>{updateScrollbars(); positionOccAxis();});
+        occBars.addEventListener('scroll',()=>positionOccAxis());
 
       }
     })();
