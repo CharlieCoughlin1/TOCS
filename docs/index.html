@@ -541,14 +541,26 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
   <script src="costs.js"></script>
   <script src="extras.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
       if(typeof L==='undefined'){console.error('Leaflet failed to load.');}
       (function(){
-        // ---- Supabase init ----
-        const SUPABASE_URL = 'https://gtjyewrhtzvhghfthati.supabase.co';
-        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0anlld3JodHp2aGdoZnRoYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4OTQwNzQsImV4cCI6MjA3MjQ3MDA3NH0.M08J92PDe-V3_8fF_D7J-gWvXa0itaB5PoREIVp73wg';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        // ---- Event logging helper ----
+
+        async function insertEvent(row){
+          try{
+            console.log('Sending event to server:', row);
+            const res = await fetch('/api/event', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(row)
+            });
+            if(!res.ok){
+              console.error('Event API error:', await res.text());
+            }
+          }catch(e){
+            console.error('Network/insert error:', e);
+          }
+        }
 
         // Stable per-browser session id
         function getSessionId(){
@@ -776,17 +788,7 @@
           return payload;
         }
 
-        async function insertEvent(row){
-          try{
-            console.log('Sending event to Supabase:', row);
-            const { error } = await supabase.from('lsh_calculator_events').insert(row);
-            if(error) console.error('Supabase insert error:', error);
-          }catch(e){
-            console.error('Network/insert error:', e);
-          }
-        }
-
-        let lastCalcRows = []; // array of rows inserted on last calculation (for loc1 and maybe loc2)
+          let lastCalcRows = []; // array of rows inserted on last calculation (for loc1 and maybe loc2)
 
         // ===== /Analytics =====
 
