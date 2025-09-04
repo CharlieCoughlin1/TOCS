@@ -14,7 +14,7 @@
     :root {
       --lsh-red:#cc2030;
       --lsh-red-dark:#871720;
-      --bar-max:210px;
+      --bar-max:250px;
       --axis-gutter:32px;
       --col-w:9rem;
       --col-gap:1rem;
@@ -233,7 +233,7 @@
     /* Placeholder (Add location) cards: no clipping, neat dashed frame */
     .placeholder-col{
       border:2px dashed #cbd5e0; border-radius:.375rem;
-      display:flex; flex-direction:column; align-items:center; justify-content:flex-start;
+      display:flex; flex-direction:column; align-items:center; justify-content:center;
       padding:0.75rem;
       min-height:calc(var(--bar-max) + 90px); /* extra headroom to avoid clipping */
       box-sizing:border-box;
@@ -1134,7 +1134,7 @@
       const calcWrap=$('calcWrapper'); const occWrap=$('occWrapper');
       const calcTab=$('calcTab'); const occTab=$('occTab');
       const occChart=$("occChart"); const occBars=$("occBars"); const yAxis=$("yAxis"); const xAxis=$("xAxis");
-      const BAR_MAX = 210;
+      const BAR_MAX = 250;
       const gridLines=[];
       let gridLayer=null;
 
