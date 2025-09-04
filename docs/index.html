@@ -499,7 +499,7 @@
 
       <div id="occPrompt" class="mb-4 text-center text-gray-500 hidden"></div>
       <div id="occWrapper">
-        <div class="flex justify-between items-center mb-4 relative">
+        <div id="occControls" class="flex justify-between items-center mb-4 relative">
           <button id="occClear" class="bg-gray-200 hover:bg-gray-300 text-sm px-3 py-1 rounded font-din-bold">Clear</button>
           <div class="relative">
             <button id="occFilterBtn" class="p-1" aria-label="Filter">
@@ -1150,6 +1150,7 @@
       }
 
       const occTables=$("occTables"); const occClear=$("occClear"); const occPrompt=$("occPrompt");
+      const occControls=$('occControls');
       let yAxisTicks=[];
       const occFilterBtn=$('occFilterBtn'); const occFilterMenu=$('occFilterMenu');
       const filterNew=$('filterNew'); const filterOld=$('filterOld');
@@ -1457,11 +1458,13 @@
         if(hasData) showContacts(); else hideContacts();
         occDownloadWrap.classList.toggle('hidden', !hasData);
         occUnits.classList.toggle('hidden', !hasData);
+        occControls.classList.toggle('hidden', !hasData);
         yAxis.classList.toggle('hidden', !hasData);
         xAxis.classList.toggle('hidden', !hasData);
         if(!hasData){
           yAxisTicks.forEach(t=>t.remove());
           yAxisTicks=[];
+          occFilterMenu.classList.add('hidden');
         }
 
         let max=0;
