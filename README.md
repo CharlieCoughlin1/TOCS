@@ -7,7 +7,8 @@ Supabase.
 
 ### Setup
 
-Create a `.env` file or export the following environment variables:
+Create a `.env` file or export the following environment variables
+(a sample is provided in `.env.example`):
 
 - `SUPABASE_URL` – your Supabase project URL
 - `SUPABASE_SERVICE_ROLE_KEY` – service role key with insert permissions
