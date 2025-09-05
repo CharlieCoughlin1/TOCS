@@ -730,13 +730,6 @@
           };
 
           // Ensure non-PII analytics rows never include contact data
-          payload.company = '';
-          payload.contact_name = '';
-          payload.contact_email = '';
-          payload.contact_phone = '';
-          payload.marketing_opt_in = false;
-          payload.is_lead = false;
-
           // Compute outputs deterministically (same formulas you display)
           const SQFT_PER_SQM = SQM_TO_SQFT;
           const sqmPerPerson = parseFloat(calcInputs.density);
@@ -2023,13 +2016,13 @@
           const mode = modeValue; // 'people' | 'budget'
           if (locSel.value){
             const base1 = buildEventPayloadForLocation(locSel.value, mode, calcInputs);
-            const row1  = { ...base1, calc_seq: calcSeq }; // NEW FIELD
+            const row1  = { ...base1, calc_seq: calcSeq, is_lead: false };
             lastCalcRows.push(row1);
             insertEvent(row1);
           }
           if (locSel2.value){
             const base2 = buildEventPayloadForLocation(locSel2.value, mode, calcInputs);
-            const row2  = { ...base2, calc_seq: calcSeq }; // NEW FIELD
+            const row2  = { ...base2, calc_seq: calcSeq, is_lead: false };
             lastCalcRows.push(row2);
             insertEvent(row2);
           }
@@ -2069,15 +2062,11 @@
           // Prefill convenience only (not used in analytics)
           saveLeadToLocal(lead);
 
-          // Create dedicated lead rows with PII (one per location in the last calc)
+          // Create dedicated lead rows without personal information
           if (lastCalcRows.length){
             for (const baseRow of lastCalcRows){
               const row = {
                 ...baseRow,
-                company: lead.company || '',
-                contact_name: lead.contact_name || '',
-                contact_email: lead.contact_email || '',
-                contact_phone: lead.contact_phone || '',
                 marketing_opt_in: !!lead.marketing_opt_in,
                 is_lead: true
               };
