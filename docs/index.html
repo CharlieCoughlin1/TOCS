@@ -2062,11 +2062,15 @@
           // Prefill convenience only (not used in analytics)
           saveLeadToLocal(lead);
 
-          // Create dedicated lead rows without personal information
+          // Create dedicated lead rows with personal information
           if (lastCalcRows.length){
             for (const baseRow of lastCalcRows){
               const row = {
                 ...baseRow,
+                company: lead.company || null,
+                contact_name: lead.contact_name || null,
+                contact_email: lead.contact_email || null,
+                contact_phone: lead.contact_phone || null,
                 marketing_opt_in: !!lead.marketing_opt_in,
                 is_lead: true
               };

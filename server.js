@@ -1,13 +1,6 @@
 const express = require('express');
-const { createClient } = require('@supabase/supabase-js');
-
-const SUPABASE_URL =
-  process.env.SUPABASE_URL || 'https://gtjyewrhtzvhghfthati.supabase.co';
-const SUPABASE_SERVICE_ROLE_KEY =
-  process.env.SUPABASE_SERVICE_ROLE_KEY ||
-  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd0anlld3JodHp2aGdoZnRoYXRpIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTY4OTQwNzQsImV4cCI6MjA3MjQ3MDA3NH0.M08J92PDe-V3_8fF_D7J-gWvXa0itaB5PoREIVp73wg';
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const fs = require('fs');
+const path = require('path');
 
 const app = express();
 app.use(express.json());
@@ -44,9 +37,22 @@ const stringFields = [
   'budget_type',
   'location1',
   'location2',
+  'company',
+  'contact_name',
+  'contact_email',
+  'contact_phone',
 ];
 
 const allowedFields = [...numericFields, ...booleanFields, ...stringFields];
+
+const DATA_DIR = path.join(__dirname, 'data');
+const CSV_PATH = path.join(DATA_DIR, 'submissions.csv');
+const csvHeaders = ['created_at', 'event_ts', ...allowedFields];
+
+fs.mkdirSync(DATA_DIR, { recursive: true });
+if (!fs.existsSync(CSV_PATH)) {
+  fs.writeFileSync(CSV_PATH, csvHeaders.join(',') + '\n', { mode: 0o600 });
+}
 
 app.post('/api/event', async (req, res) => {
   const body = req.body;
@@ -56,15 +62,14 @@ app.post('/api/event', async (req, res) => {
 
   const row = {};
 
-  let createdAt = new Date();
+  const createdAt = new Date();
+  row.created_at = createdAt.toISOString();
   if (body.ts) {
     const ts = new Date(body.ts);
     if (!isNaN(ts.getTime())) {
-      createdAt = ts;
       row.event_ts = ts.toISOString();
     }
   }
-  row.created_at = createdAt.toISOString();
 
   for (const key of allowedFields) {
     const v = body[key];
@@ -79,22 +84,24 @@ app.post('/api/event', async (req, res) => {
     }
   }
 
+  const record = csvHeaders
+    .map((h) => {
+      const v = row[h];
+      if (v === undefined || v === null) return '';
+      return '"' + String(v).replace(/"/g, '""') + '"';
+    })
+    .join(',');
+
   try {
-    const { error } = await supabase
-      .from('lsh_calculator_events')
-      .insert(row);
-    if (error) {
-      console.error('Supabase insert error:', error);
-      return res.status(500).json({ error: 'Database insert failed' });
-    }
+    await fs.promises.appendFile(CSV_PATH, record + '\n');
     return res.status(200).json({ success: true });
   } catch (e) {
-    console.error('Network/insert error:', e);
-    return res.status(500).json({ error: 'Database insert failed' });
+    console.error('CSV append error:', e);
+    return res.status(500).json({ error: 'Write failed' });
   }
 });
 
 const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
+app.listen(PORT, '127.0.0.1', () => {
+  console.log(`Server listening on http://127.0.0.1:${PORT}`);
 });
