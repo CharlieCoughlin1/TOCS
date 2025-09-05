@@ -46,7 +46,8 @@ const stringFields = [
 const allowedFields = [...numericFields, ...booleanFields, ...stringFields];
 
 const DATA_DIR = path.join(__dirname, 'data');
-const CSV_PATH = path.join(DATA_DIR, 'submissions.csv');
+// Path for storing calculator leads in a CSV for easy retrieval
+const CSV_PATH = path.join(DATA_DIR, 'LSH_Calculator_Leads.csv');
 const csvHeaders = ['created_at', 'event_ts', ...allowedFields];
 
 fs.mkdirSync(DATA_DIR, { recursive: true });
