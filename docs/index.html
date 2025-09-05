@@ -1046,59 +1046,64 @@
 
       async function loadContacts(){
         if(contactsLoaded) return;
-        const res=await fetch('Office_staff_info.csv');
-        const text=await res.text();
-        const rows=text.trim().split('\n').slice(1).map(l=>l.split(','));
-        const targets=['David Earle','Peter Musgrove','Matthew Walker','Oliver du Sautoy'];
-        const imgMap={
-          'David Earle':'Agent%20photos/David%20Earle.jpg',
-          'Peter Musgrove':'Agent%20photos/Peter%20Musgrove.jpg',
-          'Matthew Walker':'Agent%20photos/Matthew%20Walker.jpg',
-          'Oliver du Sautoy':'Agent%20photos/Oliver%20du%20Sautoy.jpg'
-        };
-        targets.forEach((name,i)=>{
-          const r=rows.find(row=>row[0]===name);
-          if(!r) return;
-          const [,,mobile,email,status]=r;
-          const card=document.createElement('div');
-          card.className='bg-gray-50 p-6 rounded-lg shadow flex flex-col items-center text-center';
-          card.classList.add('fade-in');
-          card.style.opacity=0;
-          card.style.animationDelay=`${i*0.2}s`;
-          card.style.animationFillMode='forwards';
-          const img=document.createElement('img');
-          img.src=imgMap[name];
-          img.alt=`Photo of ${name}`;
-          img.className='mb-3 w-32 h-40 object-cover rounded-lg';
-          if(name==='Oliver du Sautoy') img.style.objectPosition='center 60%';
-          card.appendChild(img);
-          const nm=document.createElement('div');
-          nm.className='font-din-bold mb-1 text-lg';
-          nm.textContent=name;
-          card.appendChild(nm);
-          const st=document.createElement('div');
-          st.className='text-sm text-gray-600 h-12 flex items-center justify-center mb-2';
-          st.textContent=status;
-          card.appendChild(st);
-          const mob=document.createElement('div');
-          mob.className='text-sm text-gray-600 mb-1';
-          const mobLink=document.createElement('a');
-          mobLink.href=`tel:${mobile.replace(/\s+/g,'')}`;
-          mobLink.textContent=mobile;
-          mobLink.className='hover:underline';
-          mob.appendChild(mobLink);
-          card.appendChild(mob);
-          const em=document.createElement('div');
-          em.className='text-sm text-gray-600';
-          const emLink=document.createElement('a');
-          emLink.href=`mailto:${email}`;
-          emLink.textContent=email;
-          emLink.className='text-lsh-red hover:underline';
-          em.appendChild(emLink);
-          card.appendChild(em);
-          contactsContainer.appendChild(card);
-        });
-        contactsLoaded=true;
+        try{
+          const res=await fetch('Office_staff_info.csv');
+          if(!res.ok) throw new Error(`HTTP ${res.status}`);
+          const text=await res.text();
+          const rows=text.trim().split('\n').slice(1).filter(Boolean).map(l=>l.split(','));
+          const targets=['David Earle','Peter Musgrove','Matthew Walker','Oliver du Sautoy'];
+          const imgMap={
+            'David Earle':'Agent%20photos/David%20Earle.jpg',
+            'Peter Musgrove':'Agent%20photos/Peter%20Musgrove.jpg',
+            'Matthew Walker':'Agent%20photos/Matthew%20Walker.jpg',
+            'Oliver du Sautoy':'Agent%20photos/Oliver%20du%20Sautoy.jpg'
+          };
+          targets.forEach((name,i)=>{
+            const r=rows.find(row=>row[0]===name);
+            if(!r) return;
+            const [,,mobile,email,status]=r;
+            const card=document.createElement('div');
+            card.className='bg-gray-50 p-6 rounded-lg shadow flex flex-col items-center text-center';
+            card.classList.add('fade-in');
+            card.style.opacity=0;
+            card.style.animationDelay=`${i*0.2}s`;
+            card.style.animationFillMode='forwards';
+            const img=document.createElement('img');
+            img.src=imgMap[name];
+            img.alt=`Photo of ${name}`;
+            img.className='mb-3 w-32 h-40 object-cover rounded-lg';
+            if(name==='Oliver du Sautoy') img.style.objectPosition='center 60%';
+            card.appendChild(img);
+            const nm=document.createElement('div');
+            nm.className='font-din-bold mb-1 text-lg';
+            nm.textContent=name;
+            card.appendChild(nm);
+            const st=document.createElement('div');
+            st.className='text-sm text-gray-600 h-12 flex items-center justify-center mb-2';
+            st.textContent=status;
+            card.appendChild(st);
+            const mob=document.createElement('div');
+            mob.className='text-sm text-gray-600 mb-1';
+            const mobLink=document.createElement('a');
+            mobLink.href=`tel:${mobile.replace(/\s+/g,'')}`;
+            mobLink.textContent=mobile;
+            mobLink.className='hover:underline';
+            mob.appendChild(mobLink);
+            card.appendChild(mob);
+            const em=document.createElement('div');
+            em.className='text-sm text-gray-600';
+            const emLink=document.createElement('a');
+            emLink.href=`mailto:${email}`;
+            emLink.textContent=email;
+            emLink.className='text-lsh-red hover:underline';
+            em.appendChild(emLink);
+            card.appendChild(em);
+            contactsContainer.appendChild(card);
+          });
+          contactsLoaded=true;
+        }catch(err){
+          console.error('Failed to load contacts',err);
+        }
       }
 
       function showContacts(){
@@ -1236,7 +1241,7 @@
 
           const rem=document.createElement('button');
           rem.className='remove-btn';
-          rem.innerHTML='&times;';
+          rem.textContent='×';
           rem.addEventListener('click',()=>{ occData.splice(idx,1); updateOccUI(); });
           box.appendChild(rem);
 
